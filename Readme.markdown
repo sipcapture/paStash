@@ -12,24 +12,15 @@ What to do with HEPstash ?
 
 hepstash is a tool to collect, correlated and ship logs and other data to a central server and to a [HEP Server](https://github.com/sipcapture.hep) or [ElasticSearch](http://www.elasticsearch.org/) for indexing.
 
-In top of elastic search, you can use a specialized interface like [kibana](https://github.com/elastic/kibana) to dive into your logs.
-
-![Archi](https://raw.github.com/bpaquet/node-logstash/master/docs/archi.jpg)
-
-Why a new implementation ?
----
-
-When I tried logstash, I had some problems. This version should have:
-
 * lower memory footprint
 * lower cpu footprint
 * faster startup delay
 
 Moreover it's written in NodeJS, which is a perfect language for programs with many IO.
 
-node-logstash is compatible with logstash. You can replace a node-logstash node by a logstash one. The data are formatted in the same way to be compatible with logstash UIs.
+hepstash and node-logstash are compatible with logstash. You can replace a node-logstash node by a logstash one. The data are formatted in the same way to be compatible with logstash UIs.
 
-How does it works ?
+How does it work ?
 ===
 
 The architecture is identical to logstash architecture. You have to instanciates plugins with the node-logstash core. There are three type of modules:
@@ -45,34 +36,6 @@ On agent, node-logstash is configured whith inputs plugins to get logs from your
 
 On log server, logs come trough a zeromq input plugin, are processed (fields and timestamps extraction), and send to ElasticSearch.
 
-How to get help ?
-===
-
-Please open an [issue](https://github.com/bpaquet/node-logstash/issues).
-
-Future of this project
-===
-
-October 25th 2015.
-
-When I started node-logstash, the ecosystem around logstash and ElasticSearch were almost non-existant. In 2015, the siutation is not the same :
-* Great ecosystem around ElasticSearch and logstash, FileBeat project
-* Logstash is now the only way to push events to ElasticSearch ([deprecation of rivers](https://www.elastic.co/blog/deprecating-rivers))
-
-So, what is the future of node-logstash ?
-* as a tool to collect logs on files and send them through network, node-losgstash is still useful with lower size, instant start, lower CPU / Memory footprint (in my tests with logstash 1.5.0). The comparison is different with Lumberjack and FileBeat.
-* as log processing tool, it has the same advantages, but the plugin ecosystem is smaller than Logstash.
-* as an injection tool in ElasticSearch : ZeroMQ river will soon be unusable ([deprecation of rivers](https://www.elastic.co/blog/deprecating-rivers)). You have to use bulk api to inject data. It should be less efficient than starting an embedded ElasticSearch node, as in the original Logstash.
-
-Current project status
----
-
-Node-logstash is production ready, and used in production. Installation is a classical node project installation, with some scripts for native packaging.
-
-Maintainers : currently I, @bpaquet, am the only maintainer. I will keep dependencies up to date, update the core to follow node version, but I do not have time to add features in the core. See Contributing below.
-
-Weaknesses :
-* tests are difficult to maintain, even if they are many and the code coverage is good. Replace vows by mocha is a good way to improve that, but it's a big rework.
 
 Contributing
 ===
@@ -104,16 +67,6 @@ How to use it ?
 Installation
 ---
 
-### Simple way
-
-Use [prepackaged deb files](https://packager.io/gh/nodelogstashpackager/node-logstash/install).
-
-After install, just add your config files to ``/etc/node-logstash/plugins.conf.d``, and restart node-logstash ``service node-logstash restart``.
-
-To see what options are passed to node-logstash, see [here](packager/Procfile).
-
-To change log level, do ``node-logstash config:set LOG_LEVEL=debug``, and restart node-logstash.
-
 ### Manual install
 
 * Install NodeJS, version >= 0.12
@@ -123,10 +76,10 @@ To change log level, do ``node-logstash config:set LOG_LEVEL=debug``, and restar
 * Install zmq dev libraries: This is required to build the [node zeromq module](https://github.com/JustinTulloss/zeromq.node).
   * Debian based system: `apt-get install libzmq1`. Under recent releases, this package is present in default repositories. On ubuntu lucid, use this [ppa](https://launchpad.net/~chris-lea/+archive/zeromq). On debian squeeze, use [backports](http://backports-master.debian.org/Instructions/).
   * Centos 6: `yum install zeromq zeromq-devel`. Before, you have to add the rpm zeromq repo : `curl http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/home:fengshuo:zeromq.repo > /etc/yum.repos.d/zeromq.repo`
-* Clone repository: `git clone git://github.com/bpaquet/node-logstash.git && cd node-logstash`
+* Clone repository: `git clone git://github.com/sipcapture/hepstash.git && cd hepstash`
 * Install dependencies: `npm install`.
 
-The executable is ``bin/node-logstash-agent``
+The executable is ``bin/hepstash-agent``
 
 Configuration formats
 ---
@@ -327,6 +280,7 @@ Misc
 License
 ===
 
+Copyright 2016 - 2017 QXIP BV
 Copyright 2012 - 2014 Bertrand Paquet
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
