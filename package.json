@@ -1,0 +1,55 @@
+{
+  "name": "hepstash",
+  "description": "HEP Logstash implementation in node JS",
+  "version": "0.0.5",
+  "author": "Bertrand Paquet <bertrand.paquet@gmail.com>",
+  "keywords": ["logstash", "log", "zmq", "zeromq", "hep", "eep"],
+  "main": "./lib/log4node.js",
+  "homepage": "https://github.com/sipcapture/hepstash",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sipcapture/hepstash.git"
+  },
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "vows": "0.8.0",
+    "vows-batch-retry": "0.0.4",
+    "js-beautify": "1.4.x",
+    "whereis": "0.4.x",
+    "jshint": "2.x",
+    "istanbul": "0.1.x",
+    "rimraf": "2.3.x",
+    "jison": "0.4.x"
+  },
+  "scripts": {
+    "test": "./test-runner.sh"
+  },
+  "dependencies": {
+    "log4node": "0.1.6",
+    "optimist": "0.6.1",
+    "mkdirp": "0.5.1",
+    "async": "0.9.0",
+    "lru-cache": "2.7.x"
+  },
+  "optionalDependencies":{
+    "aws-sdk": "2.7.x",
+    "amqplib": "0.4.0",
+    "zmq": "2.13.0",
+    "moment": "2.9.0",
+    "redis": "2.2.5",
+    "ws": "0.8.0",
+    "oniguruma": "5.1.x",
+    "msgpack": "1.0.x",
+    "geoip-lite": "1.1.6",
+    "maxmind": "0.6.x",
+    "maxmind-geolite-mirror": "1.0.x",
+    "http-proxy-agent": "1.x",
+    "https-proxy-agent": "1.x",
+    "lumberjack-protocol": "git://github.com/bpaquet/node-lumberjack-protocol.git",
+    "hep-js": "0.0.4"
+  },
+  "directories": {
+    "test": "./test",
+    "bin": "./bin"
+  }
+}

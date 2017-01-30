@@ -1,0 +1,240 @@
+#!/usr/bin/env node
+
+var optimist = require('optimist'),
+  fs = require('fs'),
+  path = require('path'),
+  http = require('http'),
+  https = require('https'),
+  logger = require('log4node'),
+  agent = require('../lib/agent'),
+  monitor_file = require('../lib/lib/monitor_file'),
+  file_loader = require('../lib/lib/file_loader'),
+  patterns_loader = require('../lib/lib/patterns_loader');
+
+var argv = optimist.argv;
+
+function help() {
+  console.log('Syntax : node-logstasth-agent [--log_level=info] [--log_file=file] [--config_file=toto] [--config_dir=/etc/config] urls');
+  console.log('Url examples: ');
+  console.log('- input://stdin://');
+  console.log('- input://file://main_input.txt?type=toto');
+  console.log('- output://stdout://');
+  console.log('- output://file:///tmp/toto.txt');
+}
+
+function log_error() {
+  if (argv.log_file) {
+    console.log.apply(console, arguments);
+  }
+  logger.error.apply(logger, arguments);
+}
+
+if (argv.help) {
+  help();
+  process.exit(0);
+}
+
+process.on('uncaughtException', function(err) {
+  log_error('Exception has been catch, it\' a bug');
+  log_error('Please submit an issue on https://github.com/bpaquet/node-logstash');
+  log_error('Exception:', err);
+  log_error(err.stack);
+});
+
+if (argv.log_file) {
+  logger.info('Log to file', argv.log_file, ', log_level', argv.log_level);
+  logger.reconfigure({
+    level: argv.log_level || process.env.LOG_LEVEL,
+    file: argv.log_file
+  });
+}
+else {
+  var log_level = argv.log_level || process.env.LOG_LEVEL;
+  if (log_level) {
+    logger.info('Changing log_level', log_level);
+    logger.setLogLevel(log_level);
+  }
+}
+
+var package_json_file = path.join(__dirname, '..', 'package.json');
+var version = JSON.parse(fs.readFileSync(package_json_file)).version;
+
+logger.notice('Starting node-logstasth-agent', version);
+
+var http_max_sockets = argv.http_max_sockets || 100;
+logger.info('Max http socket', http_max_sockets);
+http.globalAgent.maxSocket = http_max_sockets;
+https.globalAgent.maxSocket = http_max_sockets;
+
+var a = agent.create();
+
+a.on('error', function(module_name, error) {
+  logger.error('[' + module_name + '] ' + error);
+});
+
+function removeIfExists(file) {
+  fs.exists(file, function(exists) {
+    if (exists) {
+      fs.unlink(file, function(err) {
+        if (err) {
+          logger.error('Unable to remove file', file, err);
+        }
+      });
+    }
+  });
+}
+if (argv.alarm_file) {
+  logger.info('Alarm file', argv.alarm_file);
+  removeIfExists(argv.alarm_file);
+  a.on('alarm_mode', function(a) {
+    if (a) {
+      fs.writeFile(argv.alarm_file, '1', function(err) {
+        if (err) {
+          logger.error('Unable to write alarm file', argv.alarm_file, err);
+        }
+      });
+    }
+    else {
+      removeIfExists(argv.alarm_file);
+    }
+  });
+}
+
+patterns_loader.add(path.join(__dirname, '..', 'lib', 'patterns'));
+
+if (argv.patterns_directories) {
+  argv.patterns_directories.split(/,/).forEach(function(d) {
+    patterns_loader.add(d);
+  });
+}
+
+function after_config_directory(config) {
+  logger.info('Loading config : ' + config.length + ' urls');
+
+  a.start(config, function(err) {
+    if (err) {
+      log_error('Unable to load urls from command line');
+      log_error(err.stack);
+      setTimeout(function() {
+        process.exit(2);
+      }, 50);
+      return;
+    }
+    logger.info('Config loaded.');
+  });
+}
+
+function after_config_file(config) {
+  if (argv.config_dir) {
+    logger.info('Loading config files from : ' + argv.config_dir);
+    file_loader.loadDirectory(argv.config_dir, true, function(err, result) {
+      if (err) {
+        log_error('Unable to load config from directory');
+        log_error(err.stack);
+        setTimeout(function() {
+          process.exit(1);
+        }, 50);
+        return;
+      }
+      logger.info('Files loaded from directory, ' + result.length + ' urls found');
+      after_config_directory(config.concat(result));
+    });
+  }
+  else {
+    after_config_directory(config);
+  }
+}
+
+function load_config_file(config) {
+  if (argv.config_file) {
+    logger.info('Loading config file : ' + argv.config_file);
+    file_loader.loadFile(argv.config_file, true, function(err, result) {
+      if (err) {
+        log_error('Unable to load config file', argv.config_file);
+        log_error(err.stack);
+        setTimeout(function() {
+          process.exit(1);
+        }, 50);
+        return;
+      }
+      logger.info('File loaded, ' + result.length + ' urls found');
+      after_config_file(config.concat(result));
+    });
+  }
+  else {
+    after_config_file(config);
+  }
+}
+
+function main_start() {
+  load_config_file([
+    'filter://add_host://',
+    'filter://add_timestamp://',
+    'filter://add_version://',
+  ].concat(argv._.map(function(x) {
+    return file_loader.filter(true, x)[0];
+  })));
+}
+
+function close() {
+  a.close(function() {
+    logger.info('Quitting.');
+    if (argv.db_file) {
+      fs.writeFile(argv.db_file, JSON.stringify(monitor_file.getFileStatus()), function(err) {
+        if (err) {
+          log_error('Error while writing', argv.db_file, ':', err);
+        }
+        setTimeout(function() {
+          process.exit(1);
+        }, 50);
+      });
+    }
+    else {
+      setTimeout(function() {
+        process.exit(1);
+      }, 50);
+    }
+  });
+}
+
+process.on('SIGTERM', function() {
+  logger.info('SIGTERM received.');
+  close();
+});
+
+process.on('SIGINT', function() {
+  logger.info('SIGINT received.');
+  close();
+});
+
+if (argv.db_file) {
+  fs.exists(argv.db_file, function(exists) {
+    if (!exists) {
+      logger.info('Db file not found', argv.db_file);
+      main_start();
+    }
+    else {
+      fs.readFile(argv.db_file, function(err, data) {
+        if (err) {
+          log_error('Error while reading', argv.db_file, ':', err);
+        }
+        else {
+          try {
+            var parsed = JSON.parse(data);
+            monitor_file.setFileStatus(parsed);
+          }
+          catch(err) {
+            log_error('Error while parsing db file, please delete it', argv.db_file, ':', err);
+          }
+        }
+        main_start();
+      });
+    }
+  });
+}
+else {
+  main_start();
+}
+
+// avoid stop if no config is given
+setInterval(function() {}, 3600 * 1000);
