@@ -1,18 +1,16 @@
-node-logstash
+hepstash
 ====
-
-[![Build Status](https://travis-ci.org/bpaquet/node-logstash.png)](https://travis-ci.org/bpaquet/node-logstash)
 
 What is it ?
 ---
 
-It's a [NodeJS](http://nodejs.org) implementation of [Logstash](http://logstash.net/).
+It's a [NodeJS](http://nodejs.org) fork of [Logstash](http://logstash.net/) specialized for the HEPIC stack.
 
 
-What to do with node-logstash ?
+What to do with hepstash ?
 ---
 
-node-logstash is a tool to collect logs on servers. It allow to send its to a central server and to [ElasticSearch](http://www.elasticsearch.org/) for indexing.
+hepstash is a tool to collect, correlated and ship logs and other data to a central server and to a [HEP Server](https://github.com/sipcapture.hep) or [ElasticSearch](http://www.elasticsearch.org/) for indexing.
 
 In top of elastic search, you can use a specialized interface like [kibana](https://github.com/elastic/kibana) to dive into your logs.
 
