@@ -1,13 +1,13 @@
-hepstash
+HEPstash
 ====
 
 What is it ?
 ---
 
-It's a [NodeJS](http://nodejs.org) fork of [Logstash](http://logstash.net/) specialized for the HEPIC stack.
+It's a [NodeJS](http://nodejs.org) fork of [node-logstash](https://raw.github.com/bpaquet/node-logstash) with extensions specialized for the HEPIC stack.
 
 
-What to do with hepstash ?
+What to do with HEPstash ?
 ---
 
 hepstash is a tool to collect, correlated and ship logs and other data to a central server and to a [HEP Server](https://github.com/sipcapture.hep) or [ElasticSearch](http://www.elasticsearch.org/) for indexing.
