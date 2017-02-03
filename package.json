@@ -46,7 +46,8 @@
     "http-proxy-agent": "1.x",
     "https-proxy-agent": "1.x",
     "lumberjack-protocol": "git://github.com/bpaquet/node-lumberjack-protocol.git",
-    "hep-js": "0.0.4"
+    "hep-js": "*",
+    "node-netflowv9": "*"
   },
   "directories": {
     "test": "./test",
