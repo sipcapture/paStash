@@ -1,2 +1,2 @@
-# hepstash
-HEP/EEP I/O
+# paStash
+Spaghetti I/O
