@@ -1,5 +1,7 @@
-HEPstash
+paStash
 ====
+
+<img src="http://i.imgur.com/wYjsCqz.png"/>
 
 What is it ?
 ---
@@ -7,10 +9,10 @@ What is it ?
 It's a [NodeJS](http://nodejs.org) fork of [node-logstash](https://raw.github.com/bpaquet/node-logstash) with extensions specialized for the HEPIC stack.
 
 
-What to do with HEPstash ?
+What to do with paStash ?
 ---
 
-hepstash is a tool to collect, correlated and ship logs and other data to a central server and to a [HEP Server](https://github.com/sipcapture.hep) or [ElasticSearch](http://www.elasticsearch.org/) for indexing.
+paStash is a tool to manage spaghetti I/O with input, processors and output modules for all seasons and protocols.
 
 * lower memory footprint
 * lower cpu footprint
@@ -18,7 +20,7 @@ hepstash is a tool to collect, correlated and ship logs and other data to a cent
 
 Moreover it's written in NodeJS, which is a perfect language for programs with many IO.
 
-hepstash and node-logstash are compatible with logstash. You can replace a node-logstash node by a logstash one. The data are formatted in the same way to be compatible with logstash UIs.
+paStash and node-logstash are compatible with logstash. You can replace a node-logstash node by a paStash one. The data are formatted in the same way to be compatible with logstash UIs.
 
 How does it work ?
 ===
@@ -76,10 +78,10 @@ Installation
 * Install zmq dev libraries: This is required to build the [node zeromq module](https://github.com/JustinTulloss/zeromq.node).
   * Debian based system: `apt-get install libzmq1`. Under recent releases, this package is present in default repositories. On ubuntu lucid, use this [ppa](https://launchpad.net/~chris-lea/+archive/zeromq). On debian squeeze, use [backports](http://backports-master.debian.org/Instructions/).
   * Centos 6: `yum install zeromq zeromq-devel`. Before, you have to add the rpm zeromq repo : `curl http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/home:fengshuo:zeromq.repo > /etc/yum.repos.d/zeromq.repo`
-* Clone repository: `git clone git://github.com/sipcapture/hepstash.git && cd hepstash`
+* Clone repository: `git clone git://github.com/sipcapture/pastash.git && cd pastash`
 * Install dependencies: `npm install`.
 
-The executable is ``bin/hepstash-agent``
+The executable is ``bin/node-logstash-agent``
 
 Configuration formats
 ---
@@ -217,6 +219,7 @@ Input plugins
 * [Google app engine](docs/inputs/gae.md)
 * [AMQP](docs/inputs/amqp.md)
 * [SQS](docs/inputs/sqs.md)
+* [NetFlow]()
 
 Common concepts / parameters :
 
