@@ -6,7 +6,7 @@ paStash
 What is it ?
 ---
 
-It's a [NodeJS](http://nodejs.org) fork of [node-logstash](https://raw.github.com/bpaquet/node-logstash) with extensions specialized for the HEPIC stack.
+PaStasH _(pastaʃ'ʃ-utta)_ [NodeJS](http://nodejs.org) is a fork of [node-logstash](https://raw.github.com/bpaquet/node-logstash) with extensions specialized for Networking with the HEPIC stack.
 
 
 What to do with paStash ?
