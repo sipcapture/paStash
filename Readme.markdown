@@ -6,7 +6,7 @@ paStash
 What is it ?
 ---
 
-PaStasH _(pastaʃ'ʃ-utta)_ [NodeJS](http://nodejs.org) is a fork of [node-logstash](https://raw.github.com/bpaquet/node-logstash) with extensions specialized for Networking with the HEPIC stack.
+PaStasH _(pastaʃ'ʃ-utta)_ [NodeJS](http://nodejs.org) is a fork of [node-logstash](https://raw.github.com/bpaquet/node-logstash) with extensions specialized for interworking with the HEPIC stack.
 
 
 What to do with paStash ?
@@ -219,7 +219,10 @@ Input plugins
 * [Google app engine](docs/inputs/gae.md)
 * [AMQP](docs/inputs/amqp.md)
 * [SQS](docs/inputs/sqs.md)
-* [NetFlow]()
+* [NetFlow](docs/inputs/netflow.md)
+* [Freeswitch ESL](docs/inputs/esl.md)
+* [Asterisk AMI](docs/inputs/ami.md)
+
 
 Common concepts / parameters :
 
@@ -235,6 +238,7 @@ Filter plugins
 * [Grep](docs/filters/grep.md)
 * [Reverse DNS](docs/filters/reverse_dns.md)
 * [Compute field](docs/filters/compute_field.md)
+* [Compute hash](docs/filters/compute_hash.md)
 * [Compute date field](docs/filters/compute_date_field.md)
 * [Split](docs/filters/split.md)
 * [Truncate](docs/filters/truncate.md)
@@ -284,6 +288,7 @@ License
 ===
 
 Copyright 2016 - 2017 QXIP BV
+
 Copyright 2012 - 2014 Bertrand Paquet
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
