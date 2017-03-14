@@ -1,0 +1,71 @@
+# Notes: ?: => Non-capturing group (http://docs.python.org/howto/regex)
+#  ? => Match zero or one of the preceding
+#  | => Pattern separate - logical OR
+#  - => Literal hyphen
+
+MTIKBSDSYSLOG  ^<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{WORD:log_source} %{GREEDYDATA:syslog_message}
+
+
+# Firewall Log (No NAT):
+MIKROTIKFIREWALLNONAT %{DATA:LogPrefix} %{DATA:LogChain}: in:%{DATA:src_zone} out:%{DATA:dst_zone}, src-mac %{MAC}, proto %{DATA:proto}, %{IP:src_ip}:%{INT:src_port}->%{IP:dst_ip}:%{INT:dst_port}, len %{INT:length}
+
+# Firewall Log (NAT):
+MIKROTIKFIREWALLNAT %{DATA:LogPrefix} %{DATA:LogChain}: in:%{DATA:src_zone} out:%{DATA:dst_zone}, src-mac %{MAC}, proto %{DATA:proto}, %{IP:src_ip}:%{INT:src_port}->%{IP:dst_ip}:%{INT:dst_port}, NAT \(%{IP:nat_osrc_ip}:%{INT:nat_osrc_port}->%{IP:nat_nsrc_ip}:%{INT:nat_nsrc_port}\)->%{IP:nat_dst_ip}:%{INT:nat_dstport}, len %{INT:length}
+MIKROTIKFIREWALLNAT2 %{DATA:LogPrefix} %{DATA:LogChain}: in:%{DATA:src_zone} out:%{DATA:dst_zone}, proto %{DATA:proto}, %{IP:src_ip}:%{INT:src_port}->%{IP:dst_ip}:%{INT:dst_port}, NAT %{IP:nat_osrc_ip}:%{INT:nat_osrc_port}->\(%{IP:nat_nsrc_ip}:%{INT:nat_nsrc_port}->%{IP:nat_dst_ip}:%{INT:nat_dstport}\), len %{INT:length}
+
+MIKROTIKFIREWALL (?:%{MIKROTIKFIREWALLNAT}|%{MIKROTIKFIREWALLNAT2}|%{MIKROTIKFIREWALLNONAT})
+
+# DNS
+MIKROTIKDNSQUERY  query from %{IP:src_ip}: #%{INT:query_id} %{GREEDYDATA:query}
+MIKROTIKDNSANSWER  done query: #%{INT:query_id} %{GREEDYDATA:query}
+
+MIKROTIKDNS (?:%{MIKROTIKDNSANSWER}|%{MIKROTIKDNSQUERY})
+
+#WebProxy
+MIKROTIKWEBPROXY web-proxy: %{IP:src_ip} %{WORD:request_type} %{URI:url}
+# action=%{WORD:action}
+# cache=%{WORD:cache}
+
+#DHCP
+MIKROTIKDHCP %{DATA:DHCP_zone} %{WORD:action} %{IP:src_ip} (?:from|to) %{MAC:src_mac}
+
+# System Login
+
+MIKROTIKLOGINOUT   ^user %{WORD:user_name} (?<action>logged (?:out|in)) from %{IP:src_ip} via %{WORD:app_src}
+MIKROTIKLOGINFAIL  ^%{WORD:action} %{WORD:action_result} for user %{WORD:user_name} from %{IP:src_ip} via %{WORD:app_src}
+MIKROTIKRULECHANGE ^(?<config_change>%{DATA} changed) by %{WORD:user_name}$
+
+MTIKLOGIN (?:%{MIKROTIKLOGINOUT}|%{MIKROTIKLOGINFAIL}|%{MIKROTIKRULECHANGE})
+
+#### WIRELESS
+
+MTIKWIFIASSOC   %{USER:src_int}: %{MAC:src_mac} attempts to %{USER:action}
+MTIKWIFIACL     %{USER:src_int}: %{MAC:src_mac} (?<action>not in local ACL), by default %{USER:action_result}
+MTIKWIFIDEAUTH  %{USER:src_int}: %{DATA:greed} %{MAC:src_mac}, sent %{USER:action}
+MTIKWIFICONN    %{MAC:src_mac}\@%{USER:src_int}: (?<action>connected)$
+MTIKWIFIDISCONN %{MAC:src_mac}\@%{USER:src_int}: %{USER:action}, %{USER:action_result}$
+MTIKWIFIDISCON2 %{MAC:src_mac}\@%{USER:src_int}: (?<action>disconnected), received %{WORD:reason}%{GREEDYDATA:crap}$
+MTIKWIFIWDSAP   %{MAC:src_mac}\@%{USER:src_int}: (?<action>connected), is %{USER:wifi_type}, wants %{USER:wifi_req}
+MTIKWIFIBRSET   %{USER:interface}: %{USER:action_result} to %{DATA:action} for %{USER}, reason: %{DATA:reason}
+MTIKWIFIINTEVE  ^(?<action>Interface change) interface=%{USER:src_int} %{DATA:status}
+
+MTIKWIFI (?:%{MTIKWIFIDISCON2}|%{MTIKWIFIDISCONN}|%{MTIKWIFICONN}|%{MTIKWIFIWDSAP}|%{MTIKWIFIASSOC}|%{MTIKWIFIACL}|%{MTIKWIFIDEAUTH}|%{MTIKWIFIBRSET}|%{MTIKWIFIINTEVE})
+
+##### HOTSPOT
+
+MTIKHSPOTSTART       ^(?<user>T\-%{MAC:src_mac}|%{USERNAME})%{SPACE}\(%{IP:src_ip}\)\:
+MTIKHSPOTNEWHOST     ^%{USERNAME:src_int}\:%{SPACE}(?<action>new host detected)%{SPACE}%{MAC:src_mac}\/%{IP:src_ip}%{SPACE}by%{SPACE}%{WORD:protocol}%{SPACE}\:%{NUMBER:src_port:int} \-\> %{IP:dst_ip}\:%{NUMBER:dst_port:int}$
+MTIKHSPOTLOGINMETHOD ^(?<user_id>T\-%{MAC:src_mac}|%{USERNAME})%{SPACE}\(%{IP:src_ip}\)\:%{SPACE}(?<action>trying to log in) by %{USERNAME:login_method}$
+MTIKHSPOTLOGIN       ^(?<user_id>T\-%{MAC:src_mac}|%{USERNAME})%{SPACE}\(%{IP:src_ip}\)\:%{SPACE}(?<action>%{USER}%{SPACE}%{WORD})$
+MTIKHSPOTLOGIN2      ^(?<user_id>T\-%{MAC:src_mac}|%{USERNAME})%{SPACE}\(%{IP:src_ip}\)\:%{SPACE}(?<action>%{USER}%{SPACE}%{WORD:action_result})(?:\->|\:)%{SPACE}?%{GREEDYDATA:reason}$
+MTIKHSPOTLOGINFAIL   ^(?<user_id>T\-%{MAC:src_mac}|%{USERNAME})%{SPACE}\(%{IP:src_ip}\)\:%{SPACE}(?<action>login failed)\:%{SPACE}?%{GREEDYDATA:reason}
+MTIKHSPOTPROFILE     ^(?<user_id>T\-%{MAC:src_mac}|%{USERNAME})%{SPACE}\(%{IP:src_ip}\)\:%{SPACE}(?<action>using profile)%{SPACE}?\<?%{USERNAME:ip_profile}?\>?$
+MTIKHSPOTQUEUE       ^(?<user_id>T\-%{MAC:src_mac}|%{USERNAME})%{SPACE}\(%{IP:src_ip}\)\:%{SPACE}(?<action>(?:adding|removing) queue)%{SPACE}?\<%{GREEDYDATA:user_queue}\>$
+MTIKHSPOTQUEUE2      ^(?<user_id>T\-%{MAC:src_mac}|%{USERNAME})%{SPACE}\(%{IP:src_ip}\)\:%{SPACE}(?<action>(?:removing) queue)$
+MTIKHSPOTIPPOOL      ^(?<user_id>T\-%{MAC:src_mac}|%{USERNAME})%{SPACE}\(%{IP:src_ip}\)\:%{SPACE}(?<action>getting ip address)%{SPACE}(?<crap>from pool)$
+
+MTIKHSPOT (?:%{MTIKHSPOTLOGINMETHOD}|%{MTIKHSPOTIPPOOL}|%{MTIKHSPOTLOGIN}|%{MTIKHSPOTNEWHOST}|%{MTIKHSPOTPROFILE}|{MTIKHOTSPOTQUEUE2}|{MTIKHOTSPOTQUEUE}|%{MTIKHSPOTLOGINFAIL}|%{MTIKHSPOTLOGIN2})
+
+
+# Add all the above
+MIKROTIKMSGS (?:%{MIKROTIKDHCP}|%{MTIKHSPOT}|%{MTIKWIFI}|%{MTIKLOGIN})
