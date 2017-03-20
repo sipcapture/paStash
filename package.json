@@ -1,14 +1,15 @@
 {
-  "name": "hepstash",
-  "description": "HEP Logstash implementation in node JS",
+  "name": "pastash",
+  "description": "Extended Logstash implementation in node JS",
   "version": "0.0.5",
   "author": "Bertrand Paquet <bertrand.paquet@gmail.com>",
-  "keywords": ["logstash", "log", "zmq", "zeromq", "hep", "eep"],
+  "maintainer": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
+  "keywords": ["logstash", "log", "zmq", "zeromq", "hep", "eep","freeswitch","asterisk","janus", "homer"],
   "main": "./lib/log4node.js",
-  "homepage": "https://github.com/sipcapture/hepstash",
+  "homepage": "https://github.com/sipcapture/pastash",
   "repository": {
     "type": "git",
-    "url": "git://github.com/sipcapture/hepstash.git"
+    "url": "git://github.com/sipcapture/pastash.git"
   },
   "license": "Apache-2.0",
   "devDependencies": {
