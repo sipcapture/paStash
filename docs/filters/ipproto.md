@@ -12,7 +12,7 @@ Config using logstash format:
 ````
 filter {
   ipproto {
-    field => protocol
+    source_field => protocol
   }
 }
 `````
