@@ -36,6 +36,7 @@
     "aws-sdk": "2.7.x",
     "amqplib": "0.4.0",
     "zmq": "*",
+    "mqtt": "*",
     "modesl": "*",
     "node-sflow": "*",
     "asterisk.io": "*",
