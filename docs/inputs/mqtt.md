@@ -6,14 +6,13 @@ Status : experimental plugin.
 This plugin is used on log server to receive logs from agents.
 
 Example 1: to open a MQTT connection to server.
-Config using url: ``input://mqtt://mqtt://test.moquitto,org``
+Config using url: ``input://mqtt://mqtt://test.moquitto.org``
 
 Config using logstash format:
 ````
 input {
   mqtt {
     address => ['mqtt://test.moquitto,org']
-
   }
 }
 ````
