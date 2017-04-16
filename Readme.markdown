@@ -218,8 +218,10 @@ Input plugins
 * [TCP / TLS](docs/inputs/tcp_tls.md)
 * [Google app engine](docs/inputs/gae.md)
 * [AMQP](docs/inputs/amqp.md)
+* [MQTT](docs/inputs/mqtt.md)
 * [SQS](docs/inputs/sqs.md)
 * [NetFlow](docs/inputs/netflow.md)
+* [sFlow](docs/inputs/sflow.md)
 * [Freeswitch ESL](docs/inputs/esl.md)
 * [Asterisk AMI](docs/inputs/ami.md)
 
@@ -248,6 +250,7 @@ Filter plugins
 * [Geoip](docs/filters/geoip.md)
 * [Eval](docs/filters/eval.md)
 * [Bunyan](docs/filters/bunyan.md)
+* [IPProto](docs/filters/ipproto.md)
 * [HTTP Status Classifier](docs/filters/http_status_classifier.md)
 * [Remove field when equal](docs/filters/remove_field_when_equal.md)
 
