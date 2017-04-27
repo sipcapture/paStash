@@ -9,6 +9,8 @@ RUN npm install
 
 COPY . /usr/src/app
 
+RUN mkdir -p /config
+
 EXPOSE 8080
-CMD [ "bin/node-logstash-agent", "--config_dir", "/usr/src/app/config" ]
+CMD [ "bin/node-logstash-agent", "--config_dir", "/config" ]
 
