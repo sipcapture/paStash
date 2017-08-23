@@ -81,7 +81,7 @@ Installation
 * Clone repository: `git clone git://github.com/sipcapture/pastash.git && cd pastash`
 * Install dependencies: `npm install`.
 
-The executable is ``bin/node-logstash-agent``
+The executable is ``bin/pastash``
 
 Configuration formats
 ---
