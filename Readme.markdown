@@ -39,30 +39,7 @@ On agent, node-logstash is configured whith inputs plugins to get logs from your
 On log server, logs come trough a zeromq input plugin, are processed (fields and timestamps extraction), and send to ElasticSearch.
 
 
-Contributing
-===
 
-What Pull Request (PR) will be merged ?
-
-Add plugin (output, input or filter)
----
-
-Conditions to have a PR merged :
-
-* respect jslint
-* provide documentation in /docs
-* do not modify core. Modifications allowed :
-  * add plugin in ``Readme.md``.
-  * add optional dependencies in ``package.json``
-* If you provide unit tests, you can write in plugin documentation that the plugin is a plugin core.
-* If you do not provide unit tests, please indicate in the documentation : "Status : contributed plugin, maintained by @xxxx. Producion ready.", and indicate your Github login.
-
-You are encouraged to ask to merge plugins without tests, which are not production ready.
-
-Core modification
----
-
-Please respect jslint, and provide all needed unit tests.
 How to use it ?
 ===
 
