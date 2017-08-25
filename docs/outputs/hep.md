@@ -1,7 +1,7 @@
 HEP/EEP output plugin
 ---
 
-Status : experimental
+Status : stable
 
 
 This plugin is used to send correlated data to a collector supporting the [HEP](http://hep.sipcapture.org) encapsulation protocol. It accepts pass-though, dynamic or static settings depending on received data object.
