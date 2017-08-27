@@ -236,6 +236,13 @@ Common concepts / parameters :
 * [Common parameters](docs/common_params.md)
 * [Tags/fields](docs/filters/tags_fields.md)
 
+Apps with embedded parsers :
+
+* [Avaya SM logs](docs/filters/app_avaya.md)
+* [Sonus SBC logs](docs/filters/app_sonus.md)
+* [Janus RTC events](docs/filters/app_janus.md)
+
+
 Outputs
 ---
 
