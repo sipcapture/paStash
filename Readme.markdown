@@ -109,7 +109,7 @@ Command lines params
 * ``--patterns_directories`` to add some directories (separated by ,), for loading config for regex plugin and grok plugins. Grok patterns files must be located under a ``grok`` subdirectory for each specified directory.
 * ``--db_file`` to specify the file to use as database for file inputs (see below)
 * ``--http_max_sockets`` to specify the max sockets of [http.globalAgent.maxSockets](http://nodejs.org/api/http.html#http_agent_maxsockets). Default to 100.
-* ``--alarm_file`` to specify a file which will be created if node-logstash goes in alarm mode (see below).
+* ``--alarm_file`` to specify a file which will be created if node-logstash goes in alarm mode.
 
 Examples
 ---
@@ -183,7 +183,7 @@ Changelog
 Plugins list
 ===
 
-Input plugins
+Inputs
 ---
 
 * [File](docs/inputs/file.md)
@@ -208,7 +208,7 @@ Common concepts / parameters :
 * [Unserializers](docs/inputs/unserializers.md)
 * [Tags/fields](docs/inputs/tags_fields.md)
 
-Filter plugins
+Filters
 ---
 
 * [Regex](docs/filters/regex.md)
