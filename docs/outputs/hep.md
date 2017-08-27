@@ -35,7 +35,7 @@ Config using logstash format:
         host => localhost
         port => 9060
         hep_id => 2022
-        hep_tyep => 100
+        hep_type => 100
       }
     }
 ```
