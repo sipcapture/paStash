@@ -6,7 +6,7 @@ paStash
 What is it ?
 ---
 
-PaStasH _(pastaʃ'ʃ-utta)_ [NodeJS](http://nodejs.org) is a fork of [node-logstash](https://raw.github.com/bpaquet/node-logstash) with extensions specialized for interworking with the HEPIC stack.
+PaStasH _(pastaʃ'ʃ-utta)_ [NodeJS](http://nodejs.org) is a multi I/O processor supporting ingestion, decoding, interpolation and correlation of data - be it logs, packets, events and beyond. PaStash supports the Logstash configuration format and delivers cross-functionality comparable to _"Beats"_ with custom modules, providing a flexible and agnostig data pipelining tool.
 
 
 What to do with paStash ?
@@ -20,7 +20,7 @@ paStash is a tool to manage spaghetti I/O with input, processors and output modu
 
 Moreover it's written in NodeJS, which is a perfect language for programs with many IO.
 
-paStash and node-logstash are compatible with logstash. You can replace a node-logstash node by a paStash one. The data are formatted in the same way to be compatible with logstash UIs.
+paStash and node-logstash configuration is compatible with logstash. You can replace a node-logstash node by a paStash one in most cases. The data are formatted in the same way to be compatible with logstash UIs.
 
 How does it work ?
 ===
