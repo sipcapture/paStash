@@ -199,6 +199,7 @@ Inputs
 * [SQS](docs/inputs/sqs.md)
 * [NetFlow](docs/inputs/netflow.md)
 * [sFlow](docs/inputs/sflow.md)
+* [Bencode](docs/inputs/bencode.md)
 * [Freeswitch ESL](docs/inputs/esl.md)
 * [Asterisk AMI](docs/inputs/ami.md)
 
