@@ -20,21 +20,21 @@ paStash is a tool to manage spaghetti I/O with input, processors and output modu
 
 Moreover it's written in NodeJS, which is a perfect language for programs with many IO.
 
-paStash and node-logstash configuration is compatible with logstash. You can replace a node-logstash node by a paStash one in most cases. The data are formatted in the same way to be compatible with logstash UIs.
+paStash configuration is compatible with logstash. You can replace a logstash node by a paStash one in most cases. The data are formatted in the same way to be compatible with logstash UIs.
 
 How does it work ?
 ===
 
-The architecture is identical to logstash architecture. You have to instanciates plugins with the node-logstash core. There are three type of modules:
+The architecture is identical to logstash architecture. You have to instanciates plugins with the paStash core. There are three type of modules:
 
-* [inputs plugins](#inputs): where datas come into node-logstash. Examples: file, zeromq transport layer
-* [filter plugins](#filters): extract fields from logs, like timestamps. Example: regex plugin
-* [outputs plugins](#outputs): where datas leave from node-logstash: Examples: ElasticSearch , zeromq transport layer.
+* [inputs plugins](#inputs): where datas come into paStash. Examples: file, zeromq transport layer
+* [filter plugins](#filters): extract and manipulate fields from logs, like timestamps. Example: regex plugin
+* [outputs plugins](#outputs): where datas leave from paStash: Examples: ElasticSearch , zeromq transport layer.
 
 
-A typical node-logstash deployement contains agents to crawl logs and a log server.
+A typical paStash deployement contains agents to crawl logs and a log server.
 
-On agent, node-logstash is configured whith inputs plugins to get logs from your software stack, and one output plugin to send logs to log server (eg. zeromq output plugin).
+On agent, paStash is configured whith inputs plugins to get logs from your software stack, and one output plugin to send logs to log server (eg. zeromq output plugin).
 
 On log server, logs come trough a zeromq input plugin, are processed (fields and timestamps extraction), and send to ElasticSearch.
 
@@ -109,7 +109,7 @@ Command lines params
 * ``--patterns_directories`` to add some directories (separated by ,), for loading config for regex plugin and grok plugins. Grok patterns files must be located under a ``grok`` subdirectory for each specified directory.
 * ``--db_file`` to specify the file to use as database for file inputs (see below)
 * ``--http_max_sockets`` to specify the max sockets of [http.globalAgent.maxSockets](http://nodejs.org/api/http.html#http_agent_maxsockets). Default to 100.
-* ``--alarm_file`` to specify a file which will be created if node-logstash goes in alarm mode.
+* ``--alarm_file`` to specify a file which will be created if paStash goes in alarm mode.
 
 Examples
 ---
@@ -166,7 +166,7 @@ Manually :
 
 With native packaging
 
-The plugins must be deployed in ``/var/db/node-logstash/custom_plugins``. All subdirectories already exists. The NODE_PATH is already set.
+The plugins must be deployed in ``/var/db/pastash/custom_plugins``. All subdirectories already exists. The NODE_PATH is already set.
 
 
 Signals
@@ -275,9 +275,9 @@ Misc
 License
 ===
 
-Copyright 2016 - 2017 QXIP BV
+paStash Copyright 2016 - 2017 QXIP BV
 
-Copyright 2012 - 2014 Bertrand Paquet
+node-logstash Copyright 2012 - 2014 Bertrand Paquet
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
