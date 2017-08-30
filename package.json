@@ -35,6 +35,7 @@
   "optionalDependencies":{
     "aws-sdk": "2.7.x",
     "amqplib": "0.4.0",
+    "bencode": "1.0.0",
     "zmq": "*",
     "mqtt": "*",
     "modesl": "*",
