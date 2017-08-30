@@ -54,7 +54,8 @@
     "lumberjack-protocol": "git://github.com/bpaquet/node-lumberjack-protocol.git",
     "hep-js": "*",
     "node-netflowv9": "*",
-    "moment": "2.18.1"
+    "moment": "2.18.1",
+    "bencode": "git+https://git@github.com/lmangani/node-bencode.git"
   },
   "directories": {
     "test": "./test",
