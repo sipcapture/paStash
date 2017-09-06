@@ -55,6 +55,7 @@
     "hep-js": "*",
     "node-netflowv9": "*",
     "moment": "2.18.1",
+    "sqlite3": "3.1.9",
     "bencode": "git+https://git@github.com/lmangani/node-bencode.git"
   },
   "directories": {
