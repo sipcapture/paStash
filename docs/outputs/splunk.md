@@ -14,7 +14,7 @@ Config using logstash format:
 output {
   splunk {
     token => "your-token-here"
-    splunk_url => "https://localhost:8088"
+    splunk_url => "https://input-xxx.cloud.splunk.com:8088/services/collector/event"
     batchInterval => 1000
     maxBatchCount => 10
     maxBatchSize => 1024
