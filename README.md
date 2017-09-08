@@ -242,6 +242,7 @@ Apps with embedded parsers :
 * [Avaya SM logs](docs/filters/app_avaya.md)
 * [Sonus SBC logs](docs/filters/app_sonus.md)
 * [Janus RTC events](docs/filters/app_janus.md)
+* [HEPIC HSP cdrs](docs/filters/app_hsp.md)
 
 
 Outputs
@@ -249,6 +250,7 @@ Outputs
 
 * [ZeroMQ](docs/outputs/zeromq.md)
 * [ElasticSearch](docs/outputs/elasticsearch.md)
+* [Splunk](docs/outputs/splunk.md)
 * [Statsd](docs/outputs/statsd.md)
 * [Gelf](docs/outputs/gelf.md)
 * [File](docs/outputs/file.md)
