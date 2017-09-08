@@ -65,21 +65,10 @@ Configuration formats
 
 There are two format for configuration. The legacy format use urls. The new one is identical to the [logstash config format](https://www.elastic.co/guide/en/logstash/current/configuration.html).
 
-Note : if you are using multiple config files, you can mix formats.
+Note : multiple configuration files can be used in parallel with the ``--config_dir`` switch.
 
-Configuration by url (legacy)
----
 
-A plugin is instanciated by an url. Example: ``input://file:///tmp/toto.log``. This url
-instanciate an input file plugin which monitor the file ``/tmp/toto.log``.
-
-The urls can be specified:
-
-* directly on the command line
-* in a file (use the ``--config_file`` switch)
-* in all files in a directory (use the ``--config_dir`` switch)
-
-Configuration by logstash config files (recommended)
+Configuration by logstash config files
 ---
 
 Example for an input file
@@ -242,6 +231,7 @@ Apps with embedded parsers :
 * [Avaya SM logs](docs/filters/app_avaya.md)
 * [Sonus SBC logs](docs/filters/app_sonus.md)
 * [Janus RTC events](docs/filters/app_janus.md)
+* [HEPIC HSP cdrs](docs/filters/app_hsp.md)
 
 
 Outputs
@@ -249,6 +239,7 @@ Outputs
 
 * [ZeroMQ](docs/outputs/zeromq.md)
 * [ElasticSearch](docs/outputs/elasticsearch.md)
+* [Splunk](docs/outputs/splunk.md)
 * [Statsd](docs/outputs/statsd.md)
 * [Gelf](docs/outputs/gelf.md)
 * [File](docs/outputs/file.md)
