@@ -45,6 +45,10 @@ How to use it ?
 
 Installation
 ---
+### NPM install
+```
+sudo npm install -g pastash
+```
 
 ### Manual install
 
@@ -139,6 +143,8 @@ output {
   }
 }
 ```
+See our [wiki](https://github.com/sipcapture/paStash/wiki) for many more [examples](https://github.com/sipcapture/paStash/wiki)
+
 
 Adding your plugins
 ---
@@ -164,10 +170,6 @@ Signals
 * USR1: stoping or starting all inputs plugins. Can be used to close input when output targer are failing
 * USR2: see below file output plugin
 
-Changelog
-===
-
-[Changelog](changelog.md)
 
 Plugins list
 ===
