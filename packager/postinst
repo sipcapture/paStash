@@ -2,17 +2,17 @@
 
 set -e
 
-APP_NAME="node-logstash"
-CONFIG_DIR="/etc/node-logstash/plugins.conf.d"
+APP_NAME="pastash"
+CONFIG_DIR="/etc/pastash/plugins.conf.d"
 CLI="$APP_NAME"
-CUSTOM_PLUGINS="/var/db/node-logstash/custom_plugins"
+CUSTOM_PLUGINS="/var/db/pastash/custom_plugins"
 
 mkdir -p "/var/db/$APP_NAME/patterns"
 mkdir -p "$CONFIG_DIR"
 mkdir -p "$CUSTOM_PLUGINS" "$CUSTOM_PLUGINS/inputs" "$CUSTOM_PLUGINS/outputs" "$CUSTOM_PLUGINS/filters"
 chown "$APP_USER" "$CONFIG_DIR" "$CUSTOM_PLUGINS" "$CUSTOM_PLUGINS/inputs" "$CUSTOM_PLUGINS/outputs" "$CUSTOM_PLUGINS/filters"
 
-$CLI config | grep NODE_PATH || $CLI config:set NODE_PATH=$CUSTOM_PLUGINS:/opt/node-logstash/lib
+$CLI config | grep NODE_PATH || $CLI config:set NODE_PATH=$CUSTOM_PLUGINS:/opt/pastash/lib
 
 $CLI scale main=0 || true
 $CLI scale main=1 || true
