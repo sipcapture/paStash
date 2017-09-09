@@ -6,7 +6,7 @@ paStash
 What is it ?
 ---
 
-PaStasH _(pastaʃ'ʃ-utta)_ [NodeJS](http://nodejs.org) is a multi I/O processor supporting ingestion, decoding, interpolation and correlation of data - be it logs, packets, events and beyond. PaStash supports the Logstash configuration format and delivers cross-functionality comparable to _"Beats"_ with custom modules, providing a flexible and agnostig data pipelining tool.
+PaStasH _(pastaʃ'ʃ-utta)_ is a [NodeJS](http://nodejs.org) multi I/O processor supporting ingestion, decoding, interpolation and correlation of data - be it logs, packets, events and beyond. PaStash supports the Logstash configuration format and delivers cross-functionality comparable to _"Beats"_ with custom modules, providing a flexible and agnostig data pipelining tool.
 
 
 What to do with paStash ?
