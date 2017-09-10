@@ -222,6 +222,8 @@ Filters
 * [IPProto](docs/filters/ipproto.md)
 * [HTTP Status Classifier](docs/filters/http_status_classifier.md)
 * [Remove field when equal](docs/filters/remove_field_when_equal.md)
+* [Mustache](docs/filters/mustache.md)
+
 
 Common concepts / parameters :
 
