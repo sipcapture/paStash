@@ -1,10 +1,10 @@
 {
   "name": "pastash",
   "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash/beat",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "originator": "Bertrand Paquet <bertrand.paquet@gmail.com>",
   "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
-  "keywords": ["logstash","log","zmq","zeromq","hep","eep","freeswitch","asterisk","janus","homer","hepic","splunk","bencode","harvest","elasticsearch","beats","netflow"],
+  "keywords": ["logstash","log","zmq","zeromq","hep","eep","freeswitch","asterisk","avaya","janus","homer","hepic","splunk","bencode","redis","cep","elasticsearch","beats","netflow"],
   "main": "./lib/log4node.js",
   "homepage": "https://github.com/sipcapture/pastash",
   "repository": {
@@ -57,6 +57,7 @@
     "moment": "2.18.1",
     "sqlite3": "3.1.9",
     "splunk-logging": "0.9.3",
+    "mustache": "2.3.0",
     "bencode": "git+https://git@github.com/lmangani/node-bencode.git"
   },
   "directories": {
