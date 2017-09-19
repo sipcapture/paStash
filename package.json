@@ -40,7 +40,7 @@
     "mqtt": "*",
     "modesl": "*",
     "node-sflow": "*",
-    "asterisk.io": "*",
+    "asterisk.io": "git+https://git@github.com/lmangani/asterisk.io.git",
     "moment": "2.9.0",
     "redis": "2.8.0",
     "ws": "3.1.0",
