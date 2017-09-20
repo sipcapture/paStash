@@ -28,6 +28,7 @@ Parameters:
 * ``user``: username for the connection. 
 * ``password``: password for the connection. 
 * ``host``: server host to connect to.
-* ``port``: server port to connect to. 
+* ``port``: server port to connect to.
+* ``pair``: return results as key: value pairs on multiple rows.
 * ``source_field``: which field to work on for the lookup.
 * ``target_field``: field to store the result. Default: field used for resolution.
