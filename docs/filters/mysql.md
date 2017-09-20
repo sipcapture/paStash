@@ -9,7 +9,7 @@ Config using logstash format:
 ````
 filter {
   mysql {
-    db => '/path/to/sqlite.db'
+    db => 'db_name'
     user => 'root'
     password => 'secret'
     host => 'localhost'
@@ -22,7 +22,7 @@ filter {
 
 Parameters:
 
-* ``db``: path to the sqlite3 db used for lookups.
+* ``db``: name of the database used for lookups.
 * ``query``: SELECT query with single parameter matching.
 * ``filter``: override filter for lookups, can be used to extract as #{toto}.
 * ``user``: username for the connection. 
