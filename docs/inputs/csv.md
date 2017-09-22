@@ -18,6 +18,7 @@ input {
 
 Parameters :
 * ``file_path``: the input CSV File name and path. Required.
+* ``headers`` : Array with headers to parse CSV, ie: ```['name','age']```
 * ``separator``: specify optional cell separator. Defaults to: ','.
 * ``quote``: specify optional quote character.
 * ``escape``: specify optional escape character (defaults to quote value).
