@@ -59,6 +59,7 @@
     "splunk-logging": "0.9.3",
     "mustache": "2.3.0",
     "object.omit": "3.0.0",
+    "utp-native": "1.5.4",
     "bencode": "git+https://git@github.com/lmangani/node-bencode.git"
   },
   "directories": {
