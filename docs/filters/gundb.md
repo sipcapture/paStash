@@ -33,6 +33,7 @@ Parameters:
 * ```gun_write```
   * ``field``: which GunDB field to save on.
   * ``source``: source field to extract data from.
+  * ``ttl``: time to live, in seconds. Optional.
 * ```gun_read```
   * ``field``: which GunDB field to work on.
   * ``target_field``: target field to inject with returned GunDB value.
