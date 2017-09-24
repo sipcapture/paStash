@@ -33,6 +33,7 @@
     "lru-cache": "2.7.x"
   },
   "optionalDependencies":{
+    "gun": "0.8.7",
     "aws-sdk": "2.7.x",
     "amqplib": "0.4.0",
     "zmq": "*",
