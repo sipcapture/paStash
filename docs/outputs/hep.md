@@ -1,10 +1,16 @@
 HEP/EEP output plugin
 ---
 
-Status : experimental
+Status : stable
 
 
-This plugin is used to send correlated data to a collector supporting the [HEP](http://hep.sipcapture.org) encapsulation protocol. It accepts dynamic or static settings depending on received data.
+This plugin is used to send correlated data to a collector supporting the [HEP](http://hep.sipcapture.org) encapsulation protocol. It accepts pass-though, dynamic or static settings depending on received data object.
+
+#### Pass-Through
+When handed an HEP rcinfo object, the module will simply ship the packet as-is: 
+```
+{ payload: sip, rcinfo: rcinfo }
+```
 
 #### Static Example:
 Config using url: ``output://hep://localhost:9060``
@@ -29,7 +35,7 @@ Config using logstash format:
         host => localhost
         port => 9060
         hep_id => 2022
-        hep_tyep => 100
+        hep_type => 100
       }
     }
 ```

@@ -1,5 +1,5 @@
 
-       How to build node-logstash rpm ot of this node-logstash.spec in order to 
+       How to build pastash rpm ot of this pastash.spec in order to 
        install it on the RedHat based Linux OS.
       ========================================================================
 
@@ -7,15 +7,15 @@ Read this document through entirely before star building your rpm package.
 
   1. 
   Read the main documantation page
-https://github.com/bpaquet/node-logstash/blob/master/Readme.markdown
+https://github.com/sipcapture/pastash/blob/master/README.md
  - follow through the steps of "Installation" chapter, except ZeroMQ. I've built my .rpm against newer ZeroMQ library v3.2.5,
-and the 'node-logstash.spec' is configured this way. Then do NOT do 'yum install zeromq zeromq-devel', instead of this 
+and the 'pastash.spec' is configured this way. Then do NOT do 'yum install zeromq zeromq-devel', instead of this 
 enable EPEL repo, i.e.
 rpm -Uvh --replacepkgs http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
   - the latest ZeroMQ lib within EPEL is v3.2.5 (as per April 2015), so do:
 yum install zeromq3 zeromq3-devel
  ...Btw, the latest source version is v4 already, so if you want the latest - do your own workaround, 
-BUT then keep in mind, you will need to adjust the 'node-logstash.spec'  accordingly.
+BUT then keep in mind, you will need to adjust the 'pastash.spec'  accordingly.
 
   2. 
   Follow this document to setup your rpmbuild environment
@@ -42,15 +42,15 @@ Here is the file checklist, so far you must have:
     run_node.sh
       - these are the RHEL-customized scripts to start 'logstash' as a service.
 
-~/rpmbuild/SPECS/node-logstash.spec
+~/rpmbuild/SPECS/pastash.spec
 
   3. 
   Check for the latest version of NodeJS ( https://nodejs.org/ ), by the time of writing this document it is v0.12.2,
-so if there is newer version, then edit to adjust the settings inside ~/rpmbuild/SPECS/node-logstash.spec
+so if there is newer version, then edit to adjust the settings inside ~/rpmbuild/SPECS/pastash.spec
 
   4.
   An important dependency is 'start-stop-daemon' utility which exists in Debian/Ubuntu repositories. 
-But there is no such a package in the EPEL/CentOS repositories. The 'node-logstash' is not written to fork in the background, 
+But there is no such a package in the EPEL/CentOS repositories. The 'pastash' is not written to fork in the background, 
 that why we need this special tool.  I was trying to solve this problem using 'nohup' and '/etc/rc.d/init.d/functions', 
 but it is rather headache and waste of time. Fortunately there is a 3rd party port of the 'start-stop-daemon' tool, 
 you can obtain the source here in a form of .src.rpm  which makes things even much easier: 
@@ -65,17 +65,17 @@ and 'start-stop-daemon-debuginfo-1.9.18-2.2.x86_64.rpm' in less that a minute of
 
   5. 
 cd ~/rpmbuild/SPECS
-rpmbuild -bb node-logstash.spec
-  - depending on your hardware it can take ~10 min  to build then you'll finally have node-logstash-0.0.3-1.el6.x86_64.rpm  package.
+rpmbuild -bb pastash.spec
+  - depending on your hardware it can take ~10 min  to build then you'll finally have pastash-0.0.3-1.el6.x86_64.rpm  package.
 
   6.
   Finally,
-to deploy 'node-logstash' package on your RHEL or CentOS  machines you need:
+to deploy 'pastash' package on your RHEL or CentOS  machines you need:
  - enable EPEL repo then
 yum install zeromq3
  - copy over then  install the following
 rpm -i start-stop-daemon-1.9.18-2.2.x86_64.rpm
-rpm -i node-logstash-0.0.3-1.el6.x86_64.rpm
+rpm -i pastash-0.0.3-1.el6.x86_64.rpm
   Do your config file then place it inside /etc/logstash.d/, then
 /etc/init.d/logstash  start
 

@@ -2,14 +2,14 @@
 %define		zmqMajorVer 3
 %define		zmqVer 3.2.5
 
-Name:           node-logstash
+Name:           pastash
 Version:        0.0.3
 Release:        1%{?dist}
 Summary:        It's a NodeJS implementation of Logstash
 Group:          Applications/File
 License:        Free
-URL:            https://github.com/bpaquet/node-logstash
-# Source0:        https://github.com/bpaquet/node-logstash/archive/master.zip
+URL:            https://github.com/sipcapture/pastash
+# Source0:        https://github.com/sipcapture/pastash/archive/master.zip
 # Source1:	http://nodejs.org/dist/v%{NodeJSVer}/node-v%{NodeJSVer}-linux-x64.tar.gz
 Source0:	logstash
 Source1:	run_node.sh
@@ -21,7 +21,7 @@ BuildRequires:  make
 Requires:       zeromq%{zmqMajorVer} >= %{zmqVer}
 
 %description
-node-logstash is a tool to collect logs on servers. It allows to send log data to a central server and to ElasticSearch for indexing.
+pastash is a tool to collect logs on servers. It allows to send log data to a central server and to ElasticSearch for indexing.
 This implementation has advantages: 
 - lower memory footprint 
 - lower cpu footprint 
@@ -35,8 +35,8 @@ mkdir -p etc/logstash.d
 
 cd opt/logstash
 pwd
-echo "Get the node-logstash code "
-git clone https://github.com/bpaquet/node-logstash.git current
+echo "Get the pastash code "
+git clone https://github.com/bpaquet/pastash.git current
 echo " "
 echo " Wget then unpack NodeJS and rename it to 'node' "
 wget http://nodejs.org/dist/v%{NodeJSVer}/node-v%{NodeJSVer}-linux-x64.tar.gz
@@ -58,7 +58,7 @@ exit 0
 # %configure
 # make %{?_smp_mflags}
 # ===================
-# switch to node-logstash code folder
+# switch to pastash code folder
 
 # no install needed
 %install

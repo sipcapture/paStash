@@ -86,7 +86,7 @@ function output_file_test(topic_callback, check_callback) {
     topic: function() {
       var callback = this.callback;
       var socket = dgram.createSocket('udp4');
-      run('node', ['bin/node-logstash-agent', 'input://udp://localhost:17874', 'output://file://output.txt'], 'process.pid', function(exitCode) {
+      run('node', ['bin/pastash', 'input://udp://localhost:17874', 'output://file://output.txt'], 'process.pid', function(exitCode) {
         setTimeout(function() {
           socket.close();
           callback(undefined, exitCode);

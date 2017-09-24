@@ -15,10 +15,10 @@ NAME="logstash"
 DESC="logstash"
 PID_FILE="/opt/logstash/shared/logstash.pid"
 DAEMON="/opt/logstash/shared/run_node.sh"
-OPTIONS="/opt/logstash/current/bin/node-logstash-agent"
+OPTIONS="/opt/logstash/current/bin/pastash"
 START_STOP_DAEMON=/sbin/start-stop-daemon
 
-test -f /opt/logstash/current/bin/node-logstash-agent || exit 0
+test -f /opt/logstash/current/bin/pastash || exit 0
 
 test -x $DAEMON || exit 0
 

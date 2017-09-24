@@ -25,8 +25,8 @@ output {
 
 Parameters:
 
-* ``host``: ip of the target HTTP server.
-* ``port``: port of the target HTTP server.
+* ``host``: ip of the target HTTP server. Accepts string (single) or Array (multi-target).
+* ``port``: port of the target HTTP server. Same for all ips if Array.
 * ``path``: path to use in the HTTP request. Can reference log line properties (see [interpolation](../interpolation.md)).
 * ``serializer``: more doc at [serializers](serializers.md). Default value to ``raw``.
 * ``format``: params used by the ``raw`` [serializer](serializers.md).

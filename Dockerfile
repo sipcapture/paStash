@@ -12,5 +12,5 @@ COPY . /usr/src/app
 RUN mkdir -p /config
 
 EXPOSE 8080
-CMD [ "bin/node-logstash-agent", "--config_dir", "/config" ]
+CMD [ "bin/pastash", "--config_dir", "/config" ]
 
