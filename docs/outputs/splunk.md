@@ -28,4 +28,6 @@ Parameters :
 * ``batchInterval``: queue Batch interval. Optional.
 * ``maxBatchCount``: queue max Batch count. Optional.
 * ``maxBatchSize``: queue max Batch size. Optional
+* ``index``: metadata info with target index. Optional
+* ``sourcetype``: metadata info with source type. Optional
 * ``debug``: return splunk API messages to console. Optional.
