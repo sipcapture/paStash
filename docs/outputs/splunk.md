@@ -30,4 +30,6 @@ Parameters :
 * ``maxBatchSize``: queue max Batch size. Optional
 * ``index``: metadata info with target index. Optional
 * ``sourcetype``: metadata info with source type. Optional
+* ``source``: metadata info with source name. Optional
+* ``host``: metadata info with host name. Optional
 * ``debug``: return splunk API messages to console. Optional.
