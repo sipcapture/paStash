@@ -34,6 +34,7 @@
   },
   "optionalDependencies":{
     "gun": "0.8.7",
+    "kafka-node": "2.2.3",
     "aws-sdk": "2.112.x",
     "amqplib": "0.5.1",
     "zmq": "*",
