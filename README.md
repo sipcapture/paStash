@@ -246,6 +246,7 @@ Outputs
 * [ZeroMQ](docs/outputs/zeromq.md)
 * [ElasticSearch](docs/outputs/elasticsearch.md)
 * [Splunk](docs/outputs/splunk.md)
+* [Kafka](docs/outputs/kafka.md)
 * [Statsd](docs/outputs/statsd.md)
 * [Gelf](docs/outputs/gelf.md)
 * [File](docs/outputs/file.md)
