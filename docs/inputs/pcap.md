@@ -22,6 +22,6 @@ Parameters :
 * ``bpf_filter``: the capture BPF filter. Required.
 * ``device_ip``: the IP of the capture device. Default first non-local.
 * ``buf_size``: the PCAP buffer size.
-* ``binary``: the output format. false for utf8 decoding.
+* ``binary``: the output format. True for buffers, False for utf8. Default: false.
 * ``debug``: enable debug messages. Default false.
 * ``unserializer``: more doc at [unserializers](unserializers.md). Default value to ``json_logstash``.
