@@ -82,7 +82,7 @@
     "bencode": "git+https://git@github.com/lmangani/node-bencode.git",
     "ajv": "^5.3.0",
     "buffered-queue": "^0.1.4",
-    "type-of-is": "^3.5.1",
+    "generate-schema": "git+https://github.com/lmangani/generate-schema.git",
     "clickhouse": "^1.1.4"
   },
   "directories": {
