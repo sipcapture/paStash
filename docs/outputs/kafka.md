@@ -12,12 +12,12 @@ output {
   kafka {
     topic => "your-topic-here"
     kafkaHost => "receiver:9092"
-    debug => true
+    debug => false
   }
 }
 ````
 
 Parameters :
-* ``kafkaHost``: the Kafka host:port. Required. Example: 127.0.0.1:9092
-* ``topic``: your Kafka topic. Required.
+* ``kafkaHost``: Kafka host:port sets delimited by comma, _Example: 10.0.0.1:9092,10.0.0.2:9092_. Required. 
+* ``topic``: Kafka topic. Required.
 * ``debug``: Debug option. Optional.
