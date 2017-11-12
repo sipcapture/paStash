@@ -13,7 +13,7 @@ npm install socket.io
 Config using logstash format:
 ```
 input {
-  SocketIO {
+  socketio {
       host => 127.0.0.1
       port => 8013
     }
