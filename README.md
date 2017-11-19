@@ -4,7 +4,7 @@ _"When logs give you spaghetti, make pasta"_
 
 <img src="http://i.imgur.com/wYjsCqz.png"/>
 
-[![Codefresh build status](https://hub.docker.com/r/qxip/pastash/)]( https://g.codefresh.io/repositories/sipcapture/paStash/builds?filter=trigger:build;branch:master;service:59eb4192b69bdc0001a23de8~paStash)
+[![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=sipcapture&repoName=paStash&branch=master&pipelineName=paStash&accountName=lmangani&type=cf-1)]( https://hub.docker.com/r/qxip/pastash/)
 
 What is paStash ?
 ---
