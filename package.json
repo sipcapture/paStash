@@ -60,7 +60,8 @@
     "splunk-logging": "0.9.3",
     "mustache": "2.3.0",
     "object.omit": "3.0.0",
-    "bencode": "git+https://git@github.com/lmangani/node-bencode.git"
+    "bencode": "git+https://git@github.com/lmangani/node-bencode.git",
+    "nsca": "git://github.com/lmangani/node-nsca.git"
   },
   "directories": {
     "test": "./test",
