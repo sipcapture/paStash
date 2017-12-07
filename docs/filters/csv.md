@@ -3,7 +3,7 @@ CSV filter plugin
 
 Status : experimental plugin, unit tested and maintained.
 
-This plugin is used to parse CSV to JSON within a filter using the fast ```csv-parser```. 
+This filter plugin is used to parse CSV to JSON using the fast ```csv-parser```. 
 
 Config using logstash format:
 ````
