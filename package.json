@@ -4,7 +4,27 @@
   "version": "0.1.5",
   "originator": "Bertrand Paquet <bertrand.paquet@gmail.com>",
   "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
-  "keywords": ["logstash","log","zmq","zeromq","hep","eep","freeswitch","asterisk","avaya","janus","homer","hepic","splunk","bencode","redis","cep","elasticsearch","beats","netflow"],
+  "keywords": [
+    "logstash",
+    "log",
+    "zmq",
+    "zeromq",
+    "hep",
+    "eep",
+    "freeswitch",
+    "asterisk",
+    "avaya",
+    "janus",
+    "homer",
+    "hepic",
+    "splunk",
+    "bencode",
+    "redis",
+    "cep",
+    "elasticsearch",
+    "beats",
+    "netflow"
+  ],
   "main": "./lib/log4node.js",
   "homepage": "https://github.com/sipcapture/pastash",
   "repository": {
@@ -26,13 +46,14 @@
     "test": "./test-runner.sh"
   },
   "dependencies": {
-    "log4node": "0.1.6",
-    "optimist": "0.6.1",
-    "mkdirp": "0.5.1",
     "async": "2.5.0",
-    "lru-cache": "4.1.x"
+    "log4node": "0.1.6",
+    "lru-cache": "4.1.x",
+    "mkdirp": "0.5.1",
+    "nsqjs": "^0.10.0",
+    "optimist": "0.6.1"
   },
-  "optionalDependencies":{
+  "optionalDependencies": {
     "gun": "0.8.7",
     "kafka-node": "2.2.3",
     "aws-sdk": "2.112.x",
@@ -42,7 +63,7 @@
     "modesl": "*",
     "node-sflow": "*",
     "asterisk.io": "git+https://git@github.com/lmangani/asterisk.io.git",
-    "moment": "2.9.0",
+    "moment": "2.18.1",
     "redis": "2.8.0",
     "ws": "3.1.0",
     "oniguruma": "7.0.x",
@@ -55,7 +76,6 @@
     "lumberjack-protocol": "git://github.com/bpaquet/node-lumberjack-protocol.git",
     "hep-js": "*",
     "node-netflowv9": "*",
-    "moment": "2.18.1",
     "sqlite3": "3.1.10",
     "splunk-logging": "0.9.3",
     "mustache": "2.3.0",
