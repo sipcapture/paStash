@@ -18,9 +18,6 @@ output {
 
 Parameters :
 * ``dataUrl``: NSQ Data Url. Default: 'localhost'
-* ``dataHttpPort``: NSQ Data HTTP port. Default: 4151
 * ``dataTcpPort``: NSQ TCP port. Default: 4150
 * ``topic``: NSQ Topic. Default: 'test-topic'
-* ``protocol``: NSQ Protocol type. Default: 'http'
-* ``autoCreate``: Auto-Create Topics. Default: false
 * ``debug``: Debug option. Optional.
