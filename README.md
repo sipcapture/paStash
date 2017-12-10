@@ -258,6 +258,7 @@ Outputs
 * [Logio](docs/outputs/logio.md)
 * [TCP / TLS](docs/outputs/tcp_tls.md)
 * [AMQP](docs/outputs/amqp.md)
+* [NSQ](docs/outputs/nsq.md)
 * [SQS](docs/outputs/sqs.md)
 * [HEP](docs/outputs/hep.md)
 
