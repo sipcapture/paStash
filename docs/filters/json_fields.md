@@ -16,7 +16,7 @@ Config using logstash format:
 ````
 filter {
   if [type] == 'json_stream' {
-    json_fields
+    json_fields {}
   }
 }
 ```
