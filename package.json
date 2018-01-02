@@ -1,7 +1,7 @@
 {
   "name": "pastash",
   "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash/beat",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "originator": "Bertrand Paquet <bertrand.paquet@gmail.com>",
   "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
   "keywords": [
@@ -23,6 +23,8 @@
     "cep",
     "elasticsearch",
     "beats",
+    "influxdb",
+    "statsd",
     "netflow"
   ],
   "main": "./lib/log4node.js",
@@ -81,6 +83,7 @@
     "mustache": "2.3.0",
     "csv-parser": "1.11.0",
     "object.omit": "3.0.0",
+    "metrics-influxdb": "1.0.0",
     "bencode": "git+https://git@github.com/lmangani/node-bencode.git"
   },
   "directories": {
