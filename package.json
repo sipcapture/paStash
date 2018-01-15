@@ -50,7 +50,6 @@
     "log4node": "0.1.6",
     "lru-cache": "4.1.x",
     "mkdirp": "0.5.1",
-    "nsqjs": "^0.10.0",
     "optimist": "0.6.1"
   },
   "optionalDependencies": {
@@ -60,6 +59,7 @@
     "amqplib": "0.5.1",
     "zmq": "*",
     "mqtt": "*",
+    "nsqjs": "^0.10.0",
     "modesl": "*",
     "node-sflow": "*",
     "asterisk.io": "git+https://git@github.com/lmangani/asterisk.io.git",
@@ -81,6 +81,7 @@
     "mustache": "2.3.0",
     "csv-parser": "1.12.0",
     "object.omit": "3.0.0",
+    "fast-json-stringify": "^0.17.0",
     "bencode": "git+https://git@github.com/lmangani/node-bencode.git"
   },
   "directories": {
