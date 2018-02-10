@@ -4,6 +4,8 @@ _"When logs give you spaghetti, make pasta"_
 
 <img src="http://i.imgur.com/wYjsCqz.png"/>
 
+[![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=sipcapture&repoName=paStash&branch=master&pipelineName=paStash&accountName=lmangani&type=cf-1)]( https://hub.docker.com/r/qxip/pastash/)
+
 What is paStash ?
 ---
 
@@ -256,6 +258,7 @@ Outputs
 * [Logio](docs/outputs/logio.md)
 * [TCP / TLS](docs/outputs/tcp_tls.md)
 * [AMQP](docs/outputs/amqp.md)
+* [NSQ](docs/outputs/nsq.md)
 * [SQS](docs/outputs/sqs.md)
 * [HEP](docs/outputs/hep.md)
 
