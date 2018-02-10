@@ -32,4 +32,8 @@ Parameters :
 * ``sourcetype``: metadata info with source type. Optional
 * ``source``: metadata info with source name. Optional
 * ``host``: metadata info with host name. Optional
-* ``debug``: return splunk API messages to console. Optional.
+* ``timefield``: set metadata timestamp from data field. Optional.
+* ``flat``:  send flat metadata + event to splunk. Optional.
+* ``threshold_down``: threshold for send errors alerts. Default 10.
+* ``check_interval``: check interval in ms for send errors alerts. Default false.
+* ``debug``: print output splunk and API response messages to console. Optional.
