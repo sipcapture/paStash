@@ -1,26 +1,28 @@
 paStash
 ====
+_"When logs give you spaghetti, make pasta"_
 
 <img src="http://i.imgur.com/wYjsCqz.png"/>
 
-What is it ?
+[![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=sipcapture&repoName=paStash&branch=master&pipelineName=paStash&accountName=lmangani&type=cf-1)]( https://hub.docker.com/r/qxip/pastash/)
+
+What is paStash ?
 ---
 
 PaStasH _(pastaʃ'ʃ-utta)_ is a [NodeJS](http://nodejs.org) multi I/O processor supporting ingestion, decoding, interpolation and correlation of data - be it logs, packets, events and beyond. PaStash supports the Logstash configuration format and delivers cross-functionality comparable to _"Beats"_ with custom modules, providing a flexible and agnostig data pipelining tool.
 
 
-What to do with paStash ?
+What can I do with paStash ?
 ---
 
-paStash is a tool to manage spaghetti I/O with input, processors and output modules for all seasons and protocols.
+paStash is designed manage spaghetti I/O with input, processors and output modules for all seasons, and can be useful in many scenarios, such as parsing logs to objects, distributing data to multiple formats, interexchanging and correlating protocols and streams, while interpolating and manipulating data intransit. paStash is developed using NodeJS, which is an ideal language for applications with many IO and offers:
 
 * lower memory footprint
 * lower cpu footprint
 * faster startup delay
+* ease of extension
 
-Moreover it's written in NodeJS, which is a perfect language for programs with many IO.
-
-paStash configuration is compatible with logstash. You can replace a logstash node by a paStash one in most cases. The data are formatted in the same way to be compatible with logstash UIs.
+paStash configuration is compatible with logstash. You can easily replace a logstash node by a paStash one in most cases. The data are formatted in the same way to be compatible with logstash UIs.
 
 How does it work ?
 ===
@@ -52,7 +54,7 @@ sudo npm install -g pastash
 
 ### Manual install
 
-* Install NodeJS, version >= 0.12
+* Install NodeJS, version >= 6.xx
 * Install build tools
   * Debian based system: `apt-get install build-essential`
   * Centos system: `yum install gcc gcc-c++ make`
@@ -223,6 +225,8 @@ Filters
 * [HTTP Status Classifier](docs/filters/http_status_classifier.md)
 * [Remove field when equal](docs/filters/remove_field_when_equal.md)
 * [Mustache](docs/filters/mustache.md)
+* [Omit](docs/filters/omit.md)
+* [LRU](docs/filters/lru.md)
 
 
 Common concepts / parameters :
@@ -244,6 +248,7 @@ Outputs
 * [ZeroMQ](docs/outputs/zeromq.md)
 * [ElasticSearch](docs/outputs/elasticsearch.md)
 * [Splunk](docs/outputs/splunk.md)
+* [Kafka](docs/outputs/kafka.md)
 * [Statsd](docs/outputs/statsd.md)
 * [Gelf](docs/outputs/gelf.md)
 * [File](docs/outputs/file.md)
@@ -253,6 +258,7 @@ Outputs
 * [Logio](docs/outputs/logio.md)
 * [TCP / TLS](docs/outputs/tcp_tls.md)
 * [AMQP](docs/outputs/amqp.md)
+* [NSQ](docs/outputs/nsq.md)
 * [SQS](docs/outputs/sqs.md)
 * [HEP](docs/outputs/hep.md)
 
