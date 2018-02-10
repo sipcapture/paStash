@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "async": "2.6.0",
+    "lodash": "^4.17.5",
     "log4node": "0.1.6",
     "lru-cache": "4.1.x",
     "mkdirp": "0.5.1",
