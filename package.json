@@ -1,9 +1,12 @@
 {
   "name": "pastash",
-  "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash/beat",
-  "version": "0.1.9",
-  "originator": "Bertrand Paquet <bertrand.paquet@gmail.com>",
+  "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash + beat",
+  "version": "0.1.10",
   "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
+  "contributors": [{ 
+      "name"  : "Bertrand Paquet",
+      "email" : "bertrand.paquet@gmail.com>"
+  }],
   "keywords": [
     "logstash",
     "log",
