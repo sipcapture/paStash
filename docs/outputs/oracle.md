@@ -24,4 +24,14 @@ Parameters :
 * ``username``: username for authenticating access. Required.
 * ``password``: password for authenticating access. Required.
 * ``connectString``: connection string for OracleDB. Required.
-* ``schema``: JSON Array with Mapping schema. Required.
+* ``schema_file``: Absolute path to export module w/ Schema. Required.
+
+
+#### Example Schema
+```
+module.exports = [
+{"col":"CID","field":"cid","default":""},
+{"col":"GID","field":"gid","default":""},
+{"col":"UUID","field":"uuid","default":""}
+];
+```
