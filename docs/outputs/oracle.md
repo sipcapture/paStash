@@ -36,8 +36,9 @@ Parameters :
 Schemas are provided as Node modules, exporting an array. When a value is not present, the `default` will be used in order to deliver consistent columns:
 ```
 module.exports = [
-{"col":"CID","field":"cid","default":""},
-{"col":"GID","field":"gid","default":""},
-{"col":"UUID","field":"uuid","default":""}
+{ "col":"CID", "field":"cid", "default":""},
+{ "col":"GID", "field":"gid", "default":""},
+{ "col":"UUID", "field":"uuid", "default":""}
+{ "col":"TIMESTAMP", "field":"timestamp", "default":"0", "type": "date" }
 ];
 ```
