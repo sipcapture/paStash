@@ -54,4 +54,5 @@ Parameters:
 * ``hepic_path``: HEPIC API path. Default: '/api/v2/admin/groupip'.
 * ``hepic_token``: HEPIC API access token.
 * ``groupby``: IP Grouping strategy (source|destination|sdpmedia).
+* ``splitter``: Split and Fork Custom Grouped CDRs (cstm1 through cstm5).
 * ``omit``: Optional Keys to drop from returned object. Accepts string or array.
