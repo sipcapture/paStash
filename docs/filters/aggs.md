@@ -3,7 +3,7 @@ Aggs filter
 
 Status : core plugin, unit tested and maintained.
 
-The omit filter is used to drop or pick keys from objects using either a blacklist or whitelist.
+The aggs filter is used to transform streaming values into statistic aggregations.
 
 Example 1: aggregate counter
 
