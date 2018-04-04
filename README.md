@@ -148,29 +148,6 @@ output {
 See our [wiki](https://github.com/sipcapture/paStash/wiki) for many more [examples](https://github.com/sipcapture/paStash/wiki)
 
 
-Adding your plugins
----
-
-You can add easily add your plugins :
-
-Manually :
-
-* create a directory layout on the path of your choice : ``/var/my_plugins/inputs``, ``/var/my_plugins/outputs``, ``/var/my_plugins/filters``
-* set the NODE_PATH variable to ``NODE_PATH=/var/my_plugins:/node_logstash_path/lib``
-* add your plugins in ``inputs``, ``outputs`` or ``filters`` directory. In the plugin code, you can reference base plugins with ``var base_filter = require('lib/base_filter');``
-* reference your plugin as usual.
-
-
-With native packaging
-
-The plugins must be deployed in ``/var/db/pastash/custom_plugins``. All subdirectories already exists. The NODE_PATH is already set.
-
-
-Signals
----
-
-* USR1: stoping or starting all inputs plugins. Can be used to close input when output targer are failing
-* USR2: see below file output plugin
 
 
 Plugins list
@@ -250,6 +227,7 @@ Outputs
 * [Splunk](docs/outputs/splunk.md)
 * [Kafka](docs/outputs/kafka.md)
 * [Statsd](docs/outputs/statsd.md)
+* [InfluxDb](docs/outputs/influxdb.md)
 * [Gelf](docs/outputs/gelf.md)
 * [File](docs/outputs/file.md)
 * [HTTP Post](docs/outputs/http_post.md)
@@ -268,6 +246,31 @@ Common concepts / parameters :
 * [Serializers](docs/outputs/serializers.md)
 
 
+Adding your plugins
+---
+
+You can add easily add your plugins :
+
+Manually :
+
+* create a directory layout on the path of your choice : ``/var/my_plugins/inputs``, ``/var/my_plugins/outputs``, ``/var/my_plugins/filters``
+* set the NODE_PATH variable to ``NODE_PATH=/var/my_plugins:/node_logstash_path/lib``
+* add your plugins in ``inputs``, ``outputs`` or ``filters`` directory. In the plugin code, you can reference base plugins with ``var base_filter = require('lib/base_filter');``
+* reference your plugin as usual.
+
+
+With native packaging
+
+The plugins must be deployed in ``/var/db/pastash/custom_plugins``. All subdirectories already exists. The NODE_PATH is already set.
+
+
+Signals
+---
+
+* USR1: stoping or starting all inputs plugins. Can be used to close input when output targer are failing
+* USR2: see below file output plugin
+
+
 Misc
 ---
 
@@ -276,7 +279,7 @@ Misc
 License
 ===
 
-paStash Copyright 2016 - 2017 QXIP BV
+paStash Copyright 2016 - 2018 QXIP BV
 
 node-logstash Copyright 2012 - 2014 Bertrand Paquet
 
