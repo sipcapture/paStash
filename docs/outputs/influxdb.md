@@ -25,11 +25,12 @@ output {
 
 Parameters:
 
+* ``interval``: reporting interval in ms. default: 1000
 * ``host``: ip of the statsd server.
 * ``port``: port of the statsd server.
 * ``protocol``: protocol used to communicate with server, one of: ``udp``,``http``,``https``
 * ``metric_type``: one of ``histogram``, ``meter``, ``counter``, ``timer``, ``gauge``. Type of value to send to Influxdb.
-* ``metric_key``: key to send to Influxdb.
+* ``metric_key``: key name to send to Influxdb.
 * ``metric_value``: metric value to send to Influxdb. Mandatory for ``timer``, ``counter`` and ``gauge`` type.
 * ``cache_*``: cache configuration for resolving ``host``. More doc at [cache](../cache.md).
 
