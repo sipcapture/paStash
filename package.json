@@ -26,6 +26,8 @@
     "cep",
     "elasticsearch",
     "beats",
+    "influxdb",
+    "statsd",
     "netflow"
   ],
   "main": "./lib/log4node.js",
@@ -84,6 +86,7 @@
     "mustache": "2.3.0",
     "csv-parser": "1.12.0",
     "object.omit": "3.0.0",
+    "metrics-influxdb": "1.0.0",
     "fast-json-stringify": "^0.17.0",
     "tinymath": "0.1.11",
     "@qxip/bencode": "1.0.0"
