@@ -12,7 +12,7 @@ Config using logstash format:
 ````
 output {
   if [type] == nginx {
-    statsd {
+    influxdb {
       host => localhost
       port => 8089
       protocol => udp
