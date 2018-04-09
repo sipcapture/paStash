@@ -55,3 +55,13 @@ Parameters:
 * ``hepic_token``: HEPIC API access token.
 * ``groupby``: IP Grouping strategy (source|destination|sdpmedia).
 * ``omit``: Optional Keys to drop from returned object. Accepts string or array.
+* ``links``: In-Memory CDR Correlation pipeline (false|true).
+* ``links_vectors``: Vectors for In-Memory CDR Correlation pipeline. Accepts an array.
+
+Default Vectors:
+In-Memory correlation vectors extract a `key` with optional `regex` transforms, forking with `prefix`,`suffix` and stored in memory for pairing, assigning a `score` to each match against. 
+Parameter `name` can be used to force the set for common fields, such as `correlation_id` and `callid` in most CDRs.
+ 
+```json
+[{score:100,key:'callid',suffix:"_b2b-1"},{score:100,key:'correlation_id',name:'callid'},{score:100,key:'x-cid',name:'callid'},{score:50,key:'ruri_user',regex: /^(00|\+)/ },{score:50,key:'from_user',regex: /^(00|\+)/ },{score:50,key:'bnumber_ext'},{score:50, key:'anumber_ext'}]
+```
