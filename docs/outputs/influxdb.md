@@ -13,6 +13,7 @@ Config using logstash format:
 output {
   if [type] == nginx {
     influxdb {
+      database => mydatabase
       host => localhost
       port => 8089
       protocol => udp
@@ -26,8 +27,9 @@ output {
 Parameters:
 
 * ``interval``: reporting interval in ms. default: 1000
-* ``host``: ip of the statsd server.
-* ``port``: port of the statsd server.
+* ``database``: name of the influxdb database.
+* ``host``: ip of the influxdb server.
+* ``port``: port of the influxdb server.
 * ``protocol``: protocol used to communicate with server, one of: ``udp``,``http``,``https``
 * ``metric_type``: one of ``histogram``, ``meter``, ``counter``, ``timer``, ``gauge``. Type of value to send to Influxdb.
 * ``metric_key``: key name to send to Influxdb.
