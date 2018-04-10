@@ -56,6 +56,8 @@ Parameters:
 * ``groupby``: IP Grouping strategy (source|destination|sdpmedia).
 * ``omit``: Optional Keys to drop from returned object. Accepts string or array.
 * ``links``: In-Memory CDR Correlation pipeline (false|true).
+* ``links_size``: Max size of entries In-Memory CDR Correlation pipeline. Default: 5000.
+* ``links_age``: Max age in ms for entries In-Memory CDR Correlation pipeline. Default: 5000.
 * ``links_vectors``: Vectors for In-Memory CDR Correlation pipeline. Accepts an array.
 
 Default Vectors:
