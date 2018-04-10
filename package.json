@@ -71,7 +71,7 @@
     "modesl": "*",
     "node-sflow": "*",
     "asterisk.io": "git+https://git@github.com/lmangani/asterisk.io.git",
-    "moment": "2.18.1",
+    "moment": "2.19.3",
     "redis": "2.8.0",
     "ws": "4.0.0",
     "oniguruma": "7.0.x",
