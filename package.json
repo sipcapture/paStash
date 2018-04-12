@@ -1,7 +1,7 @@
 {
   "name": "pastash",
   "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash + beat",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
   "contributors": [
     {
