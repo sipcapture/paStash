@@ -1,7 +1,7 @@
 {
   "name": "pastash",
   "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash + beat",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
   "contributors": [
     {
@@ -58,7 +58,6 @@
     "lru-cache": "4.1.x",
     "mkdirp": "0.5.1",
     "optimist": "0.6.1",
-    "qrelate": "^1.0.0"
   },
   "optionalDependencies": {
     "gun": "0.9.7",
@@ -93,6 +92,7 @@
     "fast-json-stringify": "^0.17.0",
     "tinymath": "0.1.11",
     "@qxip/bencode": "1.0.0",
+    "qrelate": "^1.0.4",
     "hoek": "~5.0.3"
   },
   "directories": {
