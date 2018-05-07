@@ -63,16 +63,15 @@ Parameters:
 Default Vectors:
 In-Memory correlation vectors extract a `key` with optional `regex` transforms, forking with `prefix`,`suffix` and stored in memory for pairing, assigning a `score` to each match against. Parameter `name` can be used to force the set for common fields, such as `correlation_id` and `callid` in most CDRs.
 
-The following format is accepted by the `links_vectors` file pointer for importing rules:
+The following format is accepted by the [qrelate](https://github.com/QXIP/qrelate) `links_vectors` file pointer for importing rules:
 ```
 module.exports = [
     { score: 100, key: 'callid', suffix: "_b2b-1" },
     { score: 100, key: 'correlation_id', name: 'callid' },
     { score: 100, key: 'x-cid', name: 'callid' },
     { score: 50,  key: 'ruri_user', regex: /^(00|\+)/ },
-    { score: 50,  key: 'from_user', regex: /^(00|\+)/ },
-    { score: 50,  key: 'bnumber_ext' },
-    { score: 50,  key: 'anumber_ext' }
+    { score: 50,  key: 'to_user', name: "to_user_tail", regex_match: /.{8}$/ }
+    { score: 50,  key: 'anumber_ext' prefix: "USER-" }
 ];
 
 ```
