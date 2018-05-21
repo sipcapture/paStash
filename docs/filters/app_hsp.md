@@ -68,7 +68,7 @@ The following format is accepted by the [qrelate](https://github.com/QXIP/qrelat
 module.exports = [
     { score: 100, key: 'callid', suffix: "_b2b-1" },
     { score: 100, key: 'correlation_id', name: 'callid' },
-    { score: 100, key: 'x-cid', name: 'callid' },
+    { score: 100, key: 'x-cid', name: 'callid', inject: 'x-cid' },
     { score: 50,  key: 'ruri_user', regex: /^(00|\+)/ },
     { score: 50,  key: 'to_user', name: "to_user_tail", regex_match: /.{8}$/ }
     { score: 50,  key: 'anumber_ext' prefix: "USER-" }
