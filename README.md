@@ -54,7 +54,7 @@ sudo npm install -g pastash
 
 ### Manual install
 
-* Install NodeJS, version >= 6.xx
+* Install NodeJS, version >= 8.xx
 * Install build tools
   * Debian based system: `apt-get install build-essential`
   * Centos system: `yum install gcc gcc-c++ make`
