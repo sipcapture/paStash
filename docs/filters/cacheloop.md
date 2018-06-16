@@ -8,10 +8,12 @@ The CacheLoop filter provides aggregation features within a pipeline implemented
 Example: aggregate documents with the same 'correlation_id' keys in a 5s range.
 ````
 filter {
-  cacheloop {
-    maxAge: 5000
-    extract => correlation_id
-    bypass => false
+  if [status] == 10 {
+    cacheloop {
+      maxAge: 5000
+      extract => correlation_id
+      bypass => false
+    }
   }
 }
 `````
