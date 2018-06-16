@@ -11,13 +11,11 @@ Example: classify a message
 Config using logstash format:
 ````
 filter{
- if [type] == 2 {
-  gun_write{
+  bayes{
     source_field => message
-    destination_field => classification
-    json_file => '/path/to/bayes_snapshot.json'
+    target_field => classification
+    json_file => '/path/to/valid/bayes_snapshot.json'
   }
- }
 }
 ````
 
