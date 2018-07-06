@@ -25,4 +25,5 @@ Parameters:
 * ``cacheSize``: maximum size for records before eviction. Default: 5000
 * ``cacheAge``: maximum age for records in cache in millisecods. Default: 10000
 * ``bypass``:Let records pass through other pipes, causing duplication. Default: false
-* ``custom_type``: inject a custom 'type' tag in output. Default: false.
+* ``whitelist``: remove all fields except those in whitelist from cached object. Default: false.
+* ``blacklist``: keep all fields except those in blacklist from cached object.. Default: false.
