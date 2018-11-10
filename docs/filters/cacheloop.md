@@ -28,3 +28,4 @@ Parameters:
 * ``whitelist``: remove all fields except those in whitelist from cached object. Default: false.
 * ``blacklist``: keep all fields except those in blacklist from cached object.. Default: false.
 * ``average``: array with numeric fields to be averaged across a group. Default: false.
+* ``rename``: rename data group with an arbitrary name. Default: false.
