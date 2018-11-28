@@ -1,7 +1,7 @@
 {
   "name": "pastash",
   "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash + beat",
-  "version": "1.0.41",
+  "version": "1.0.45",
   "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
   "contributors": [
     {
@@ -60,9 +60,10 @@
     "optimist": "0.6.1"
   },
   "optionalDependencies": {
+    "@pm2/io": "^2.4.7",
+    "asterisk-ami-client": "^1.1.5",
     "@qxip/bencode": "1.0.0",
     "amqplib": "0.5.1",
-    "asterisk.io": "git+https://git@github.com/lmangani/asterisk.io.git",
     "aws-sdk": "2.112.x",
     "csv-parser": "1.12.0",
     "fast-json-stringify": "^0.17.0",
