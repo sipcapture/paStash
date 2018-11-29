@@ -33,11 +33,24 @@ As in logstash, you can use complex conditions: ``if [loglevel] == "ERROR" and [
 You can use the following comparison operators:
 * equality: ``==``, ``!=``, ``<``, ``>``, ``<=``, ``>=``
 * regexp: ``=~``, ``!~``
-* inclusion: ``in``, ``not in``
+* inclusion: ``in``, ``not in``, ``miss``
 
 The supported boolean operators are: ``and``, ``or``, ``nand``, ``xor``.
 The supported unary operators are: ``!``.
 
 
 Conditions can be long and complex. You can use ``if``, ``elsif``, ``else``. Conditions can contain other expressions, you can negate expressions with !, and you can group them with parentheses (...).
+
+Example 2: inject a missing header via filter.
+````
+filter {
+  if [type] miss "undefined" {
+    compute_field {
+      field => type
+      value => '#{somefield}'
+    }
+  }
+}
+````
+
 

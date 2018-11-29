@@ -38,6 +38,7 @@
 "!~"                                return 'BINARY_OPERATOR'
 "not in"                            return 'BINARY_OPERATOR'
 "in"                                return 'BINARY_OPERATOR'
+"miss"                              return 'BINARY_OPERATOR'
 "!"                                 return 'UNARY_OPERATOR'
 "and"                               return 'CONDITION_OPERATOR'
 "or"                                return 'CONDITION_OPERATOR'

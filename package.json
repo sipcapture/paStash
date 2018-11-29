@@ -1,7 +1,7 @@
 {
   "name": "pastash",
   "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash + beat",
-  "version": "1.0.33",
+  "version": "1.0.41",
   "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
   "contributors": [
     {
@@ -72,7 +72,7 @@
     "hep-js": "*",
     "hoek": "~5.0.3",
     "http-proxy-agent": "2.x",
-    "https-proxy-agent": "2.x",
+    "https-proxy-agent": "2.2.0",
     "kafka-node": "2.2.3",
     "lumberjack-protocol": "git://github.com/bpaquet/node-lumberjack-protocol.git",
     "maxmind": "0.6.x",

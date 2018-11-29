@@ -27,3 +27,5 @@ Parameters:
 * ``bypass``:Let records pass through other pipes, causing duplication. Default: false
 * ``whitelist``: remove all fields except those in whitelist from cached object. Default: false.
 * ``blacklist``: keep all fields except those in blacklist from cached object.. Default: false.
+* ``average``: array with numeric fields to be averaged across a group. Default: false.
+* ``rename``: rename data group with an arbitrary name. Default: false.
