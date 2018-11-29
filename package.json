@@ -53,6 +53,7 @@
     "test": "./test-runner.sh"
   },
   "dependencies": {
+    "@pm2/io": "^2.4.7",
     "async": "2.6.0",
     "log4node": "0.1.6",
     "lru-cache": "4.1.x",
