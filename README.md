@@ -48,23 +48,17 @@ How to use it ?
 Installation
 ---
 ### NPM install
+PaStash and its dependencies can be easily installed with NPM _(provides `pastash` as command)_
 ```
-sudo npm install -g pastash
+sudo npm install -g @pastash/pastash
 ```
 
-### Manual install
+### NPM plugin install
+PaStash can be extended with modules from the `@pastash` NPM keyspace
+```
+sudo npm install -g @pastash/input_dummy
+```
 
-* Install NodeJS, version >= 8.xx
-* Install build tools
-  * Debian based system: `apt-get install build-essential`
-  * Centos system: `yum install gcc gcc-c++ make`
-* Install zmq dev libraries: This is required to build the [node zeromq module](https://github.com/JustinTulloss/zeromq.node).
-  * Debian based system: `apt-get install libzmq1`. Under recent releases, this package is present in default repositories. On ubuntu lucid, use this [ppa](https://launchpad.net/~chris-lea/+archive/zeromq). On debian squeeze, use [backports](http://backports-master.debian.org/Instructions/).
-  * Centos 6: `yum install zeromq zeromq-devel`. Before, you have to add the rpm zeromq repo : `curl http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/home:fengshuo:zeromq.repo > /etc/yum.repos.d/zeromq.repo`
-* Clone repository: `git clone git://github.com/sipcapture/pastash.git && cd pastash`
-* Install dependencies: `npm install`.
-
-The executable is ``bin/pastash``
 
 Configuration formats
 ---
