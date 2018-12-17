@@ -14,7 +14,7 @@ Config using url: ``output://redis://localhost:6379?channel=logstash_channel``
 
 Config using logstash format:
 ````
-input {
+output {
   redis {
     host => localhost
     port => 6379
