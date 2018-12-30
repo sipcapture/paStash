@@ -1,7 +1,7 @@
 {
   "name": "@pastash/pastash",
   "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - now with plugins",
-  "version": "1.0.46",
+  "version": "1.0.50",
   "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
   "contributors": [
     {
@@ -57,7 +57,8 @@
     "log4node": "0.1.6",
     "lru-cache": "4.1.x",
     "mkdirp": "0.5.1",
-    "optimist": "0.6.1"
+    "optimist": "0.6.1",
+    "requireg": "^0.2.1"
   },
   "optionalDependencies": {
     "amqplib": "0.5.1",
