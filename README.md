@@ -56,7 +56,7 @@ sudo npm install -g @pastash/pastash
 ### NPM plugin install
 PaStash can be extended with modules from the `@pastash` NPM keyspace
 ```
-sudo npm install -g @pastash/input_dummy
+sudo npm install -g @pastash/output_loki
 ```
 
 
@@ -71,11 +71,19 @@ Note : multiple configuration files can be used in parallel with the ``--config_
 Configuration by logstash config files
 ---
 
-Example for an input file
+Example for a simple logging pipeline:
 ```
 input {
   file {
     path => '/tmp/toto.log'
+  }
+}
+
+output {
+  loki {
+    host => localhost
+    port => 3100
+    path => "/api/prom/push"
   }
 }
 ```
@@ -147,128 +155,8 @@ See our [wiki](https://github.com/sipcapture/paStash/wiki) for many more [exampl
 Plugins list
 ===
 
-Inputs
----
+* See [paStash plugins](https://github.com/lmangani/pastash_plugins) for plugins lists, examples and docs
 
-* [File](docs/inputs/file.md)
-* [Syslog](docs/inputs/syslog.md)
-* [ZeroMQ](docs/inputs/zeromq.md)
-* [Redis](docs/inputs/redis.md)
-* [HTTP](docs/inputs/http.md)
-* [Websocket](docs/inputs/ws.md)
-* [TCP / TLS](docs/inputs/tcp_tls.md)
-* [Google app engine](docs/inputs/gae.md)
-* [AMQP](docs/inputs/amqp.md)
-* [MQTT](docs/inputs/mqtt.md)
-* [SQS](docs/inputs/sqs.md)
-* [NetFlow](docs/inputs/netflow.md)
-* [sFlow](docs/inputs/sflow.md)
-* [Bencode](docs/inputs/bencode.md)
-* [Freeswitch ESL](docs/inputs/esl.md)
-* [Asterisk AMI](docs/inputs/ami.md)
-
-
-Common concepts / parameters :
-
-* [Unserializers](docs/inputs/unserializers.md)
-* [Tags/fields](docs/inputs/tags_fields.md)
-
-Filters
----
-
-* [Regex](docs/filters/regex.md)
-* [Grok](docs/filters/grok.md)
-* [Mutate Replace](docs/filters/mutate_replace.md)
-* [Grep](docs/filters/grep.md)
-* [Reverse DNS](docs/filters/reverse_dns.md)
-* [Compute field](docs/filters/compute_field.md)
-* [Compute hash](docs/filters/compute_hash.md)
-* [Compute date field](docs/filters/compute_date_field.md)
-* [Split](docs/filters/split.md)
-* [Truncate](docs/filters/truncate.md)
-* [Rename](docs/filters/rename.md)
-* [Multiline](docs/filters/multiline.md)
-* [Json fields](docs/filters/json_fields.md)
-* [Geoip](docs/filters/geoip.md)
-* [Eval](docs/filters/eval.md)
-* [Bunyan](docs/filters/bunyan.md)
-* [IPProto](docs/filters/ipproto.md)
-* [HTTP Status Classifier](docs/filters/http_status_classifier.md)
-* [Remove field when equal](docs/filters/remove_field_when_equal.md)
-* [Mustache](docs/filters/mustache.md)
-* [Omit](docs/filters/omit.md)
-* [LRU](docs/filters/lru.md)
-
-
-Common concepts / parameters :
-
-* [Common parameters](docs/common_params.md)
-* [Tags/fields](docs/filters/tags_fields.md)
-
-Apps with embedded parsers :
-
-* [Avaya SM logs](docs/filters/app_avaya.md)
-* [Sonus SBC logs](docs/filters/app_sonus.md)
-* [Janus RTC events](docs/filters/app_janus.md)
-* [HEPIC HSP cdrs](docs/filters/app_hsp.md)
-
-
-Outputs
----
-
-* [ZeroMQ](docs/outputs/zeromq.md)
-* [ElasticSearch](docs/outputs/elasticsearch.md)
-* [Splunk](docs/outputs/splunk.md)
-* [Kafka](docs/outputs/kafka.md)
-* [Statsd](docs/outputs/statsd.md)
-* [InfluxDb](docs/outputs/influxdb.md)
-* [Gelf](docs/outputs/gelf.md)
-* [File](docs/outputs/file.md)
-* [HTTP Post](docs/outputs/http_post.md)
-* [Websocket](docs/outputs/ws.md)
-* [Redis](docs/outputs/redis.md)
-* [Logio](docs/outputs/logio.md)
-* [TCP / TLS](docs/outputs/tcp_tls.md)
-* [AMQP](docs/outputs/amqp.md)
-* [NSQ](docs/outputs/nsq.md)
-* [SQS](docs/outputs/sqs.md)
-* [HEP](docs/outputs/hep.md)
-
-Common concepts / parameters :
-
-* [Common parameters](docs/common_params.md)
-* [Serializers](docs/outputs/serializers.md)
-
-
-Adding your plugins
----
-
-You can add easily add your plugins :
-
-Manually :
-
-* create a directory layout on the path of your choice : ``/var/my_plugins/inputs``, ``/var/my_plugins/outputs``, ``/var/my_plugins/filters``
-* set the NODE_PATH variable to ``NODE_PATH=/var/my_plugins:/node_logstash_path/lib``
-* add your plugins in ``inputs``, ``outputs`` or ``filters`` directory. In the plugin code, you can reference base plugins with ``var base_filter = require('lib/base_filter');``
-* reference your plugin as usual.
-
-
-With native packaging
-
-The plugins must be deployed in ``/var/db/pastash/custom_plugins``. All subdirectories already exists. The NODE_PATH is already set.
-
-
-Signals
----
-
-* USR1: stoping or starting all inputs plugins. Can be used to close input when output targer are failing
-* USR2: see below file output plugin
-
-
-Misc
----
-
-* [Elasticsearch mapping](docs/elastic_mapping.md)
 
 License
 ===
