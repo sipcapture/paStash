@@ -29,3 +29,11 @@ Parameters:
 * ``blacklist``: keep all fields except those in blacklist from cached object.. Default: false.
 * ``average``: array with numeric fields to be averaged across a group. Default: false.
 * ``rename``: rename data group with an arbitrary name. Default: false.
+* ``clone``: clone field between groups. Default: false.
+
+##### Clone Example
+To clone a specific field between chained objects matching a criteria use the following format:
+```
+clone => ['correlation_id','type','access','type','carrier'];
+```
+
