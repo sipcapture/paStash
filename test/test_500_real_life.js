@@ -5,7 +5,7 @@ var vows = require('vows-batch-retry'),
   spawn = require('child_process').spawn,
   dgram = require('dgram'),
   log = require('log4node'),
-  whereis = require('whereis');
+  whereis = require('which');
 
 function createAgent(urls, callback, error_callback) {
   var a = agent.create();

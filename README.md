@@ -4,6 +4,8 @@ _"When logs give you spaghetti, make pasta"_
 
 <img src="http://i.imgur.com/wYjsCqz.png"/>
 
+[![Codefresh build status]( https://g.codefresh.io/api/badges/build?repoOwner=sipcapture&repoName=paStash&branch=master&pipelineName=paStash&accountName=lmangani&type=cf-1)]( https://hub.docker.com/r/qxip/pastash/)
+
 What is paStash ?
 ---
 
@@ -52,7 +54,7 @@ sudo npm install -g pastash
 
 ### Manual install
 
-* Install NodeJS, version >= 6.xx
+* Install NodeJS, version >= 8.xx
 * Install build tools
   * Debian based system: `apt-get install build-essential`
   * Centos system: `yum install gcc gcc-c++ make`
@@ -146,29 +148,6 @@ output {
 See our [wiki](https://github.com/sipcapture/paStash/wiki) for many more [examples](https://github.com/sipcapture/paStash/wiki)
 
 
-Adding your plugins
----
-
-You can add easily add your plugins :
-
-Manually :
-
-* create a directory layout on the path of your choice : ``/var/my_plugins/inputs``, ``/var/my_plugins/outputs``, ``/var/my_plugins/filters``
-* set the NODE_PATH variable to ``NODE_PATH=/var/my_plugins:/node_logstash_path/lib``
-* add your plugins in ``inputs``, ``outputs`` or ``filters`` directory. In the plugin code, you can reference base plugins with ``var base_filter = require('lib/base_filter');``
-* reference your plugin as usual.
-
-
-With native packaging
-
-The plugins must be deployed in ``/var/db/pastash/custom_plugins``. All subdirectories already exists. The NODE_PATH is already set.
-
-
-Signals
----
-
-* USR1: stoping or starting all inputs plugins. Can be used to close input when output targer are failing
-* USR2: see below file output plugin
 
 
 Plugins list
@@ -248,6 +227,7 @@ Outputs
 * [Splunk](docs/outputs/splunk.md)
 * [Kafka](docs/outputs/kafka.md)
 * [Statsd](docs/outputs/statsd.md)
+* [InfluxDb](docs/outputs/influxdb.md)
 * [Gelf](docs/outputs/gelf.md)
 * [File](docs/outputs/file.md)
 * [HTTP Post](docs/outputs/http_post.md)
@@ -256,6 +236,7 @@ Outputs
 * [Logio](docs/outputs/logio.md)
 * [TCP / TLS](docs/outputs/tcp_tls.md)
 * [AMQP](docs/outputs/amqp.md)
+* [NSQ](docs/outputs/nsq.md)
 * [SQS](docs/outputs/sqs.md)
 * [HEP](docs/outputs/hep.md)
 
@@ -263,6 +244,31 @@ Common concepts / parameters :
 
 * [Common parameters](docs/common_params.md)
 * [Serializers](docs/outputs/serializers.md)
+
+
+Adding your plugins
+---
+
+You can add easily add your plugins :
+
+Manually :
+
+* create a directory layout on the path of your choice : ``/var/my_plugins/inputs``, ``/var/my_plugins/outputs``, ``/var/my_plugins/filters``
+* set the NODE_PATH variable to ``NODE_PATH=/var/my_plugins:/node_logstash_path/lib``
+* add your plugins in ``inputs``, ``outputs`` or ``filters`` directory. In the plugin code, you can reference base plugins with ``var base_filter = require('lib/base_filter');``
+* reference your plugin as usual.
+
+
+With native packaging
+
+The plugins must be deployed in ``/var/db/pastash/custom_plugins``. All subdirectories already exists. The NODE_PATH is already set.
+
+
+Signals
+---
+
+* USR1: stoping or starting all inputs plugins. Can be used to close input when output targer are failing
+* USR2: see below file output plugin
 
 
 Misc
@@ -273,7 +279,7 @@ Misc
 License
 ===
 
-paStash Copyright 2016 - 2017 QXIP BV
+paStash Copyright 2016 - 2018 QXIP BV
 
 node-logstash Copyright 2012 - 2014 Bertrand Paquet
 
@@ -282,3 +288,11 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
 http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+
+----
+#### Made by Humans
+This Open-Source project is made possible by actual Humans without corporate sponsors, angels or patreons.<br>
+If you use this software in production, please consider supporting its development with contributions or [donations](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=donation%40sipcapture%2eorg&lc=US&item_name=SIPCAPTURE&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHostedGuest)
+
+[![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=donation%40sipcapture%2eorg&lc=US&item_name=SIPCAPTURE&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHostedGuest) 
