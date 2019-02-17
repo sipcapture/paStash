@@ -49,7 +49,7 @@ Installation
 ---
 ### NPM install
 ```
-sudo npm install -g pastash
+npm install --save @voicenter/pastash 
 ```
 
 ### Manual install

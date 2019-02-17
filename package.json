@@ -1,7 +1,82 @@
 {
-  "name": "$package_name$",
-  "version": "0.0.1",
+  "name": "@voicenter/pastash",
+  "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash + beat",
+  "version": "1.0.44",
+  "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
+  "contributors": [
+    {
+      "name": "shlomi gutman",
+      "email": "shlomi@voicenter.com"
+    }
+  ],
+  "homepage": "https://github.com/voicenter/pastash",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/voicenter/paStash.git"
+  },
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "istanbul": "0.4.x",
+    "jison": "0.4.x",
+    "js-beautify": "1.6.x",
+    "jshint": "^2.9.6",
+    "rimraf": "2.6.x",
+    "vows": "0.7.0",
+    "vows-batch-retry": "0.0.4",
+    "which": "^1.3.1"
+  },
+  "scripts": {
+    "test": "./test-runner.sh"
+  },
   "dependencies": {
-    $END$
+    "@pm2/io": "^2.4.7",
+    "async": "2.6.0",
+    "async-chainable": "^2.6.1",
+    "circular-json": "^0.5.9",
+    "log4node": "0.1.6",
+    "lru-cache": "4.1.x",
+    "mkdirp": "0.5.1",
+    "optimist": "0.6.1",
+    "zephyr": "^1.3.6"
+  },
+  "optionalDependencies": {
+    "@qxip/bencode": "1.0.0",
+    "amqplib": "0.5.1",
+    "asterisk.io": "git+https://git@github.com/lmangani/asterisk.io.git",
+    "aws-sdk": "2.112.x",
+    "csv-parser": "1.12.0",
+    "fast-json-stringify": "^0.17.0",
+    "geoip-lite": "1.2.1",
+    "gun": "0.9.7",
+    "hep-js": "*",
+    "hoek": "~5.0.3",
+    "http-proxy-agent": "2.x",
+    "https-proxy-agent": "2.2.0",
+    "kafka-node": "2.2.3",
+    "lumberjack-protocol": "git://github.com/bpaquet/node-lumberjack-protocol.git",
+    "maxmind": "0.6.x",
+    "maxmind-geolite-mirror": "1.0.x",
+    "metrics-influxdb": "1.0.0",
+    "modesl": "*",
+    "moment": "2.19.3",
+    "mqtt": "*",
+    "msgpack": "1.0.x",
+    "mustache": "2.3.0",
+    "node-netflowv9": "*",
+    "node-sflow": "*",
+    "nsqjs": "^0.10.0",
+    "object.omit": "3.0.0",
+    "oniguruma": "7.0.x",
+    "qrelate": "^1.0.9",
+    "redis": "2.8.0",
+    "splunk-logging": "0.9.3",
+    "sqlite3": "3.1.13",
+    "tinymath": "0.1.11",
+    "ws": "4.0.0",
+    "zmq": "*"
+  },
+  "directories": {
+    "test": "./test",
+    "bin": "./bin"
   }
 }
