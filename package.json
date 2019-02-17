@@ -1,8 +1,8 @@
 {
   "name": "@voicenter/pastash",
   "description": "Spaghetti I/O Processing, Interpolation, Correlation and beyond - nodejs logstash + beat",
-  "version": "1.0.44",
-  "author": "Lorenzo Mangani <lorenzo.mangani@gmail.com>",
+  "version": "1.0.45",
+  "author": "Shlomi Gutman <shlomi@voicenter.com>",
   "contributors": [
     {
       "name": "shlomi gutman",
