@@ -32,6 +32,7 @@
     "@pm2/io": "^2.4.7",
     "async": "2.6.0",
     "async-chainable": "^2.6.1",
+    "axios": "^0.18.0",
     "circular-json": "^0.5.9",
     "log4node": "0.1.6",
     "lru-cache": "4.1.x",
