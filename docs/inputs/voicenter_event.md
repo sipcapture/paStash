@@ -13,4 +13,4 @@ input {
 
 Parameters :
 * ``api``: the api servers array. Required.
-* ``token``: the tokens. Required.
+* ``token``: the token. Required.
