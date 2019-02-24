@@ -28,7 +28,7 @@ filter {
   command {
     debug => true
     field => message
-    plugins => ['@voicenter/voicenter_pastash_command_demo']
+    plugins => plugins.json
     fieldCommandList => "Command"
     fieldResultList => "Result"
     commandList => ["fooFunc","barFunc"]
@@ -41,6 +41,15 @@ output {
 
 ```
 
+#### plugins.json example 
+```
+[
+  {
+    "plugin": "@voicenter/voicenter_pastash_command_demo",
+    "conf": {}
+  }
+]
+```
 
 
 #### Pass it an Request with a Command array 
