@@ -43,12 +43,11 @@ output {
 
 #### plugins.json example 
 ```
-[
-  {
-    "plugin": "@voicenter/voicenter_pastash_command_demo",
-    "conf": {}
-  }
-]
+
+{
+    "@voicenter/voicenter_pastash_command_demo": {"conf": "value"}
+}
+
 ```
 
 
