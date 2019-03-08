@@ -28,6 +28,7 @@ filter {
   command {
     debug => true
     field => message
+    plugins_path => "path_to_plugins" (if not set or plugin is not in directory will try to load from global)
     plugins => plugins.json
     fieldCommandList => "Command"
     fieldResultList => "Result"
