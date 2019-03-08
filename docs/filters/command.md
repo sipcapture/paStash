@@ -28,7 +28,8 @@ filter {
   command {
     debug => true
     field => message
-    plugins => ['@voicenter/voicenter_pastash_command_demo']
+    plugins_path => "path_to_plugins" (if not set or plugin is not in directory will try to load from global)
+    plugins => plugins.json
     fieldCommandList => "Command"
     fieldResultList => "Result"
     commandList => ["fooFunc","barFunc"]
@@ -41,6 +42,14 @@ output {
 
 ```
 
+#### plugins.json example 
+```
+
+{
+    "@voicenter/voicenter_pastash_command_demo": {"conf": "value"}
+}
+
+```
 
 
 #### Pass it an Request with a Command array 
