@@ -13,7 +13,7 @@ filter {
 
 output {
   file {
-    path => "/tmp/pastash_out_#{now:YYYY-MM-DD_HH:mm}.csv"
+    path => "/tmp/pastash_out_#{now:YYYY-MM-DD_HHmm}.csv"
   }
 }
 ````
