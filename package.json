@@ -69,7 +69,7 @@
     "csv-parser": "1.12.0",
     "fast-json-stringify": "^0.17.0",
     "geoip-lite": "1.2.1",
-    "gun": "0.9.7",
+    "gun": "0.2019.416",
     "hep-js": "*",
     "hoek": "~5.0.3",
     "http-proxy-agent": "2.x",
