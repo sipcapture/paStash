@@ -1,6 +1,8 @@
 node_modules/
 yarn.lock
+.DS_Store
 .idea
 config.cnf
+config-test.cnf
 data.json
 plugins.json
