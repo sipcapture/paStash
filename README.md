@@ -9,36 +9,36 @@ _"When logs give you spaghetti, make pasta"_
 What is paStash ?
 ---
 
-PaStasH _(pastaʃ'ʃ-utta)_ is a [NodeJS](http://nodejs.org) multi I/O processor supporting ingestion, decoding, interpolation and correlation of data - be it logs, packets, events and beyond. PaStash supports the Logstash configuration format and delivers cross-functionality comparable to _"Beats"_ with custom modules, providing a flexible and agnostig data pipelining tool.
+PaStasH _(pastaʃ'ʃ-utta)_ is a [NodeJS](http://nodejs.org) multi I/O processor supporting ingestion, decoding, interpolation and correlation of data - be it logs, packets, events and beyond. PaStash supports the Logstash configuration format and delivers cross-functionality comparable to _"Beats"_ with custom modules, providing a flexible and agnostic data pipelining tool.
 
 
 What can I do with paStash ?
 ---
 
-paStash is designed manage spaghetti I/O with input, processors and output modules for all seasons, and can be useful in many scenarios, such as parsing logs to objects, distributing data to multiple formats, interexchanging and correlating protocols and streams, while interpolating and manipulating data intransit. paStash is developed using NodeJS, which is an ideal language for applications with many IO and offers:
+paStash is designed manage spaghetti I/O with input, processors and output modules for all seasons, and can be useful in many scenarios, such as parsing logs to objects, distributing data to multiple formats, inter-exchanging and correlating protocols and streams, while interpolating and manipulating data in transit. paStash is developed using NodeJS, which is an ideal language for applications with many IO and offers:
 
 * lower memory footprint
-* lower cpu footprint
-* faster startup delay
+* lower CPU footprint
+* lower start-up delay
 * ease of extension
 
 paStash configuration is compatible with logstash. You can easily replace a logstash node by a paStash one in most cases. The data are formatted in the same way to be compatible with logstash UIs.
 
-How does it work ?
+How does it work?
 ===
 
-The architecture is identical to logstash architecture. You have to instanciates plugins with the paStash core. There are three type of modules:
+The architecture is identical to logstash architecture. You have to instantiates plugins with the paStash core. There are three type of modules:
 
 * [inputs plugins](#inputs): where datas come into paStash. Examples: file, zeromq transport layer
 * [filter plugins](#filters): extract and manipulate fields from logs, like timestamps. Example: regex plugin
 * [outputs plugins](#outputs): where datas leave from paStash: Examples: ElasticSearch , zeromq transport layer.
 
 
-A typical paStash deployement contains agents to crawl logs and a log server.
+A typical paStash deployment contains agents to crawl logs and a log server.
 
-On agent, paStash is configured whith inputs plugins to get logs from your software stack, and one output plugin to send logs to log server (eg. zeromq output plugin).
+On agent, paStash is configured with input plugins to get logs from your software stack, and one output plugin to send logs to a log server (eg. zeromq output plugin).
 
-On log server, logs come trough a zeromq input plugin, are processed (fields and timestamps extraction), and send to ElasticSearch.
+On the log server, logs come through a zeromq input plugin, are processed (fields and timestamps extraction), and sent to ElasticSearch.
 
 
 
@@ -60,7 +60,7 @@ sudo npm install -g pastash
   * Centos system: `yum install gcc gcc-c++ make`
 * Install zmq dev libraries: This is required to build the [node zeromq module](https://github.com/JustinTulloss/zeromq.node).
   * Debian based system: `apt-get install libzmq1`. Under recent releases, this package is present in default repositories. On ubuntu lucid, use this [ppa](https://launchpad.net/~chris-lea/+archive/zeromq). On debian squeeze, use [backports](http://backports-master.debian.org/Instructions/).
-  * Centos 6: `yum install zeromq zeromq-devel`. Before, you have to add the rpm zeromq repo : `curl http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/home:fengshuo:zeromq.repo > /etc/yum.repos.d/zeromq.repo`
+  * Centos 6: `yum install zeromq zeromq-devel`. First, you have to add the rpm zeromq repo : `curl http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/home:fengshuo:zeromq.repo > /etc/yum.repos.d/zeromq.repo`
 * Clone repository: `git clone git://github.com/sipcapture/pastash.git && cd pastash`
 * Install dependencies: `npm install`.
 
@@ -69,7 +69,7 @@ The executable is ``bin/pastash``
 Configuration formats
 ---
 
-There are two format for configuration. The legacy format use urls. The new one is identical to the [logstash config format](https://www.elastic.co/guide/en/logstash/current/configuration.html).
+There are two format for configuration. The legacy format uses urls. The new one is identical to the [logstash config format](https://www.elastic.co/guide/en/logstash/current/configuration.html).
 
 Note : multiple configuration files can be used in parallel with the ``--config_dir`` switch.
 
@@ -87,13 +87,13 @@ input {
 ```
 
 You can use ``if`` to have an [event dependent configuration](https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html). See [here for details](docs/common_params.md).
-As for urls, config can be specified
+As for urls, a config can be specified
 
 * directly on the command line
 * in a file (use the ``--config_file`` switch)
 * in all files in a directory (use the ``--config_dir`` switch)
 
-Note : the implementation is young, all bugs reports are welcome.
+Note : the implementation is young, all bug reports are welcome.
 Note : both formats can be mixed.
 
 Command lines params
@@ -101,10 +101,10 @@ Command lines params
 
 * ``--log_level`` to change the log level (emergency, alert, critical, error, warning, notice, info, debug)
 * ``--log_file`` to redirect log to a log file.
-* ``--patterns_directories`` to add some directories (separated by ,), for loading config for regex plugin and grok plugins. Grok patterns files must be located under a ``grok`` subdirectory for each specified directory.
+* ``--patterns_directories`` to add some directories (comma-separated ,), for loading config, for regex plugin and grok plugins. Grok pattern files must be located under a ``grok`` subdirectory for each specified directory.
 * ``--db_file`` to specify the file to use as database for file inputs (see below)
-* ``--http_max_sockets`` to specify the max sockets of [http.globalAgent.maxSockets](http://nodejs.org/api/http.html#http_agent_maxsockets). Default to 100.
-* ``--alarm_file`` to specify a file which will be created if paStash goes in alarm mode.
+* ``--http_max_sockets`` to specify the maximum amount of sockets of [http.globalAgent.maxSockets](http://nodejs.org/api/http.html#http_agent_maxsockets). Default to 100.
+* ``--alarm_file`` to specify a file which will be created if paStash goes into alarm mode.
 
 Examples
 ---
@@ -253,7 +253,7 @@ You can add easily add your plugins :
 
 Manually :
 
-* create a directory layout on the path of your choice : ``/var/my_plugins/inputs``, ``/var/my_plugins/outputs``, ``/var/my_plugins/filters``
+* create a directory layout in the path of your choice : ``/var/my_plugins/inputs``, ``/var/my_plugins/outputs``, ``/var/my_plugins/filters``
 * set the NODE_PATH variable to ``NODE_PATH=/var/my_plugins:/node_logstash_path/lib``
 * add your plugins in ``inputs``, ``outputs`` or ``filters`` directory. In the plugin code, you can reference base plugins with ``var base_filter = require('lib/base_filter');``
 * reference your plugin as usual.
@@ -261,13 +261,13 @@ Manually :
 
 With native packaging
 
-The plugins must be deployed in ``/var/db/pastash/custom_plugins``. All subdirectories already exists. The NODE_PATH is already set.
+The plugins must be deployed in ``/var/db/pastash/custom_plugins``. All subdirectories already exist. The NODE_PATH is already set.
 
 
 Signals
 ---
 
-* USR1: stoping or starting all inputs plugins. Can be used to close input when output targer are failing
+* USR1: stopping or starting all input plugins. Can be used to close input when output targets are failing
 * USR2: see below file output plugin
 
 
@@ -292,7 +292,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 ----
 #### Made by Humans
-This Open-Source project is made possible by actual Humans without corporate sponsors, angels or patreons.<br>
+This Open-Source project is made possible by actual Humans without corporate sponsors, angels or patrons.<br>
 If you use this software in production, please consider supporting its development with contributions or [donations](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=donation%40sipcapture%2eorg&lc=US&item_name=SIPCAPTURE&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHostedGuest)
 
 [![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=donation%40sipcapture%2eorg&lc=US&item_name=SIPCAPTURE&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHostedGuest) 
