@@ -20,5 +20,5 @@ filter {
 Parameters:
 
 * ``start_line_regex``: regular expression which is used to find lines which start blocks. You have to escape special characters.
-* ``regex_flags: regex flags (eg : g, i, m).
+* ``regex_flags:`` regex flags (eg : g, i, m).
 * ``max_delay``: delay to wait the end of a block. Default value: 50 ms. Softwares which write logs by block usually write blocks in one time, this parameter is used to send lines without waiting the next matching start line.
