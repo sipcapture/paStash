@@ -33,7 +33,7 @@ filter {
 }
 ````
 
-Example 3: to force number extraction. If the macthed string is not a number but ``-``, the field ``a`` will not be set.
+Example 3: to force number extraction. If the matched string is not a number but ``-``, the field ``a`` will not be set.
 
 Config using url: ``filter://regex://?regex=(\d+|-)&fields=a&numerical_fields=a``
 
