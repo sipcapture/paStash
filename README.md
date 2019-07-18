@@ -9,36 +9,36 @@ _"When logs give you spaghetti, make pasta"_
 What is paStash ?
 ---
 
-PaStasH _(pastaʃ'ʃ-utta)_ is a [NodeJS](http://nodejs.org) multi I/O processor supporting ingestion, decoding, interpolation and correlation of data - be it logs, packets, events and beyond. PaStash supports the Logstash configuration format and delivers cross-functionality comparable to _"Beats"_ with custom modules, providing a flexible and agnostic data pipelining tool.
+PaStasH _(pastaʃ'ʃ-utta)_ is a [NodeJS](http://nodejs.org) multi I/O processor which supports ingestion, decoding, interpolation and correlation of data - be it logs, packets, events and beyond. PaStash supports the Logstash configuration format and delivers cross-functionality comparable to _"Beats"_ with custom modules, providing a flexible and agnostic data pipelining tool.
 
 
 What can I do with paStash ?
 ---
 
-paStash is designed manage spaghetti I/O with input, processors and output modules for all seasons, and can be useful in many scenarios, such as parsing logs to objects, distributing data to multiple formats, inter-exchanging and correlating protocols and streams, while interpolating and manipulating data in transit. paStash is developed using NodeJS, which is an ideal language for applications with many IO and offers:
+paStash is designed to manage spaghetti I/O with input, processors and output modules for all seasons, and can be useful in many scenarios, such as parsing logs to objects, distributing data to multiple formats, inter-exchanging and correlating protocols and streams, while interpolating and manipulating data in transit. paStash is developed using NodeJS, which is an ideal language for applications with many IO, and offers:
 
-* lower memory footprint
-* lower CPU footprint
-* lower start-up delay
+* low memory footprint
+* low CPU usage
+* low start-up delay
 * ease of extension
 
-paStash configuration is compatible with logstash. You can easily replace a logstash node by a paStash one in most cases. The data are formatted in the same way to be compatible with logstash UIs.
+paStash configuration is compatible with logstash. You can easily replace a logstash node with a paStash one in most cases. The data are formatted in the same way so as to be compatible with logstash UIs.
 
 How does it work?
 ===
 
-The architecture is identical to logstash architecture. You have to instantiates plugins with the paStash core. There are three type of modules:
+The architecture is identical to logstash architecture. You instantiate plugins with the paStash core. There are three type of modules/plugins:
 
-* [inputs plugins](#inputs): where datas come into paStash. Examples: file, zeromq transport layer
+* [inputs plugins](#inputs): where log data comes into paStash. Examples: file, zeromq transport layer
 * [filter plugins](#filters): extract and manipulate fields from logs, like timestamps. Example: regex plugin
-* [outputs plugins](#outputs): where datas leave from paStash: Examples: ElasticSearch , zeromq transport layer.
+* [outputs plugins](#outputs): where data leaves from paStash: Examples: ElasticSearch , zeromq transport layer.
 
 
-A typical paStash deployment contains agents to crawl logs and a log server.
+A paStash deployment has agents to ingest logs (at source also), and optionally a paStash node for further processing.
 
-On agent, paStash is configured with input plugins to get logs from your software stack, and one output plugin to send logs to a log server (eg. zeromq output plugin).
+On an agent, paStash is generally configured via input plugins to get logs from your software stack, and via one or more output plugins to send the logs to a paStash node (eg. via zeromq output plugin), or directly to ElasticSearch.
 
-On the log server, logs come through a zeromq input plugin, are processed (fields and timestamps extraction), and sent to ElasticSearch.
+On the paStash node, logs come in via e.g. a zeromq input plugin, can be processed (fields and timestamps extraction), and sent onward to ElasticSearch.
 
 
 
@@ -72,7 +72,7 @@ The executable is ``bin/pastash``
 Configuration formats
 ---
 
-There are two format for configuration. The legacy format uses urls. The new one is identical to the [logstash config format](https://www.elastic.co/guide/en/logstash/current/configuration.html).
+There are two formats for configuration. The legacy format uses urls. The new one is identical to the [logstash config format](https://www.elastic.co/guide/en/logstash/current/configuration.html).
 
 Note : multiple configuration files can be used in parallel with the ``--config_dir`` switch.
 
@@ -90,7 +90,7 @@ input {
 ```
 
 You can use ``if`` to have an [event dependent configuration](https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html). See [here for details](docs/common_params.md).
-As for urls, a config can be specified
+It is possible to specify a synonymous config via urls
 
 * directly on the command line
 * in a file (use the ``--config_file`` switch)
@@ -99,7 +99,7 @@ As for urls, a config can be specified
 Note : the implementation is young, all bug reports are welcome.
 Note : both formats can be mixed.
 
-Command lines params
+Command line params
 ---
 
 * ``--log_level`` to change the log level (emergency, alert, critical, error, warning, notice, info, debug)
@@ -151,62 +151,59 @@ output {
 See our [wiki](https://github.com/sipcapture/paStash/wiki) for many more [examples](https://github.com/sipcapture/paStash/wiki)
 
 
-
-
 Plugins list
 ===
 
 Inputs
 ---
 
-* [File](docs/inputs/file.md)
-* [Syslog](docs/inputs/syslog.md)
-* [ZeroMQ](docs/inputs/zeromq.md)
-* [Redis](docs/inputs/redis.md)
-* [HTTP](docs/inputs/http.md)
-* [Websocket](docs/inputs/ws.md)
-* [TCP / TLS](docs/inputs/tcp_tls.md)
-* [Google app engine](docs/inputs/gae.md)
 * [AMQP](docs/inputs/amqp.md)
-* [MQTT](docs/inputs/mqtt.md)
-* [SQS](docs/inputs/sqs.md)
-* [NetFlow](docs/inputs/netflow.md)
-* [sFlow](docs/inputs/sflow.md)
-* [Bencode](docs/inputs/bencode.md)
-* [Freeswitch ESL](docs/inputs/esl.md)
 * [Asterisk AMI](docs/inputs/ami.md)
-
+* [Bencode](docs/inputs/bencode.md)
+* [File](docs/inputs/file.md)
+* [Freeswitch ESL](docs/inputs/esl.md)
+* [Google app engine](docs/inputs/gae.md)
+* [HTTP](docs/inputs/http.md)
+* [MQTT](docs/inputs/mqtt.md)
+* [NetFlow](docs/inputs/netflow.md)
+* [Redis](docs/inputs/redis.md)
+* [SQS](docs/inputs/sqs.md)
+* [Syslog](docs/inputs/syslog.md)
+* [TCP / TLS](docs/inputs/tcp_tls.md)
+* [Websocket](docs/inputs/ws.md)
+* [ZeroMQ](docs/inputs/zeromq.md)
+* [sFlow](docs/inputs/sflow.md)
 
 Common concepts / parameters :
 
-* [Unserializers](docs/inputs/unserializers.md)
 * [Tags/fields](docs/inputs/tags_fields.md)
+* [Unserializers](docs/inputs/unserializers.md)
 
 Filters
 ---
 
-* [Regex](docs/filters/regex.md)
-* [Grok](docs/filters/grok.md)
-* [Mutate Replace](docs/filters/mutate_replace.md)
-* [Grep](docs/filters/grep.md)
-* [Reverse DNS](docs/filters/reverse_dns.md)
+* [Bunyan](docs/filters/bunyan.md)
+* [Compute date field](docs/filters/compute_date_field.md)
 * [Compute field](docs/filters/compute_field.md)
 * [Compute hash](docs/filters/compute_hash.md)
-* [Compute date field](docs/filters/compute_date_field.md)
+* [Eval](docs/filters/eval.md)
+* [Geoip](docs/filters/geoip.md)
+* [Grep](docs/filters/grep.md)
+* [Grok](docs/filters/grok.md)
+* [HTTP Status Classifier](docs/filters/http_status_classifier.md)
+* [IPProto](docs/filters/ipproto.md)
+* [Json fields](docs/filters/json_fields.md)
+* [LRU](docs/filters/lru.md)
+* [Multiline](docs/filters/multiline.md)
+* [Mustache](docs/filters/mustache.md)
+* [Mutate Replace](docs/filters/mutate_replace.md)
+* [Omit](docs/filters/omit.md)
+* [Regex](docs/filters/regex.md)
+* [Remove field when equal](docs/filters/remove_field_when_equal.md)
+* [Rename](docs/filters/rename.md)
+* [Reverse DNS](docs/filters/reverse_dns.md)
 * [Split](docs/filters/split.md)
 * [Truncate](docs/filters/truncate.md)
-* [Rename](docs/filters/rename.md)
-* [Multiline](docs/filters/multiline.md)
-* [Json fields](docs/filters/json_fields.md)
-* [Geoip](docs/filters/geoip.md)
-* [Eval](docs/filters/eval.md)
-* [Bunyan](docs/filters/bunyan.md)
-* [IPProto](docs/filters/ipproto.md)
-* [HTTP Status Classifier](docs/filters/http_status_classifier.md)
-* [Remove field when equal](docs/filters/remove_field_when_equal.md)
-* [Mustache](docs/filters/mustache.md)
-* [Omit](docs/filters/omit.md)
-* [LRU](docs/filters/lru.md)
 
 
 Common concepts / parameters :
@@ -217,31 +214,31 @@ Common concepts / parameters :
 Apps with embedded parsers :
 
 * [Avaya SM logs](docs/filters/app_avaya.md)
-* [Sonus SBC logs](docs/filters/app_sonus.md)
-* [Janus RTC events](docs/filters/app_janus.md)
 * [HEPIC HSP cdrs](docs/filters/app_hsp.md)
+* [Janus RTC events](docs/filters/app_janus.md)
+* [Sonus SBC logs](docs/filters/app_sonus.md)
 
 
 Outputs
 ---
 
-* [ZeroMQ](docs/outputs/zeromq.md)
-* [ElasticSearch](docs/outputs/elasticsearch.md)
-* [Splunk](docs/outputs/splunk.md)
-* [Kafka](docs/outputs/kafka.md)
-* [Statsd](docs/outputs/statsd.md)
-* [InfluxDb](docs/outputs/influxdb.md)
-* [Gelf](docs/outputs/gelf.md)
-* [File](docs/outputs/file.md)
-* [HTTP Post](docs/outputs/http_post.md)
-* [Websocket](docs/outputs/ws.md)
-* [Redis](docs/outputs/redis.md)
-* [Logio](docs/outputs/logio.md)
-* [TCP / TLS](docs/outputs/tcp_tls.md)
 * [AMQP](docs/outputs/amqp.md)
-* [NSQ](docs/outputs/nsq.md)
-* [SQS](docs/outputs/sqs.md)
+* [ElasticSearch](docs/outputs/elasticsearch.md)
+* [File](docs/outputs/file.md)
+* [Gelf](docs/outputs/gelf.md)
 * [HEP](docs/outputs/hep.md)
+* [HTTP Post](docs/outputs/http_post.md)
+* [InfluxDb](docs/outputs/influxdb.md)
+* [Kafka](docs/outputs/kafka.md)
+* [Logio](docs/outputs/logio.md)
+* [NSQ](docs/outputs/nsq.md)
+* [Redis](docs/outputs/redis.md)
+* [SQS](docs/outputs/sqs.md)
+* [Splunk](docs/outputs/splunk.md)
+* [Statsd](docs/outputs/statsd.md)
+* [TCP / TLS](docs/outputs/tcp_tls.md)
+* [Websocket](docs/outputs/ws.md)
+* [ZeroMQ](docs/outputs/zeromq.md)
 
 Common concepts / parameters :
 
