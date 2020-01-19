@@ -59,6 +59,10 @@ PaStash can be extended with modules from the `@pastash` NPM keyspace
 sudo npm install -g @pastash/output_loki
 ```
 
+### Plugins list
+* See [paStash plugins](https://github.com/lmangani/pastash_plugins) for plugins lists, examples and docs
+
+------------
 
 Configuration formats
 ---
@@ -151,17 +155,10 @@ See our [wiki](https://github.com/sipcapture/paStash/wiki) for many more [exampl
 
 
 
-
-Plugins list
-===
-
-* See [paStash plugins](https://github.com/lmangani/pastash_plugins) for plugins lists, examples and docs
-
-
 License
 ===
 
-paStash Copyright 2016 - 2018 QXIP BV
+paStash Copyright 2016 - 2020 QXIP BV
 
 node-logstash Copyright 2012 - 2014 Bertrand Paquet
 
