@@ -50,13 +50,13 @@ Installation
 ### NPM install
 PaStash and its dependencies can be easily installed with NPM _(provides `pastash` as command)_
 ```
-sudo npm install -g @pastash/pastash
+npm install -g @pastash/pastash
 ```
 
 ### NPM plugin install
 PaStash can be extended with modules from the `@pastash` NPM keyspace
 ```
-sudo npm install -g @pastash/output_loki
+npm install -g @pastash/output_loki
 ```
 
 ### Plugins list
