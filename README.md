@@ -48,15 +48,15 @@ How to use it ?
 Installation
 ---
 ### NPM install
-PaStash and its dependencies can be easily installed with NPM _(provides `pastash` as command)_
+PaStash and its dependencies can be easily installed with NPM _(provides `pastash` as command)_ as root or sudo user:
 ```
-npm install -g @pastash/pastash
+npm install --unsafe-perm -g @pastash/pastash
 ```
 
 ### NPM plugin install
 PaStash can be extended with modules from the `@pastash` NPM keyspace
 ```
-npm install -g @pastash/output_loki
+npm install --unsafe-perm -g @pastash/output_loki
 ```
 
 ### Plugins list
