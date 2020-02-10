@@ -1,0 +1,12 @@
+{
+  "name": "@pastash/input_stdin",
+  "version": "1.0.0",
+  "description": "Stdin Input Plugin for @pastash/pastash",
+  "main": "input_stdin.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}

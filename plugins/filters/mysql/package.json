@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/filter_mysql",
+  "version": "1.0.1",
+  "description": "MySQL Filter Plugin for @pastash/pastash",
+  "main": "filter_mysql.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "mysql2": "^1.6.4"
+  }
+}

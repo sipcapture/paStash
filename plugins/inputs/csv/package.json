@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/input_csv",
+  "version": "1.0.1",
+  "description": "CSV Input Plugin for @pastash/pastash",
+  "main": "input_csv.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {
+    "csv-parser": "1.12.0"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}

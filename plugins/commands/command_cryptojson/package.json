@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/command_cryptojson",
+  "version": "1.0.0",
+  "description": "Crypto JSON for PaStash Commands",
+  "main": "command_cryptojson.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "crypto-json": "^2.0.2"
+  }
+}

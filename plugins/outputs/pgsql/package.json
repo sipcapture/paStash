@@ -1,0 +1,16 @@
+{
+  "name": "@pastash/output_pgsql",
+  "version": "1.0.8",
+  "description": "PgSQL Output Plugin for @pastash/pastash",
+  "main": "output_pgsql.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "pg": "*",
+    "uuidv4": "^6.0.2"
+  }
+}

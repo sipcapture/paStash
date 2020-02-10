@@ -1,0 +1,16 @@
+{
+  "name": "@pastash/filter_command",
+  "version": "1.0.8",
+  "description": "Command Plugin for @pastash/pastash with async-chainable support ",
+  "main": "filter_command.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "zephyr": "^1.3.6",
+    "async-chainable": "^2.6.1",
+    "circular-json": "^0.5.9"
+  }
+}

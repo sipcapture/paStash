@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/input_ami",
+  "version": "1.0.1",
+  "description": "Asterisk AMI Plugin for @pastash/pastash",
+  "main": "input_ami.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {
+    "asterisk.io": "git+https://git@github.com/lmangani/asterisk.io.git"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}

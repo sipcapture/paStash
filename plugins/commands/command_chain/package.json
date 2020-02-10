@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/command_chain",
+  "version": "1.0.1",
+  "description": "Command Chain for PaStash Commands with async-chainable support",
+  "main": "command_chain.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "circular-json": "^0.5.9"
+  },
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/input_netflowv9",
+  "version": "1.0.1",
+  "description": "NetFlowv9 Input Plugin for @pastash/pastash",
+  "main": "input_netflowv9.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {
+    "node-netflowv9": "*"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}

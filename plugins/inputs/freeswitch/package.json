@@ -1,0 +1,16 @@
+{
+  "name": "@pastash/input_freeswitch",
+  "version": "1.0.0",
+  "description": "FreeSwitch Input Plugin for @pastash/pastash",
+  "main": "input_freeswitch.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "modesl": "*"
+  }
+
+}

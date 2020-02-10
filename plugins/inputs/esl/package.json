@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/input_esl",
+  "version": "1.0.1",
+  "description": "Freeswitch ESL Input Plugin for @pastash/pastash",
+  "main": "input_esl.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {
+    "modesl": "*"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}

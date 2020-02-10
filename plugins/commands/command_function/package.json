@@ -1,0 +1,11 @@
+{
+  "name": "@pastash/command_function",
+  "version": "1.0.0",
+  "description": "Command Function for PaStash Commands",
+  "main": "command_function.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}

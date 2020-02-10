@@ -1,0 +1,17 @@
+{
+  "name": "@pastash/input_ws",
+  "version": "1.0.0",
+  "description": "WebSocket Input Plugin for @pastash/pastash",
+  "main": "input_ws.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "http": "*",
+    "https": "*",
+    "ws": "*"
+  }
+
+}

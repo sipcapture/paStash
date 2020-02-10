@@ -1,0 +1,15 @@
+{
+  "name": "@pastash/filter_cacheloop",
+  "version": "1.0.1",
+  "description": "Cache-Loop Filter Plugin for @pastash/pastash",
+  "main": "filter_cacheloop.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {
+    "object.omit": "3.0.0",
+    "record-cache": "^1.1.0"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}

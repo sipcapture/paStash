@@ -1,0 +1,15 @@
+{
+  "name": "@pastash/output_nsq",
+  "version": "1.0.1",
+  "description": "NSQ Output Plugin for @pastash/pastash",
+  "main": "output_nsq.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "nsqjs": "^0.12.0"
+  }
+}

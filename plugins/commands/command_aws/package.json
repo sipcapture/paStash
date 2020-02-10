@@ -1,0 +1,15 @@
+{
+  "name": "@pastash/command_aws",
+  "version": "1.0.8",
+  "description": "Command AWS Fetch/Store for PaStash Commands",
+  "main": "command_aws.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.416.0",
+    "bluebird": "^3.5.3"
+  }
+}

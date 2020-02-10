@@ -1,0 +1,11 @@
+{
+  "name": "@pastash/filter_app_cdr_kamailio",
+  "version": "1.0.1",
+  "description": "CDR Filter Plugin for @pastash/pastash",
+  "main": "filter_app_cdr_kamailio.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}

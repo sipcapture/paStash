@@ -1,0 +1,16 @@
+{
+  "name": "@pastash/output_http_post",
+  "version": "1.0.0",
+  "description": "HTTP Post Output Plugin for @pastash/pastash",
+  "main": "output_http_post.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "http": "*",
+    "https": "*"
+  }
+}

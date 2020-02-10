@@ -1,0 +1,18 @@
+{
+  "name": "@pastash/output_loki",
+  "version": "1.0.8",
+  "description": "Loki Output Plugin for @pastash/pastash",
+  "main": "output_loki.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "http": "0.0.0",
+    "https": "^1.0.0",
+    "record-cache": "^1.1.0",
+    "util": "^0.11.1"
+  }
+}

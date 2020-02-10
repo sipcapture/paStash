@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/command_cryptofile",
+  "version": "1.0.0",
+  "description": "Command Crypto File file for PaStash Commands",
+  "main": "command_cryptofile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "file-encryptor": "^0.1.1"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@pastash/output_kafka",
+  "version": "1.0.1",
+  "description": "kafka Output Plugin for @pastash/pastash",
+  "main": "output_kafka.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "kafka-node": "^3.0.1"
+  }
+}

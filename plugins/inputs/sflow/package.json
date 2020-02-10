@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/input_sflow",
+  "version": "1.0.1",
+  "description": "SFlow Input Plugin for @pastash/pastash",
+  "main": "input_sflow.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {
+    "node-sflow": "*"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}

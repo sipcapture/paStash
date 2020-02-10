@@ -1,0 +1,15 @@
+{
+  "name": "@pastash/input_mysql",
+  "version": "1.0.0",
+  "description": "MySQL Input Plugin for @pastash/pastash",
+  "main": "input_mysql.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "mysql2": "*"
+  }
+}

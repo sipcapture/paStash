@@ -1,0 +1,15 @@
+{
+  "name": "@pastash/output_oracle",
+  "version": "1.0.1",
+  "description": "OracleDB Output Plugin for @pastash/pastash",
+  "main": "output_oracle.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "oracledb": "^3.0.1"
+  }
+}

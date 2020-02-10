@@ -1,0 +1,11 @@
+{
+  "name": "@pastash/command_math",
+  "version": "1.0.5",
+  "description": "Command Math for PaStash Commands",
+  "main": "command_math.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}

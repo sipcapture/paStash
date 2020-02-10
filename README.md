@@ -60,7 +60,7 @@ npm install --unsafe-perm -g @pastash/output_loki
 ```
 
 ### Plugins list
-* See [paStash plugins](https://github.com/lmangani/pastash_plugins) for plugins lists, examples and docs
+* See [paStash plugins](https://github.com/lmangani/pastash/tree/master/plugins) for plugins lists, examples and docs
 
 ------------
 

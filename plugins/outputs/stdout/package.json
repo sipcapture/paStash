@@ -1,0 +1,12 @@
+{
+  "name": "@pastash/output_stdout",
+  "version": "1.0.0",
+  "description": "Stdout Output Plugin for @pastash/pastash",
+  "main": "output_stdout.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}
