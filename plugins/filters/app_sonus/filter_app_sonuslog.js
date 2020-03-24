@@ -24,7 +24,7 @@ function FilterAppSonusLog() {
 util.inherits(FilterAppSonusLog, base_filter.BaseFilter);
 
 FilterAppSonusLog.prototype.start = function(callback) {
-logger.info('Initialized App Sonus Log to SIP/HEP parser');
+logger.info('Initialized App Sonus SysLog to SIP/HEP parser');
   this.postProcess = function(){
 	 if(!last||!ipcache) return;
          var rcinfo = {
@@ -113,28 +113,50 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   ipcache.group = ip[8];
 	   ipcache.ts = convertDate(ip[1],ip[2]);
 	   ipcache.usec = ip[2].split('.')[1];
-	   //console.log('in',ipcache);
+	   logger.info('in',ipcache);
 
    } else if (line.indexOf('sent msg for CallId') !== -1) {
-	if (hold) this.postProcess();
-	   var regex = /\d+\s(.*)\s(.*):\d.*\: sent msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)/g;
+	   var regex = /<147> [0-9] (.*)usec(.*?)sent msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
 	   var ip = regex.exec(line);
-	   if (!ip) { console.error(line); return; }
+	   if (!ip) { logger.error(line); return; }
 	   ipcache.srcIp = ip[6];
 	   ipcache.srcPort = ip[7];
 	   ipcache.dstIp = ip[4];
 	   ipcache.dstPort = ip[5];
 	   ipcache.callId = ip[3];
 	   ipcache.group = ip[8];
-	   ipcache.ts = convertDate(ip[1],ip[2]);
-	   ipcache.usec = ip[2].split('.')[1];
-	   //console.log('out',ipcache);
+	   ipcache.ts =  new Date(ip[1].trim()).getTime();
+	   ipcache.usec = parseInt(ip[1].split('.')[1])
+	   last = ip[9];
+           last = last.replace(/#015#012/g, '\r\n');
+           last = last.replace(/#012/g, '\n');
+	   logger.info('out',ipcache);
+	   this.postProcess();
+
+   } else if (line.indexOf('received msg for CallId') !== -1) {
+	   var regex = /<147> [0-9] (.*)usec(.*?)received msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
+	   var ip = regex.exec(line);
+	   if (!ip) { logger.error(line); return; }
+	   logger.log('receive',ipcache);
+	   ipcache.srcIp = ip[6];
+	   ipcache.srcPort = ip[7];
+	   ipcache.dstIp = ip[4];
+	   ipcache.dstPort = ip[5];
+	   ipcache.callId = ip[3];
+	   ipcache.group = ip[8];
+	   ipcache.ts =  new Date(ip[1].trim()).getTime();
+	   ipcache.usec = parseInt(ip[1].split('.')[1])
+	   last = ip[9];
+           last = last.replace(/#015#012/g, '\r\n');
+           last = last.replace(/#012/g, '\n');
+   	   last += line + '\r\n';
+	   logger.info('out',ipcache);
+	   this.postProcess();
 
    } else if (line.startsWith("Sonus Networks") ) {
 
    } else if (line.startsWith("RAW PDU") || line.startsWith("[") ) {
 	        hold = true;
-
    } else {
 
       // Parse Payload
@@ -144,7 +166,6 @@ FilterAppSonusLog.prototype.process = function(data) {
 		last += line + '\n';
 		return;
       	} else {
-		this.postProcess();
       	}
 
       }
