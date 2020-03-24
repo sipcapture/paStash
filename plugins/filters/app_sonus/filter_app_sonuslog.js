@@ -87,7 +87,8 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   ipcache.usec = parseInt(ip[1].split('.')[1])
 	   last = ip[9];
            last = last.replace(/#015#012/g, '\r\n');
-           last = last.replace(/#012/g, '\n');
+           last = last.replace(/#012/g, '\r\n');
+   	   last += line + '\r\n';
 	   logger.info('out',ipcache);
 	   this.postProcess();
 
@@ -106,23 +107,12 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   ipcache.usec = parseInt(ip[1].split('.')[1])
 	   last = ip[9];
            last = last.replace(/#015#012/g, '\r\n');
-           last = last.replace(/#012/g, '\n');
+           last = last.replace(/#012/g, '\r\n');
    	   last += line + '\r\n';
 	   logger.info('out',ipcache);
 	   this.postProcess();
    }
 };
-
-var convertDate = function(date,time){
-	var regex = /([0-9]{2})([0-9]{2})([0-9]{4})/g;
-	var dd = regex.exec(date)
-	var regex = /([0-9]{2})([0-9]{2})([0-9]{2}).(.*)/g;
-	var tt = regex.exec(time)
-	var newdate = dd[3]+"-"+dd[1]+"-"+dd[2]+"T"+tt[1]+":"+tt[2]+":"+tt[3]+"."+tt[4]+"Z";
-	var output = Date.parse(newdate);
-	if (output) return output;
-	else return new Date().getTime();
-}
 
 exports.create = function() {
   return new FilterAppSonusLog();
