@@ -39,8 +39,8 @@ logger.info('Initialized App Sonus SysLog to SIP/HEP parser');
               srcPort: ipcache.srcPort,
               dstIp: ipcache.dstIp,
               dstPort: ipcache.dstPort,
-              time_sec: ipcache.ts || '',
-              time_usec: ipcache.usec || ''
+              time_sec: ipcache.ts || new Date().getTime(),
+              time_usec: ipcache.usec || 000
             };
 
 	 // EXTRACT CORRELATION HEADER, IF ANY
@@ -70,52 +70,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 
    var line = data.message;
 
-   if (line.indexOf('sending from') !== -1) {
-        var regex = /sending from \[(.*)\]:(.*) to \[(.*)\]:([^\s]+)/g;
-        var ip = regex.exec(line);
-	if (!ip) { console.error(line);  return; }
-	if (hold) this.postProcess();
-	ipcache.srcIp = ip[1];
-	ipcache.srcPort = ip[2];
-	ipcache.dstIp = ip[3];
-	ipcache.dstPort = ip[4];
-	date_regex = /^\[(.*)\]\s/g;
-        ipcache.xdate = moment(date_regex.exec(line)[1].split(',').join('.'), 'DD-MM-YYYY HH:mm:ss.SSS');
-	ipcache.ts = ipcache.xdate.unix();
-        ipcache.usec = ipcache.xdate.millisecond() * 1000;
-	//console.log('out',ipcache);
-
-   } else if (line.indexOf('Incoming message on') !== -1) {
-        var regex = /Incoming message on \[(.*)\]:(.*) from \[(.*)\]:([^\s]+)/g;
-        var ip = regex.exec(line);
-	if (!ip) { console.error(line);  return; }
-	if (hold) this.postProcess();
-	ipcache.srcIp = ip[3];
-	ipcache.srcPort = ip[4];
-	ipcache.dstIp = ip[1];
-	ipcache.dstPort = ip[2];
-	date_regex = /^\[(.*)\]\s/g;
-        ipcache.xdate = moment(date_regex.exec(line)[1].split(',').join('.'), 'DD-MM-YYYY HH:mm:ss.SSS');
-	ipcache.ts = ipcache.xdate.unix();
-        ipcache.usec = ipcache.xdate.millisecond() * 1000;
-	//console.log('in',ipcache);
-
-   } else if (line.indexOf('received msg for CallId') !== -1) {
-	if (hold) this.postProcess();
-	   var regex = /\d+\s(.*)\s(.*):\d.*\: received msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)/g;
-	   var ip = regex.exec(line);
-	   if (!ip) { console.error(line);  return; }
-	   ipcache.srcIp = ip[4];
-	   ipcache.srcPort = ip[5];
-	   ipcache.dstIp = ip[6];
-	   ipcache.dstPort = ip[7];
-	   ipcache.callId = ip[3];
-	   ipcache.group = ip[8];
-	   ipcache.ts = convertDate(ip[1],ip[2]);
-	   ipcache.usec = ip[2].split('.')[1];
-	   logger.info('in',ipcache);
-
-   } else if (line.indexOf('sent msg for CallId') !== -1) {
+   if (line.indexOf('sent msg for CallId') !== -1) {
 	   var regex = /<147> [0-9] (.*)usec(.*?)sent msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
@@ -125,7 +80,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   ipcache.dstPort = ip[5];
 	   ipcache.callId = ip[3];
 	   ipcache.group = ip[8];
-	   ipcache.ts =  new Date(ip[1].trim()).getTime();
+	   ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000);
 	   ipcache.usec = parseInt(ip[1].split('.')[1])
 	   last = ip[9];
            last = last.replace(/#015#012/g, '\r\n');
@@ -144,7 +99,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   ipcache.dstPort = ip[5];
 	   ipcache.callId = ip[3];
 	   ipcache.group = ip[8];
-	   ipcache.ts =  new Date(ip[1].trim()).getTime();
+	   ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000);
 	   ipcache.usec = parseInt(ip[1].split('.')[1])
 	   last = ip[9];
            last = last.replace(/#015#012/g, '\r\n');
@@ -152,23 +107,6 @@ FilterAppSonusLog.prototype.process = function(data) {
    	   last += line + '\r\n';
 	   logger.info('out',ipcache);
 	   this.postProcess();
-
-   } else if (line.startsWith("Sonus Networks") ) {
-
-   } else if (line.startsWith("RAW PDU") || line.startsWith("[") ) {
-	        hold = true;
-   } else {
-
-      // Parse Payload
-      if ( hold ) {
-
-      	if (line.length > 1) {
-		last += line + '\n';
-		return;
-      	} else {
-      	}
-
-      }
    }
 };
 
