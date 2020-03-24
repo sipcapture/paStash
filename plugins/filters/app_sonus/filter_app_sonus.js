@@ -1,5 +1,5 @@
 /*
-   Custom, Unoptimized sonus Log to SIP/HEP3 Parser w/ reassembly of rows
+   Custom, Unoptimized Sonus Log to SIP/HEP3 Parser w/ reassembly of rows
    (C) 2020 QXIP BV
 */
 
