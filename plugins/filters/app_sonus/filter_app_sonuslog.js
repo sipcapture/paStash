@@ -32,7 +32,7 @@ logger.info('Initialized App Sonus SysLog to SIP/HEP parser');
               version: 3,
               payload_type: 1,
               ip_family: 2,
-              protocol: 6,
+              protocol: 17,
               proto_type: 1,
               correlation_id: ipcache.callId || '',
               srcIp: ipcache.srcIp,
@@ -51,12 +51,15 @@ logger.info('Initialized App Sonus SysLog to SIP/HEP parser');
 	 }
 	 */
 
+	 if (last.indexOf('2.0/TCP') !== -1){
+		rcinfo.protocol = 6;
+         }
+
          if (last && rcinfo) {
            var data = { payload: last, rcinfo: rcinfo };
 	   this.emit('output', data);
 	   last = '';
 	   ipcache = {};
-	   hold = false;
          }
   }
   callback();
@@ -64,7 +67,6 @@ logger.info('Initialized App Sonus SysLog to SIP/HEP parser');
 
 var last = '';
 var ipcache = {};
-var hold = false;
 
 FilterAppSonusLog.prototype.process = function(data) {
 
@@ -74,6 +76,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   var regex = /<147> [0-9] (.*)usec(.*?)sent msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
+	   ipcache = {};
 	   ipcache.srcIp = ip[6];
 	   ipcache.srcPort = ip[7];
 	   ipcache.dstIp = ip[4];
