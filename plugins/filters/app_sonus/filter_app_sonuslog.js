@@ -73,7 +73,7 @@ FilterAppSonusLog.prototype.process = function(data) {
    var line = data.message;
 
    if (line.indexOf('sent msg for CallId') !== -1) {
-	   var regex = /<147> [0-9] (.*)usec(.*?)sent msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
+	   var regex = /<147> [0-9] (.*)(?:usec| USEC)(.*?)sent msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
 	   ipcache = {};
@@ -93,7 +93,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   this.postProcess();
 
    } else if (line.indexOf('received msg for CallId') !== -1) {
-	   var regex = /<147> [0-9] (.*)usec(.*?)received msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
+	   var regex = /<147> [0-9] (.*)(?:usec| USEC)(.*?)received msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
 	   logger.log('receive',ipcache);
