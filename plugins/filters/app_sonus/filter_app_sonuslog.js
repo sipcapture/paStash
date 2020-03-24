@@ -9,10 +9,10 @@ var base_filter = require('@pastash/pastash').base_filter,
 
 var moment = require('moment');
 
-function FilterAppSonus() {
+function FilterAppSonusLog() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
-    name: 'AppSonus',
+    name: 'AppSonusLog',
     optional_params: ['correlation_hdr'],
     default_values: {
       'correlation_hdr': false
@@ -21,9 +21,9 @@ function FilterAppSonus() {
   });
 }
 
-util.inherits(FilterAppSonus, base_filter.BaseFilter);
+util.inherits(FilterAppSonusLog, base_filter.BaseFilter);
 
-FilterAppSonus.prototype.start = function(callback) {
+FilterAppSonusLog.prototype.start = function(callback) {
 logger.info('Initialized App Sonus Log to SIP/HEP parser');
   this.postProcess = function(){
 	 if(!last||!ipcache) return;
@@ -66,7 +66,7 @@ var last = '';
 var ipcache = {};
 var hold = false;
 
-FilterAppSonus.prototype.process = function(data) {
+FilterAppSonusLog.prototype.process = function(data) {
 
    var line = data.message;
 
@@ -163,5 +163,5 @@ var convertDate = function(date,time){
 }
 
 exports.create = function() {
-  return new FilterAppSonus();
+  return new FilterAppSonusLog();
 };
