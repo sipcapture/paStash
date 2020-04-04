@@ -1,6 +1,6 @@
 {
   "name": "@pastash/output_pgsql",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "PgSQL Output Plugin for @pastash/pastash",
   "main": "output_pgsql.js",
   "scripts": {

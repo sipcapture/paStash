@@ -78,6 +78,8 @@ var createDatabase = function(){
 
 util.inherits(OutputPostgres, base_output.BaseOutput);
 
+var insert_failures = 0;
+
 OutputPostgres.prototype.process = function(data) {
 	var id = uuid();
 	if (data[this.id]) id = data[this.id];
@@ -85,11 +87,21 @@ OutputPostgres.prototype.process = function(data) {
 		logger.error("no pg client available", pool.err);
 		return;
 	}
+	if(!this.table) {
+		logger.error("no table configured?");
+		return;
+	}
 	pool.client.query('insert into ' + this.table + '(id, data) values($1, $2)',
                 [id, data],
                 function(err,result) {
                     if (err) {
-                        logger.error("error inserting!", this.table, err);
+                        logger.error("error inserting!", err);
+			insert_failures++;
+			if(insert_failures > 10) {
+				insert_failures = 0;
+				logger.error("too many insert failures, restarting pool");
+				pool.client.end(); pool.client.connect();
+			}
                     }
 		    if (this.debug) logger.info("Successful insert!",result);
 		}
