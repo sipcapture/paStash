@@ -1,0 +1,11 @@
+{
+  "name": "@pastash/filter_convert_epoch_to_ts_date_field",
+  "version": "1.0.0",
+  "description": "Epoch to human readable timestamp converter Filter Plugin for @pastash/pastash",
+  "main": "filter_convert_epoch_to_ts_date_field.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Gheorghe Lupu <lupu.gt@gmail.com>",
+  "license": "ISC"
+}
