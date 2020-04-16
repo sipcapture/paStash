@@ -3,7 +3,7 @@ Compute date field filter
 
 Status : core plugin, unit tested and maintained.
 
-The compute date field filter is used to compute a date field from ``timestamp``field, using using [moment](http://momentjs.com/docs/#/parsing/string-format/) date format.
+The compute date field filter is used to compute a date field from ``timestamp``field, using [moment](http://momentjs.com/docs/#/parsing/string-format/) date format.
 Optionally, you can provide a from_field field if you want for example to convert an epoch time field to human readable time field.
 
 Example 1: add a field named ``toto``, containing timestamp formated with ``DD/MMMM/YYYY``
