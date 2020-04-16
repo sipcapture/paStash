@@ -20,7 +20,7 @@ filter {
 }
 ````
 
-Example 2: add a field named ``human_readable_time``, containing timestamp formated with mask ``YYYY-MM-DDTHH:mm:ss.SSSZ`` from ``epoch_time`` field
+Example 2: add a field named ``human_readable_time``, containing timestamp formated with mask ``YYYY-MM-DDTHH:mm:ss.SSSZ`` from ``epoch_time`` field.
 
 Config using logstash format:
 
