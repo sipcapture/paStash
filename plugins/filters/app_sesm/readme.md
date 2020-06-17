@@ -3,9 +3,16 @@ App SESM Filter
 
 Status : experimental plugin.
 
-The filter is used to parse/reassemble SESM Logs into InfluxDB Timeseries.
+This filter is used to parse/reassemble SESM Logs into InfluxDB Timeseries.
 
-Example:
+#### Setup
+```
+npm install -g @pastash/pastash @pastash/filter_app_sesm
+```
+
+
+#### Example
+Create a configuration file in `/opt/pastash_sesm.config` and add your log and InfluxDB details:
 ````
 input {
   file {
@@ -28,3 +35,7 @@ output {
 
 `````
 
+#### Usage
+```
+pastash --config_file=/opt/pastash_sesm.config
+```
