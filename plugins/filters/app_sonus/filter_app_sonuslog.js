@@ -13,9 +13,10 @@ function FilterAppSonusLog() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppSonusLog',
-    optional_params: ['correlation_hdr'],
+    optional_params: ['correlation_hdr','type'],
     default_values: {
-      'correlation_hdr': false
+      'correlation_hdr': false,
+      'type': 0
     },
     start_hook: this.start,
   });
@@ -74,6 +75,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 
    if (line.indexOf('sent msg for CallId') !== -1) {
 	   var regex = /<147> [0-9] (.*)(?:usec| USEC)(.*?)sent msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
+	   if this.type == 1 regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) (.*)msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
 	   ipcache = {};
@@ -94,6 +96,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 
    } else if (line.indexOf('received msg for CallId') !== -1) {
 	   var regex = /<147> [0-9] (.*)(?:usec| USEC)(.*?)received msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
+	   if this.type == 1 regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) (.*)msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
 	   logger.log('receive',ipcache);
