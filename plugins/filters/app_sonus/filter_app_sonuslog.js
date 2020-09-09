@@ -100,10 +100,10 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
 	   logger.log('receive',ipcache);
-	   ipcache.srcIp = ip[6];
-	   ipcache.srcPort = ip[7];
-	   ipcache.dstIp = ip[4];
-	   ipcache.dstPort = ip[5];
+	   ipcache.srcIp = ip[4];
+	   ipcache.srcPort = ip[5];
+	   ipcache.dstIp = ip[6];
+	   ipcache.dstPort = ip[7];
 	   ipcache.callId = ip[3];
 	   ipcache.group = ip[8];
 	   ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000);
