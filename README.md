@@ -87,7 +87,7 @@ output {
   loki {
     host => localhost
     port => 3100
-    path => "/api/prom/push"
+    path => "/loki/api/v1/push"
   }
 }
 ```
