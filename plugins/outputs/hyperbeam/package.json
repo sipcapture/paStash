@@ -1,6 +1,6 @@
 {
   "name": "@pastash/output_hyperbeam",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "HyperBeam Output Plugin for @pastash/pastash",
   "main": "output_hyperbeam.js",
   "scripts": {

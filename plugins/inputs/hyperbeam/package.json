@@ -1,6 +1,6 @@
 {
   "name": "@pastash/input_hyperbeam",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "HyperBeam Input Plugin for @pastash/pastash",
   "main": "input_hyperbeam.js",
   "scripts": {
