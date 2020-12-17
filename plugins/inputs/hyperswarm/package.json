@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/input_hyperswarm",
+  "version": "1.0.1",
+  "description": "HyperSwarm Input Plugin for @pastash/pastash",
+  "main": "input_hyperswarm.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "hyperswarm": "^2.15.2"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@pastash/output_hyperswarm",
+  "version": "1.0.1",
+  "description": "HyperSwarm Output Plugin for @pastash/pastash",
+  "main": "output_hyperswarm.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "hyperswarm": "^2.15.2"
+  }
+}
