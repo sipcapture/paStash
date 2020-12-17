@@ -1,15 +1,15 @@
-## HyperBeam Input
+## HyperSwarm Input
 
 ### Install
 ```
-npm install -g @pastash/pastash @pastash/input_hyperbeam
+npm install -g @pastash/pastash @pastash/input_hyperswarm
 ```
 
 ### Example
 
 ```
 input {
-  hyperbeam {
+  hyperswarm {
     path => supersecretkeyword
   }
 }

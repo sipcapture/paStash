@@ -1,8 +1,8 @@
-## HyperBeam Output
+## HyperSwarm Output
 
 ### Install
 ```
-npm install -g @pastash/pastash @pastash/output_hyperbeam
+npm install -g @pastash/pastash @pastash/output_hyperswarm
 ```
 
 ### Example
@@ -13,7 +13,7 @@ input {
 }
 
 output {
-  hyperbeam {
+  hyperswarm {
     path => supersecretkeyword
   }
 }
