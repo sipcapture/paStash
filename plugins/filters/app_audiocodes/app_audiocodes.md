@@ -3,6 +3,12 @@ App Audiocodes filter
 
 Status : functional, experimental plugin.
 
+### Installation
+```
+npm install -g @pastash/filter_app_audiocodes
+```
+
+### Usage
 The filter is used to parse/reassemble Audiocodes Syslog events to complete HEP-SIP payloads.
 
 Example 1: parse SIP logs.
