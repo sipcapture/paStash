@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/filter_app_audiocodes",
+  "version": "1.0.11",
+  "description": "Audiocodes Syslog plugin for @pastash/pastash",
+  "main": "filter_app_audiocodes.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {
+    "moment": "2.19.3"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC"
+}
