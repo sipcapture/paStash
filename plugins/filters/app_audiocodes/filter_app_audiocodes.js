@@ -89,8 +89,8 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   ipcache.usec = parseInt(ip[1].split('.')[1])
 	   last = ip[5];
    	   last += line + '\n\n';
-	   var callid = \Call-ID: (.*)\\n\.exec(last);
-	   ipcache.callId = callid;
+	   var callid = sip.match("Call-ID:\s?(.*)\\n");
+	   ipcache.callId = callid[1] || '';
 	   logger.info('inbound',ipcache);
 	   this.postProcess(ipcache,last);
 
@@ -110,8 +110,8 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   ipcache.usec = parseInt(ip[1].split('.')[1])
 	   last = ip[5];
    	   last += line + '\n\n';
-	   var callid = \Call-ID: (.*)\\n\.exec(last);
-	   ipcache.callId = callid;
+	   var callid = sip.match("Call-ID:\s?(.*)\\n");
+	   ipcache.callId = callid[1] || '';
 	   logger.info('outbound',ipcache);
 	   this.postProcess(ipcache,last);
    }
