@@ -1,6 +1,6 @@
 {
   "name": "@pastash/filter_app_audiocodes",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Audiocodes Syslog plugin for @pastash/pastash",
   "main": "filter_app_audiocodes.js",
   "scripts": {

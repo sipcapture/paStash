@@ -13,10 +13,10 @@ function FilterAppAudiocodes() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppAudiocodes',
-    optional_params: ['correlation_hdr','type'],
+    optional_params: ['correlation_hdr','bypass'],
     default_values: {
       'correlation_hdr': false,
-      'type': 0
+      'bypass': false
     },
     start_hook: this.start,
   });
@@ -28,6 +28,7 @@ FilterAppAudiocodes.prototype.start = function(callback) {
 logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
   this.postProcess = function(ipcache,last){
 	 if(!last||!ipcache) return;
+   	 last = last.replace(/#012/g, '\r\n');
          var rcinfo = {
               type: 'HEP',
               version: 3,
@@ -57,10 +58,8 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
          }
 
          if (last && rcinfo) {
-           var data = { payload: payload, rcinfo: rcinfo };
-	   this.emit('output', data);
-	   payload = '';
-	   ipcache = {};
+           var data = { payload: last, rcinfo: rcinfo };
+	   return data;
          }
   }
   callback();
@@ -68,52 +67,60 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
 
 var last = '';
 var ipcache = {};
+var alias = {};
 
 FilterAppAudiocodes.prototype.process = function(data) {
 
-   var line = data.message;
+   var line = data.message.toString();
+   line = line.replace(/\n/g, '#012');
 
    if (line.indexOf('Incoming SIP Message') !== -1) {
-	   var regex = /(.*)---- Incoming SIP Message from (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- \\n(.*)\\n \\n \\n(.*) \[Time:(.*)-(.*)@(.*)\]/;
+	   var regex = /(.*)--- Incoming SIP Message from (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/;
 	   var ip = regex.exec(line);
-	   if (!ip) { logger.error(line); return; }
-	   logger.log('receive',ipcache);
-	   if (ip[3]) {
-		   var alias = this[ip[3]].split(':');
-		   ipcache.dstIp = alias[0] || '127.0.0.1';
-		   ipcache.dstPort = alias[1] || 5060;
+	   if (!ip) {
+		logger.error('failed parsing Incoming SIP', line);
+		if (this.bypass) return data;
+	   } else {
+		   if (ip[3]) {
+			   // var alias = this[ip[3]].split(':');
+			   ipcache.dstIp = alias[0] || '127.0.0.1';
+			   ipcache.dstPort = alias[1] || 5060;
+		   }
+		   ipcache.srcIp = ip[2].split(':')[0];
+		   ipcache.srcPort = ip[2].split(':')[1];
+		   ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000) || new Date().getTime();
+		   ipcache.usec = parseInt(ip[1].split('.')[1]) || 000
+		   last = ip[5];
+	   	   last += last + '\n\n';
+		   var callid = last.match("Call-ID: (.*?) #012");
+		   ipcache.callId = callid[1] || '';
+		   return this.postProcess(ipcache,last);
 	   }
-	   ipcache.srcIp = ip[2].split(':')[0];
-	   ipcache.srcPort = ip[2].split(':')[1];
-	   ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000);
-	   ipcache.usec = parseInt(ip[1].split('.')[1])
-	   last = ip[5];
-   	   last += line + '\n\n';
-	   var callid = sip.match("Call-ID:\s?(.*)\\n");
-	   ipcache.callId = callid[1] || '';
-	   logger.info('inbound',ipcache);
-	   this.postProcess(ipcache,last);
 
    } else if (line.indexOf('Outgoing SIP Message') !== -1) {
-	   var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- \\n(.*)\\n \\n \\n(.*) \[Time:(.*)-(.*)@(.*)\]/;
+	   var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
 	   var ip = regex.exec(line);
-	   if (!ip) { logger.error(line); return; }
-	   logger.log('receive',ipcache);
-	   if (ip[3]) {
-		   var alias = this[ip[3]].split(':');
-		   ipcache.srcIp = alias[0] || '127.0.0.1';
-		   ipcache.srcPort = alias[1] || 5060;
+	   if (!ip) {
+		logger.error('failed parsing Outgoing SIP', line);
+		if (this.bypass) return data;
+	   } else {
+		   if (ip[3]) {
+			   // var alias = this[ip[3]].split(':');
+			   ipcache.srcIp = alias[0] || '127.0.0.1';
+			   ipcache.srcPort = alias[1] || 5060;
+		   }
+		   ipcache.dstIp = ip[2].split(':')[0];
+		   ipcache.dstPort = ip[2].split(':')[1];
+		   ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000) || new Date().getTime()
+		   ipcache.usec = parseInt(ip[1].split('.')[1]) || 000
+		   last = ip[5];
+	   	   last += last + '#012#012';
+		   var callid = last.match("Call-ID: (.*?) #012");
+		   ipcache.callId = callid[1] || '';
+		   return this.postProcess(ipcache,last);
 	   }
-	   ipcache.dstIp = ip[2].split(':')[0];
-	   ipcache.dstPort = ip[2].split(':')[1];
-	   ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000);
-	   ipcache.usec = parseInt(ip[1].split('.')[1])
-	   last = ip[5];
-   	   last += line + '\n\n';
-	   var callid = sip.match("Call-ID:\s?(.*)\\n");
-	   ipcache.callId = callid[1] || '';
-	   logger.info('outbound',ipcache);
-	   this.postProcess(ipcache,last);
+   } else {
+	if (this.bypass) return data;
    }
 };
 
