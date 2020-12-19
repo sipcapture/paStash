@@ -69,16 +69,30 @@ var last = '';
 var ipcache = {};
 var alias = {};
 
+var hold;
+var cache;
+
 FilterAppAudiocodes.prototype.process = function(data) {
 
    var line = data.message.toString();
+
+   if(hold) {
+	var message = /^.*?\[S=[0-9]+\].*?\[SID=.*?\]\s?(.*)/
+	var test = message.exec(line);
+	line = cache += test[1];
+	hold = false;
+	cache = '';
+   }
+
    line = line.replace(/\n/g, '#012');
 
    if (line.indexOf('Incoming SIP Message') !== -1) {
 	   var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
 	   var ip = regex.exec(line);
 	   if (!ip) {
-		logger.error('failed parsing Incoming SIP', line);
+		logger.error('failed parsing Incoming SIP. Cache on!');
+		cache = /(.*)\[Time:.*\]/.exec(line)[1] || line;
+		hold = true;
 		if (this.bypass) return data;
 	   } else {
 		   if (ip[3]) {
@@ -101,7 +115,9 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
 	   var ip = regex.exec(line);
 	   if (!ip) {
-		logger.error('failed parsing Outgoing SIP', line);
+		logger.error('failed parsing Outgoing SIP. Cache on!');
+		cache = /(.*)\[Time:.*\]/.exec(line)[1] || line;
+		hold = true;
 		if (this.bypass) return data;
 	   } else {
 		   if (ip[3]) {
