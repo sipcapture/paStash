@@ -13,10 +13,14 @@ function FilterAppAudiocodes() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppAudiocodes',
-    optional_params: ['correlation_hdr','bypass'],
+    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport'],
     default_values: {
       'correlation_hdr': false,
-      'bypass': false
+      'debug': true,
+      'bypass': false,
+      'logs': false,
+      'localip': '127.0.0.1',
+      'localport': 5060
     },
     start_hook: this.start,
   });
@@ -28,7 +32,7 @@ FilterAppAudiocodes.prototype.start = function(callback) {
 logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
   this.postProcess = function(ipcache,last,type){
 	 if(!last||!ipcache) return;
-   	 last = last.replace(/#012/g, '\r\n');
+   	 last = last.replace(/#012/g, '\r\n').trim() + "\r\n\r\n";
          var rcinfo = {
               type: 'HEP',
               version: 3,
@@ -58,7 +62,7 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
          }
 
          if (last && rcinfo) {
-           var data = { payload: last.trim(), rcinfo: rcinfo };
+           var data = { payload: last, rcinfo: rcinfo };
 	   return data;
          }
   }
@@ -82,7 +86,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	var test = message.exec(line.replace(/\n/g, '#012'));
 	if (this.debug) console.log('cache is',cache);
 	if (this.debug) console.log('line is',test[1]);
-	line = cache += test[1];
+	line = cache + test[1];
 	hold = false;
 	cache = '';
 	if (this.debug) console.info('reassembled line', line);
@@ -91,7 +95,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
    line = line.replace(/\n/g, '#012');
 
    var ids = /\[SID=(?<mac>.*?):(?<seq>.*?):(?<sid>.*?)\]/.exec(line) || [];
-   logger.error('SESSION SID',ids[3]);
+   if (this.debug) logger.error('SESSION SID',ids[3]);
 
    if (line.indexOf('Incoming SIP Message') !== -1) {
       try {
@@ -107,13 +111,13 @@ FilterAppAudiocodes.prototype.process = function(data) {
 		   if (ip[3]) {
 			/* convert alias to IP:port */
 			   // var alias = this[ip[3]].split(':');
-			   ipcache.dstIp = alias[0] || '127.0.0.1';
-			   ipcache.dstPort = alias[1] || 5060;
+			   ipcache.dstIp = alias[0] || this.localip;
+			   ipcache.dstPort = alias[1] || this.localport;
 		   }
 		   ipcache.srcIp = ip[2].split(':')[0];
 		   ipcache.srcPort = ip[2].split(':')[1];
 		   last = ip[5];
-	   	   last += last + '#012 #012';
+	   	   last += '#012 #012';
 		   var callid = last.match(/call-id:\s?(.*?)\s?#012/i) || [];
 		   ipcache.callId = ids[3] || callid[1] || '';
 		   return this.postProcess(ipcache,last);
@@ -123,7 +127,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
    } else if (line.indexOf('Outgoing SIP Message') !== -1) {
       try {
 	   // var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
-	   var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012(.*)/g;
+	   var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 (.*)/g;
 	   var ip = regex.exec(line);
 	   if (!ip) {
 		logger.error('failed parsing Outgoing SIP. Cache on!');
@@ -133,13 +137,13 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   } else {
 		   if (ip[3]) {
 			   // var alias = this[ip[3]].split(':');
-			   ipcache.srcIp = alias[0] || '127.0.0.1';
-			   ipcache.srcPort = alias[1] || 5060;
+			   ipcache.srcIp = alias[0] || this.localip;
+			   ipcache.srcPort = alias[1] || this.localport;
 		   }
 		   ipcache.dstIp = ip[2].split(':')[0];
 		   ipcache.dstPort = ip[2].split(':')[1];
 		   last = ip[5];
-	   	   last += last + '#012 #012';
+	   	   last += '#012 #012';
 		   var callid = last.match(/call-id:\s?(.*?)\s?#012/i) || [];
 		   ipcache.callId = ids[3] || callid[1] || '';
 		   return this.postProcess(ipcache,last);
