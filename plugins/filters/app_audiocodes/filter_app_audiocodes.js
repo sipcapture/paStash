@@ -41,8 +41,8 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
               srcPort: ipcache.srcPort,
               dstIp: ipcache.dstIp,
               dstPort: ipcache.dstPort,
-              time_sec: ipcache.ts || new Date().getTime(),
-              time_usec: ipcache.usec || 000
+              time_sec: ipcache.ts || parseInt(new Date().getTime() / 1000),
+              time_usec: ipcache.usec || new Date().getMilliseconds()
             };
 
 	 // EXTRACT CORRELATION HEADER, IF ANY
@@ -102,7 +102,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
 		   }
 		   ipcache.srcIp = ip[2].split(':')[0];
 		   ipcache.srcPort = ip[2].split(':')[1];
-		   ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000) || new Date().getTime();
+		   //ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000) || new Date().getTime();
 		   ipcache.usec = parseInt(ip[1].split('.')[1]) || 000
 		   last = ip[5];
 	   	   last += last + '\n\n';
@@ -127,7 +127,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
 		   }
 		   ipcache.dstIp = ip[2].split(':')[0];
 		   ipcache.dstPort = ip[2].split(':')[1];
-		   ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000) || new Date().getTime()
+		   //ipcache.ts =  parseInt(new Date(ip[1].trim()).getTime()/1000) || new Date().getTime()
 		   ipcache.usec = parseInt(ip[1].split('.')[1]) || 000
 		   last = ip[5];
 	   	   last += last + '#012#012';
