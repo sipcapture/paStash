@@ -75,7 +75,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
    line = line.replace(/\n/g, '#012');
 
    if (line.indexOf('Incoming SIP Message') !== -1) {
-	   var regex = /(.*)--- Incoming SIP Message from (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/;
+	   var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
 	   var ip = regex.exec(line);
 	   if (!ip) {
 		logger.error('failed parsing Incoming SIP', line);
@@ -92,7 +92,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
 		   ipcache.usec = parseInt(ip[1].split('.')[1]) || 000
 		   last = ip[5];
 	   	   last += last + '\n\n';
-		   var callid = last.match("Call-ID: (.*?) #012");
+		   var callid = last.match(/call-id:\s?(.*?)\s?#012/i);
 		   ipcache.callId = callid[1] || '';
 		   return this.postProcess(ipcache,last);
 	   }
@@ -115,7 +115,8 @@ FilterAppAudiocodes.prototype.process = function(data) {
 		   ipcache.usec = parseInt(ip[1].split('.')[1]) || 000
 		   last = ip[5];
 	   	   last += last + '#012#012';
-		   var callid = last.match("Call-ID: (.*?) #012");
+		   //var callid = last.match("Call-ID: (.*?) #012");
+		   var callid = last.match(/call-id:\s?(.*?)\s?#012/i);
 		   ipcache.callId = callid[1] || '';
 		   return this.postProcess(ipcache,last);
 	   }
