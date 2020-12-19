@@ -94,6 +94,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
    logger.error('SESSION SID',ids[3]);
 
    if (line.indexOf('Incoming SIP Message') !== -1) {
+      try {
 	   // var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
 	   var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012(.*)/g;
 	   var ip = regex.exec(line);
@@ -117,8 +118,10 @@ FilterAppAudiocodes.prototype.process = function(data) {
 		   ipcache.callId = ids[3] || callid[1] || '';
 		   return this.postProcess(ipcache,last);
 	   }
+     } catch(e) { logger.error(e); }
 
    } else if (line.indexOf('Outgoing SIP Message') !== -1) {
+      try {
 	   // var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
 	   var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012(.*)/g;
 	   var ip = regex.exec(line);
@@ -141,6 +144,8 @@ FilterAppAudiocodes.prototype.process = function(data) {
 		   ipcache.callId = ids[3] || callid[1] || '';
 		   return this.postProcess(ipcache,last);
 	   }
+     } catch(e) { logger.error(e); }
+
    } else if (ids[3] && !hold) {
 	if (this.bypass) return data;
 	// Prepare SIP LOG
