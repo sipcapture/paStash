@@ -13,8 +13,9 @@ function FilterAppAudiocodes() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppAudiocodes',
-    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport'],
+    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact'],
     default_values: {
+      'correlation_contact': false,
       'correlation_hdr': false,
       'debug': false,
       'bypass': false,
@@ -56,6 +57,14 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
 		if (xcid && xcid[1]) rcinfo.correlation_id = xcid[1].trim();
 	 }
 	 */
+
+	 if (this.correlation_contact && last.startsWith('INVITE')) {
+		var extract = /x-c=(.*?)\//.exec(last);
+		if (extract[1]) {
+			rcinfo.correlation_id = extract[1];
+			if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id);
+		}
+	 }
 
 	 if (last.indexOf('2.0/TCP') !== -1 || last.indexOf('2.0/TLS') !== -1 ){
 		rcinfo.protocol = 6;
@@ -162,12 +171,14 @@ FilterAppAudiocodes.prototype.process = function(data) {
    } else if (ids[3] && !hold) {
 	if (this.bypass) return data;
 	// Prepare SIP LOG
-	ipcache.callId = ids[3] || '';
-	ipcache.srcIp = this.localip || '127.0.0.1';
-	ipcache.srcPort = 514
-	ipcache.dstIp = this.localip || '127.0.0.1';
-	ipcache.dstPort = 514
-	if (this.logs) return this.postProcess(ipcache,line,100);
+	if (this.logs) {
+		ipcache.callId = ids[3] || '';
+		ipcache.srcIp = this.localip || '127.0.0.1';
+		ipcache.srcPort = 514
+		ipcache.dstIp = this.localip || '127.0.0.1';
+		ipcache.dstPort = 514
+		return this.postProcess(ipcache,line,100);
+	}
    } else {
 	// Discard
 	if (this.bypass) return data;

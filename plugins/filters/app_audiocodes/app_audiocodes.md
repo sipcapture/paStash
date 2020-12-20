@@ -30,3 +30,7 @@ filter {
 Parameters:
 
 * ``correlation_hdr``: SIP Header to use for correlation IDs. Default : false.
+* ``correlation_contact``: Auto-Extract correlation from Contact x-c. Default : false.
+* ``localip``: Replacement IP for SBC Aliases. Default : 127.0.0.1.
+* ``localport``: Replacement port for SBC Aliases. Default : 5060.
+* ``debug``: Enable debug logs. Default : false.
