@@ -16,7 +16,7 @@ function FilterAppAudiocodes() {
     optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport'],
     default_values: {
       'correlation_hdr': false,
-      'debug': true,
+      'debug': false,
       'bypass': false,
       'logs': false,
       'localip': '127.0.0.1',
@@ -36,7 +36,7 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
          var rcinfo = {
               type: 'HEP',
               version: 3,
-              payload_type: type ? 'LOG' : 'SIP',
+              payload_type: 'SIP',
               ip_family: 2,
               protocol: 17,
               proto_type: type || 1,
@@ -110,7 +110,6 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   } else {
 		   if (ip[3]) {
 			/* convert alias to IP:port */
-			   // var alias = this[ip[3]].split(':');
 			   ipcache.dstIp = alias[0] || this.localip;
 			   ipcache.dstPort = alias[1] || this.localport;
 		   }
@@ -120,6 +119,11 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   	   last += '#012 #012';
 		   var callid = last.match(/call-id:\s?(.*?)\s?#012/i) || [];
 		   ipcache.callId = ids[3] || callid[1] || '';
+		   // Seek final fragment
+		   if(ip[6].includes(' SIP Message ')){
+			hold = true;
+			cache = /(.*)\[Time.*\]/.exec(ip[6])[1] || '';
+		   }
 		   return this.postProcess(ipcache,last);
 	   }
      } catch(e) { logger.error(e); }
@@ -136,7 +140,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
 		if (this.bypass) return data;
 	   } else {
 		   if (ip[3]) {
-			   // var alias = this[ip[3]].split(':');
+			/* convert alias to IP:port */
 			   ipcache.srcIp = alias[0] || this.localip;
 			   ipcache.srcPort = alias[1] || this.localport;
 		   }
@@ -146,6 +150,11 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   	   last += '#012 #012';
 		   var callid = last.match(/call-id:\s?(.*?)\s?#012/i) || [];
 		   ipcache.callId = ids[3] || callid[1] || '';
+		   // Seek final fragment
+		   if(ip[6].includes(' SIP Message ')){
+			hold = true;
+			cache = /(.*)\[Time.*\]/.exec(ip[6])[1] || '';
+		   }
 		   return this.postProcess(ipcache,last);
 	   }
      } catch(e) { logger.error(e); }
@@ -154,10 +163,10 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	if (this.bypass) return data;
 	// Prepare SIP LOG
 	ipcache.callId = ids[3] || '';
-	ipcache.srcIp = '127.0.0.1';
-	ipcache.srcPort = 0
-	ipcache.dstIp = '127.0.0.1';
-	ipcache.dstPort = 0
+	ipcache.srcIp = this.localip || '127.0.0.1';
+	ipcache.srcPort = 514
+	ipcache.dstIp = this.localip || '127.0.0.1';
+	ipcache.dstPort = 514
 	if (this.logs) return this.postProcess(ipcache,line,100);
    } else {
 	// Discard
