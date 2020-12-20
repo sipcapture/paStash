@@ -16,7 +16,7 @@ function FilterAppAudiocodes() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppAudiocodes',
-    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact', 'qos'],
+    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact', 'qos', 'autolocal'],
     default_values: {
       'correlation_contact': false,
       'correlation_hdr': false,
@@ -24,6 +24,7 @@ function FilterAppAudiocodes() {
       'bypass': false,
       'logs': false,
       'qos': true,
+      'autolocal': false,
       'localip': '127.0.0.1',
       'localport': 5060
     },
@@ -173,6 +174,10 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   }
      } catch(e) { logger.error(e, line); }
 
+   } else if (this.autolocal && line.indexOf('Local IP Address =') !== -1) {
+	var local = line.match(/Local IP Address = (.*?):(.*?),/) || [];
+	if(local[1]) this.localip   = local[1];
+	if(local[2]) this.localport = local[2];
    } else if (line.indexOf('CALL_END ') !== -1 && this.logs) {
 	// Parser TBD page 352 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
 	var cdr = line.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
