@@ -16,13 +16,14 @@ function FilterAppAudiocodes() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppAudiocodes',
-    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact'],
+    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact', 'qos'],
     default_values: {
       'correlation_contact': false,
       'correlation_hdr': false,
       'debug': false,
       'bypass': false,
       'logs': false,
+      'qos': true,
       'localip': '127.0.0.1',
       'localport': 5060
     },
@@ -172,19 +173,65 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   }
      } catch(e) { logger.error(e, line); }
 
-   } else if (line.indexOf('CALL_END') !== -1) {
+   } else if (line.indexOf('CALL_END ') !== -1 && this.logs) {
 	// Parser TBD page 352 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
 	var cdr = line.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
 	ipcache.callId = cdr[3] || '';
 	if (this.debug) logger.info('CALL_END', cdr, ipcache);
 	if (this.logs) return this.postProcess(ipcache,JSON.stringify(cdr),100);
-   } else if (line.indexOf('MEDIA_END') !== -1) {
+
+   } else if (line.indexOf('MEDIA_END ') !== -1 && this.qos) {
 	// Parsed TBD page 353 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
 	var qos = line.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
-	ipcache.callId = qos[2] || '';
-	if (this.debug) logger.info('MEDIA_END',qos, ipcache);
-	if (this.logs) return this.postProcess(ipcache,JSON.stringify(qos),100);
-   } else if (ids[3] && !hold) {
+	if (qos.length == 25){
+		qos.splice(15, 1);
+		qos.splice(5, 1);
+	}
+	logger.info('!!!!!!!!!!!!!! DEBUG MEDIA', qos, qos.length);
+	if(qos && qos[2] && qos[21]){
+		ipcache.callId = qos[2] || '';
+		var response = [];
+		// A-LEG
+		ipcache.srcIp = qos[7];
+		ipcache.srcPort = parseInt(qos[8]);
+		ipcache.dstIp = qos[9];
+		ipcache.dstPort = parseInt(qos[10]);
+		var local_report = {
+			"CORRELATION_ID": qos[2],
+			"RTP_SIP_CALL_ID": qos[2],
+			"MOS": 4.5 * parseInt(qos[17]) / 127,
+			"TOTAL_PK": parseInt(qos[11]),
+			"CODEC_NAME": qos[5],
+			"DIR":0,
+			"REPORT_NAME": qos[4] + "_" + qos[7] + ":" + qos[8],
+			"PARTY":0,
+			"TYPE":"HANGUP"
+		};
+		response.push(this.postProcess(ipcache,JSON.stringify(local_report),35));
+		// B-LEG
+		ipcache.srcIp = qos[9];
+		ipcache.srcPort = parseInt(qos[10]);
+		ipcache.dstIp = qos[7];
+		ipcache.dstPort = parseInt(qos[8]);
+		var remote_report = {
+			"CORRELATION_ID": qos[2],
+			"RTP_SIP_CALL_ID": qos[2],
+			"MOS": 4.5 * parseInt(qos[18]) / 127,
+			"TOTAL_PK": parseInt(qos[12]),
+			"CODEC_NAME": qos[5],
+			"DIR":1,
+			"REPORT_NAME": qos[4] + "_" + qos[9] + ":" + qos[10],
+			"PARTY":1,
+			"TYPE":"HANGUP"
+		};
+		response.push(this.postProcess(ipcache,JSON.stringify(remote_report),35));
+		if (this.debug) logger.info('MEDIA_END', response);
+		if (this.qos) return response;
+	} else {
+		logger.error('missing media parameters', qos);
+	}
+
+   } else if (ids[3] && !hold && this.logs) {
 	if (this.bypass) return data;
 	// Prepare SIP LOG
 	if (this.logs) {
