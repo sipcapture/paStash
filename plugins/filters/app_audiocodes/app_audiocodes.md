@@ -33,4 +33,7 @@ Parameters:
 * ``correlation_contact``: Auto-Extract correlation from Contact x-c. Default : false.
 * ``localip``: Replacement IP for SBC Aliases. Default : 127.0.0.1.
 * ``localport``: Replacement port for SBC Aliases. Default : 5060.
+* ``autolocal``: Enable detection of Local SBC IP from logs. Default : false.
+* ``logs``: Enable emulation of HEP 100 logs. Default : false.
+* ``qos``: Enable emulation of HEP QoS logs. Default : false.
 * ``debug``: Enable debug logs. Default : false.
