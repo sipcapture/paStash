@@ -8,6 +8,17 @@ var base_filter = require('@pastash/pastash').base_filter,
   logger = require('@pastash/pastash').logger;
 
 var moment = require('moment');
+var LRU = require("lru-cache")
+  , options = { max: 500
+              , length: function (n, key) { return n * 2 + key.length }
+              , dispose: function (key, n) { n.close() }
+              , maxAge: 1000 * 60 * 60 };
+var cache = new LRU(options)
+/*
+cache.set("key", "value")
+cache.get("key") // "value"
+*/
+
 
 function FilterAppAudiocodes() {
   base_filter.BaseFilter.call(this);
@@ -37,15 +48,15 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
          var rcinfo = {
               type: 'HEP',
               version: 3,
-              payload_type: 'SIP',
+              payload_type: type ? 'LOG' :'SIP',
               ip_family: 2,
               protocol: 17,
               proto_type: type || 1,
               correlation_id: ipcache.callId || '',
-              srcIp: ipcache.srcIp,
-              srcPort: ipcache.srcPort,
-              dstIp: ipcache.dstIp,
-              dstPort: ipcache.dstPort,
+              srcIp: ipcache.srcIp || this.localip,
+              srcPort: ipcache.srcPort || 0,
+              dstIp: ipcache.dstIp || this.localip,
+              dstPort: ipcache.dstPort || 0,
               time_sec: ipcache.ts || parseInt(new Date().getTime() / 1000),
               time_usec: ipcache.usec || new Date().getMilliseconds()
             };
@@ -58,7 +69,7 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
 	 }
 	 */
 
-	 if (this.correlation_contact && last.startsWith('INVITE')) {
+	 if (this.correlation_contact && rcinfo.proto_type == 1 && last.startsWith('INVITE')) {
 		var extract = /x-c=(.*?)\//.exec(last);
 		if (extract[1]) {
 			rcinfo.correlation_id = extract[1];
@@ -93,8 +104,6 @@ FilterAppAudiocodes.prototype.process = function(data) {
    if(hold) {
 	var message = /^.*?\[S=[0-9]+\].*?\[SID=.*?\]\s?(.*)\[Time:.*\]$/
 	var test = message.exec(line.replace(/\n/g, '#012'));
-	if (this.debug) console.log('cache is',cache);
-	if (this.debug) console.log('line is',test[1]);
 	line = cache + test[1];
 	hold = false;
 	cache = '';
@@ -127,7 +136,9 @@ FilterAppAudiocodes.prototype.process = function(data) {
 		   last = ip[5];
 	   	   last += '#012 #012';
 		   var callid = last.match(/call-id:\s?(.*?)\s?#012/i) || [];
-		   ipcache.callId = ids[3] || callid[1] || '';
+		   ipcache.callId = callid[1] || ids[3] || '';
+		   // Cache SID to Call-ID correlation
+		   cache.set(ids[3], ipcache.callid);
 		   // Seek final fragment
 		   if(ip[6].includes(' SIP Message ')){
 			hold = true;
@@ -159,6 +170,8 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   	   last += '#012 #012';
 		   var callid = last.match(/call-id:\s?(.*?)\s?#012/i) || [];
 		   ipcache.callId = ids[3] || callid[1] || '';
+		   // Cache SID to Call-ID correlation
+		   cache.set(ids[3], ipcache.callid);
 		   // Seek final fragment
 		   if(ip[6].includes(' SIP Message ')){
 			hold = true;
@@ -168,11 +181,23 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   }
      } catch(e) { logger.error(e); }
 
+   } else if (line.indexOf('CALL_END') !== -1) {
+	if (this.debug) logger.info('CALL_END', line);
+	// Parser TBD page 352 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
+	var cdr = line.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
+	ipcache.callId = cdr[3] || '';
+		return this.postProcess(ipcache,cdr,100);
+   } else if (line.indexOf('MEDIA_END') !== -1) {
+	if (this.debug) logger.info('MEDIA_END', line);
+	// Parsed TBD page 353 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
+	var qos = line.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
+	ipcache.callId = qos[2] || '';
+		return this.postProcess(ipcache,qos,100);
    } else if (ids[3] && !hold) {
 	if (this.bypass) return data;
 	// Prepare SIP LOG
 	if (this.logs) {
-		ipcache.callId = ids[3] || '';
+		ipcache.callId = cache.get(ids[3]) || ids[3] || '';
 		ipcache.srcIp = this.localip || '127.0.0.1';
 		ipcache.srcPort = 514
 		ipcache.dstIp = this.localip || '127.0.0.1';

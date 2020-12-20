@@ -10,5 +10,8 @@
     "moment": "2.19.3"
   },
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "lru-cache": "^6.0.0"
+  }
 }
