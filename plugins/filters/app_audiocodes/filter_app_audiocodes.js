@@ -94,6 +94,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
 
    var line = data.message.toString();
    var ipcache = {};
+   if (this.debug) console.info('DEBUG', line);
 
    if(hold && line) {
 	var message = /^.*?\[S=[0-9]+\].*?\[SID=.*?\]\s?(.*)\[Time:.*\]$/
@@ -112,8 +113,12 @@ FilterAppAudiocodes.prototype.process = function(data) {
    if (line.indexOf('Incoming SIP Message') !== -1) {
       try {
 	   // var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
-	   var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012(.*)/g;
+           var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012(.*)/g; //7.20A.260.012
+	   var regex_1 = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
 	   var ip = regex.exec(line);
+	   if (!ip){
+	           ip = regex_1.exec(line);
+	   }
 	   if (!ip) {
 		cache = line.replace(/\[Time.*\]$/,'');
 		hold = true;
@@ -144,8 +149,12 @@ FilterAppAudiocodes.prototype.process = function(data) {
 
    } else if (line.indexOf('Outgoing SIP Message') !== -1) {
       try {
-	   var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 (.*)/g;
-	   var ip = regex.exec(line);
+           var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 (.*)/g; //7.20A.260.012
+	   var regex_1 = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
+           var ip = regex.exec(line);
+           if (!ip){
+                   ip = regex_1.exec(line);
+           }
 	   if (!ip) {
 		cache = line.replace(/\[Time.*\]$/,'');
 		hold = true;
