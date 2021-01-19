@@ -16,7 +16,7 @@ function FilterAppAudiocodes() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppAudiocodes',
-    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact', 'qos', 'autolocal'],
+    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact', 'qos', 'autolocal', 'version'],
     default_values: {
       'correlation_contact': false,
       'correlation_hdr': false,
@@ -26,7 +26,8 @@ function FilterAppAudiocodes() {
       'qos': true,
       'autolocal': false,
       'localip': '127.0.0.1',
-      'localport': 5060
+      'localport': 5060,
+      'version': '7.20A.260.012'
     },
     start_hook: this.start,
   });
@@ -94,6 +95,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
 
    var line = data.message.toString();
    var ipcache = {};
+   if (this.debug) console.info('DEBUG', line);
 
    if(hold && line) {
 	var message = /^.*?\[S=[0-9]+\].*?\[SID=.*?\]\s?(.*)\[Time:.*\]$/
@@ -112,7 +114,12 @@ FilterAppAudiocodes.prototype.process = function(data) {
    if (line.indexOf('Incoming SIP Message') !== -1) {
       try {
 	   // var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
-	   var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012(.*)/g;
+           var regex;
+	   if (this.version == '7.20A.260.012') {
+                regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012(.*)/g; //7.20A.260.012
+	   } else if (this.version == '7.20A.256.511') {
+                regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
+	   }
 	   var ip = regex.exec(line);
 	   if (!ip) {
 		cache = line.replace(/\[Time.*\]$/,'');
@@ -144,7 +151,12 @@ FilterAppAudiocodes.prototype.process = function(data) {
 
    } else if (line.indexOf('Outgoing SIP Message') !== -1) {
       try {
-	   var regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 (.*)/g;
+           var regex;
+           if (this.version == '7.20A.260.012') {
+                regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 (.*)/g; //7.20A.260.012
+           } else if (this.version == '7.20A.256.511') {
+	        regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
+           }
 	   var ip = regex.exec(line);
 	   if (!ip) {
 		cache = line.replace(/\[Time.*\]$/,'');
