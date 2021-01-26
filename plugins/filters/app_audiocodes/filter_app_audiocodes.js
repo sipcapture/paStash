@@ -90,20 +90,23 @@ var alias = {};
 
 var hold;
 var cache;
+var seq;
 
 FilterAppAudiocodes.prototype.process = function(data) {
 
    var line = data.message.toString();
    var ipcache = {};
    if (this.debug) console.info('DEBUG', line);
-
+   var message = /^.*?\[S=([0-9]+)\].*?\[SID=.*?\]\s?(.*)\[Time:.*\]$/
+   var test = message.exec(line.replace(/\n/g, '#012'));
    if(hold && line) {
-	var message = /^.*?\[S=[0-9]+\].*?\[SID=.*?\]\s?(.*)\[Time:.*\]$/
-	var test = message.exec(line.replace(/\n/g, '#012'));
-	line = cache + ( test ? test[1] : '');
-	hold = false;
-	cache = '';
-	if (this.debug) console.info('reassembled line', line);
+        if (this.debug) logger.error('Next packet number', test[1]);
+        if (parseInt(test[1]) == seq + 1) {
+	  line = cache + ( test ? test[2] : '');
+	  hold = false;
+	  cache = '';
+	  if (this.debug) console.info('reassembled line', line);
+        }
    }
 
    line = line.replace(/\n/g, '#012');
@@ -124,6 +127,9 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   if (!ip) {
 		cache = line.replace(/\[Time.*\]$/,'');
 		hold = true;
+                var regpackid = /.*\[S=([0-9]+)\].*/.exec(line);
+                seq = parseInt(regpackid[1]);
+                if (this.debug) logger.error('Cashed packet number', seq);
 		logger.error('failed parsing Incoming SIP. Cache on!');
 		if (this.bypass) return data;
 	   } else {
@@ -161,6 +167,9 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   if (!ip) {
 		cache = line.replace(/\[Time.*\]$/,'');
 		hold = true;
+                var regpackid = /.*\[S=([0-9]+)\].*/.exec(line);
+                seq = parseInt(regpackid[1]);
+                if (this.debug) logger.error('Cashed packet number', seq);
 		logger.error('failed parsing Outgoing SIP. Cache on!');
 		if (this.bypass) return data;
 	   } else {
