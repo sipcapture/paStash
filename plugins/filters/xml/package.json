@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/filter_xml",
+  "version": "1.0.1",
+  "description": "XML plugin for @pastash/pastash",
+  "main": "filter_xml.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "xml-js": "^1.6.11"
+  }
+}
