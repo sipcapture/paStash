@@ -57,12 +57,11 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
             };
 
 	 // EXTRACT CORRELATION HEADER, IF ANY
-	 /*
-	 if (this.correlation_hdr) {
-		var xcid = sip.match(this.correlation_hdr+":\s?(.*)\\r");
-		if (xcid && xcid[1]) rcinfo.correlation_id = xcid[1].trim();
-	 }
-	 */
+	  if (this.correlation_hdr && rcinfo.proto_type == 1 && last.startsWith('INVITE')) {
+          	var xcid = last.match(this.correlation_hdr+":\s?(.*)\r\n\r\n");
+               	if (xcid && xcid[1]) rcinfo.correlation_id = xcid[1].trim();
+                        if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id);
+         }
 
 	 if (this.correlation_contact && rcinfo.proto_type == 1 && last.startsWith('INVITE')) {
 		var extract = /x-c=(.*?)\//.exec(last);
