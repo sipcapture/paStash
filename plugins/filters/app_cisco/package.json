@@ -1,0 +1,17 @@
+{
+  "name": "@pastash/filter_app_cisco",
+  "version": "1.0.1",
+  "description": "Cisco ISR Log plugin for @pastash/pastash",
+  "main": "filter_app_cisco.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {
+    "moment": "2.19.3"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "lru-cache": "^6.0.0"
+  }
+}
