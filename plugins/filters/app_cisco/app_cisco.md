@@ -9,6 +9,7 @@ Status : functional, experimental plugin.
 ```
 
 #### Recipe Example
+```
 input {
   udp {
     host => 0.0.0.0
@@ -34,3 +35,4 @@ output {
 }
 
 
+```
