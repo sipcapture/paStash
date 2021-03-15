@@ -62,7 +62,7 @@ output {
 
 ## Usage
 ```
-pastash --config_file=/path/to/pastash_sonus.conf
+pastash --config_file=/path/to/pastash_audiocodes.conf
 ```
 
 To configure as a service, please follow [this guide](https://github.com/sipcapture/paStash/wiki/pastash-service#running-as-node-service)
