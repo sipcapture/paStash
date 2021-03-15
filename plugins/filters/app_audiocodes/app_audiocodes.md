@@ -33,7 +33,7 @@ _NOTE: Since UDP is the only transport, paStash should be deployed in close netw
 * `audiocodes` filter to parse syslog events
 * `hep` output to port `9060`
 
-Save the following recipe to a readable location, ie: `/path/to/pastash_sonus.conf`
+Save the following recipe to a readable location, ie: `/path/to/pastash_audiocodes.conf`
 
 ```
 input {
