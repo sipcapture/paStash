@@ -73,6 +73,7 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
 
 	 if (last.indexOf('2.0/TCP') !== -1 || last.indexOf('2.0/TLS') !== -1 ){
 		rcinfo.protocol = 6;
+		if (this.autolocal) rcinfo.dstPort = 5061;
          }
 
          if (last && rcinfo) {
