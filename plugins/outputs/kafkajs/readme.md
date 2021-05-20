@@ -9,7 +9,7 @@ This plugin is used to send logs to Kafka.
 Config using logstash format:
 ````
 output {
-  kafka {
+  kafkajs {
     topic => "your-topic-here"
     kafkaHost => "receiver:9092"
     debug => false
