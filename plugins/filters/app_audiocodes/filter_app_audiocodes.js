@@ -98,7 +98,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
    var ipcache = {};
    if (this.debug) console.info('DEBUG', line);
    var message = /^.*?\[S=([0-9]+)\].*?\[SID=.*?\]\s?(.*)\[Time:.*\]$/
-   var test = message.exec(line.replace(/\n/g, '#012'));
+   var test = message.exec(line.replace(/\r\n/g, '#012'));
    if(hold && line) {
         if (this.debug) logger.error('Next packet number', test[1]);
         if (parseInt(test[1]) == seq + 1) {
@@ -109,7 +109,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
         }
    }
 
-   line = line.replace(/\n/g, '#012');
+   line = line.replace(/\r\n/g, '#012');
 
    var ids = /\[SID=(?<mac>.*?):(?<seq>.*?):(?<sid>.*?)\]/.exec(line) || [];
    if (this.debug) logger.error('SESSION SID',ids[3]);
