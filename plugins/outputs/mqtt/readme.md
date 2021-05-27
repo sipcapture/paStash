@@ -5,6 +5,11 @@ Status : experimental plugin.
 
 This plugin is used to output paStash data objects to MQTT topics.
 
+```
+npm install -g @pastash/output_mqtt
+```
+
+
 Example 1: to open a MQTT connection to server.
 Config using url: ``output://mqtt://mqtt://test.moquitto.org``
 
