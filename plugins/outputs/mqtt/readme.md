@@ -6,11 +6,11 @@ Status : experimental plugin.
 This plugin is used to output paStash data objects to MQTT topics.
 
 Example 1: to open a MQTT connection to server.
-Config using url: ``input://mqtt://mqtt://test.moquitto.org``
+Config using url: ``output://mqtt://mqtt://test.moquitto.org``
 
 Config using logstash format:
 ````
-input {
+output {
   mqtt {
     address => ['mqtt://test.moquitto,org']
   }
