@@ -14,6 +14,7 @@ function OutputMqtt() {
       'subscribe': false,
       'address': false
     },
+    start_hook: this.start
   });
 }
 
