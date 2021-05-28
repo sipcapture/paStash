@@ -1,6 +1,6 @@
 {
   "name": "@pastash/output_mqtt",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MQTT Output Plugin for @pastash/pastash",
   "main": "output_mqtt.js",
   "scripts": {

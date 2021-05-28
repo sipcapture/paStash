@@ -29,15 +29,15 @@ OutputMqtt.prototype.start = function(callback) {
   this.socket = mqtt.connect(this.address);
 
   this.socket.on('connect', function(data) {
-	logger.info('Connected to MQTT Server', this.address);
+	logger.info('Connected to MQTT Server', this.socket);
 	if (this.subscribe) this.socket.subscribe(this.topic);
         callback();
-  });
+  }.bind(this));
 
 };
 
 OutputMqtt.prototype.process = function(data) {
-  this.socket.publish(this.topic,data);
+  this.socket.publish(this.topic,data.toString());
 };
 
 OutputMqtt.prototype.close = function(callback) {
