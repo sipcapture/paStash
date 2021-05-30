@@ -37,7 +37,7 @@ OutputPostgres.prototype.start =function(callback) {
 		pool.client = new Client({
 		  connectionString: pgConnectionString,
 		})
-		pool.client.on('error', err => { pool.client.end(); pool.client.connect(); }  );
+		pool.client.on('error', err => { pool.client.end(); this.start(); }  );
 
 		pool.client
 		  .connect()
@@ -100,7 +100,7 @@ OutputPostgres.prototype.process = function(data) {
 			if(insert_failures > 10) {
 				insert_failures = 0;
 				logger.error("too many insert failures, restarting pool");
-				pool.client.end(); pool.client.connect();
+				pool.client.end(); this.start();
 			}
                     }
 		    if (this.debug) logger.info("Successful insert!",result);
