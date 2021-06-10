@@ -1,0 +1,11 @@
+{
+  "name": "@pastash/filter_app_ingate",
+  "version": "1.0.11",
+  "description": "Ingate Syslog Filter Plugin for @pastash/pastash",
+  "main": "filter_app_ingate.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "license": "ISC"
+}

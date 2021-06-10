@@ -1,0 +1,12 @@
+{
+  "regex": "<(\\S+)>(\\S+\\s+\\S+\\s+\\d+:\\d+:\\d+)(\\s\\S+[^:]){1,2}(:.*|:)",
+
+  "fields": "syslog_priority,timestamp,syslog_program,message",
+  "date_format": "MMM DD HH:mm:ss Z",
+
+
+  "_comment":"^<(\\S+)>(\\S+\\s+\\S+\\s+\\d+:\\d+:\\d+) (\\S+)(:\\s*.*|:)$",
+  "_comment":"^<(\\S+)>(\\S+\\s+\\S+\\s+\\d+:\\d+:\\d+) ((?:\\S+\\s)?\\S+)(:\\s*.*|:)$",
+  "_comment":"^<(\\S+)>(\\S+\\s+\\S+\\s+\\d+:\\d+:\\d+) ((?:\\S+\\s)?\\S+)(:\\s*.*|:)\\n?$",
+  "_comment":"^<(\\S+)>(\\S+\\s+\\S+\\s+\\d+:\\d+:\\d+) ((?:[^\\:\\s])?\\S+)(:.*|:)$"
+}

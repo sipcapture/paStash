@@ -37,7 +37,7 @@ OutputMqtt.prototype.start = function(callback) {
 };
 
 OutputMqtt.prototype.process = function(data) {
-  this.socket.publish(this.topic,data.toString());
+  this.socket.publish(this.topic,JSON.stringify(data));
 };
 
 OutputMqtt.prototype.close = function(callback) {
