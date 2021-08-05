@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/filter_dry",
+  "version": "1.0.1",
+  "description": "Dry plugin for @pastash/pastash",
+  "main": "filter_dry.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "dry": "^2.0.0"
+  }
+}
