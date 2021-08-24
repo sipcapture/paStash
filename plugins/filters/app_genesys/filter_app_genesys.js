@@ -77,12 +77,17 @@ FilterAppGenesys.prototype.process = function(data) {
 
    } else if (line.indexOf('event: message') !== -1) {
       var UUID = /CallUUID\t'(.*)'\n/.exec(line);
-      if(!UUID || !UUID[1]) return;
-      UUID = UUID[1];
-      console.log('got log!', UUID);
-      var callid = lru.get(UUID);
-      var payload = line;
-      payload_type = 100;
+      if(UUID && UUID[1]) {
+        UUID = UUID[1];
+	var rc = [0, 'UDP', 0, 0, '127.0.0.1', 0];
+	var localIp = '127.0.0.1';
+	var localPort = 0;
+        console.log('got log!', UUID);
+        var callid = lru.get(UUID);
+        var payload = line;
+        payload_type = 100;
+        var payload = line;
+      }
    }
 
    // HEP IP DATAGRAM
