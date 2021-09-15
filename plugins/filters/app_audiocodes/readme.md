@@ -79,6 +79,7 @@ Parameters for `app_audiocodes`:
 * `correlation_contact`: Auto-Extract correlation from Contact x-c. Default : false.
 * `debug`: Enable debug logs. Default : false.
 * `version`: Syslog parser version. Supports `7.20A.260.012` _(or higher)_ and `7.20A.256.511` _(or lower)_. Default: 7.20A.260.012
+* `ini`: Audiocodes INI path. Supports extraction and replacement of Interface aliases to IP:PORT. Default: false
 
 For full instructions consult the [plugin documentation](https://github.com/sipcapture/paStash/blob/next/plugins/filters/app_audiocodes/app_audiocodes.md)
 

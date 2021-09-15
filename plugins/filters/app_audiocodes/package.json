@@ -1,6 +1,6 @@
 {
   "name": "@pastash/filter_app_audiocodes",
-  "version": "1.0.27",
+  "version": "1.1.0",
   "description": "Audiocodes Syslog plugin for @pastash/pastash",
   "main": "filter_app_audiocodes.js",
   "scripts": {
@@ -12,6 +12,7 @@
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "ini": "^2.0.0",
     "lru-cache": "^6.0.0"
   }
 }

@@ -7,6 +7,9 @@ var base_filter = require('@pastash/pastash').base_filter,
   util = require('util'),
   logger = require('@pastash/pastash').logger;
 
+var fs = require('fs')
+  , ini = require('ini')
+
 var moment = require('moment');
 var LRU = require("lru-cache")
   , sidcache = new LRU(1000)
@@ -16,7 +19,7 @@ function FilterAppAudiocodes() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppAudiocodes',
-    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact', 'qos', 'autolocal', 'version'],
+    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact', 'qos', 'autolocal', 'version', 'ini'],
     default_values: {
       'correlation_contact': false,
       'correlation_hdr': false,
@@ -27,7 +30,8 @@ function FilterAppAudiocodes() {
       'autolocal': false,
       'localip': '127.0.0.1',
       'localport': 5060,
-      'version': '7.20A.260.012'
+      'version': '7.20A.260.012',
+      'ini': false
     },
     start_hook: this.start,
   });
@@ -37,6 +41,12 @@ util.inherits(FilterAppAudiocodes, base_filter.BaseFilter);
 
 FilterAppAudiocodes.prototype.start = function(callback) {
 logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
+  if (this.ini){
+	logger.info('Reading INI file to resolver...', this.ini);
+	try { this.resolver = parseIni(this.ini); this.aliascache = {}; }
+	catch(err) { logger.error(err) }
+  }
+
   this.postProcess = function(ipcache,last,type){
 	 if(!last||!ipcache) return;
    	 last = last.replace(/#012/g, '\r\n').trim() + "\r\n\r\n";
@@ -123,18 +133,36 @@ FilterAppAudiocodes.prototype.process = function(data) {
 	   } else if (this.version == '7.20A.256.511') {
                 regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
 	   }
+
+	   if (this.resolver){
+	   	var aliasregex = /SIPInterface #([^\s]+) \((.*)\) (.*) TO/g;
+	   	var interface = aliasregex.exec(line) || false;
+	   	if (this.resolver && interface){
+			var alias = interface[1]; //0
+			var group = interface[2]; //some-group
+			var proto = interface[3]; //UDP,TCP,TLS
+			var xlocalip = this.resolver.interfaces[alias.toString()].IPAddress || false;
+			var xlocalport = this.resolver.sip[group.toString()][proto+"Port"] || false;
+			console.log('alias',alias);
+	   	}
+	   }
+
 	   var ip = regex.exec(line);
 	   if (!ip) {
 		cache = line.replace(/\[Time.*\]$/,'');
 		hold = true;
                 var regpackid = /.*\[S=([0-9]+)\].*/.exec(line);
                 seq = parseInt(regpackid[1]);
-                if (this.debug) logger.error('Cashed packet number', seq);
+                if (this.debug) logger.error('Crashed packet number', seq);
 		logger.error('failed parsing Incoming SIP. Cache on!');
 		if (this.bypass) return data;
 	   } else {
-		   if (ip[3]) {
-			/* convert alias to IP:port */
+
+                   if (xlocalip && xlocalport){
+			   ipcache.dstIp = xlocalip;
+			   ipcache.dstPort = parseInt(xlocalport);
+		   } else if (ip[3]) {
+			   /* convert alias to IP:port */
 			   ipcache.dstIp = alias[0] || this.localip;
 			   ipcache.dstPort = alias[1] || this.localport;
 		   }
@@ -163,18 +191,35 @@ FilterAppAudiocodes.prototype.process = function(data) {
            } else if (this.version == '7.20A.256.511') {
 	        regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
            }
+
+	   if (this.resolver){
+	   	var aliasregex = /SIPInterface #([^\s]+) \((.*)\) (.*) TO/g;
+	   	var interface = aliasregex.exec(line) || false;
+	   	if (this.resolver && interface){
+			var alias = interface[1]; //0
+			var group = interface[2]; //some-group
+			var proto = interface[3]; //UDP,TCP,TLS
+			var xlocalip = this.resolver.interfaces[alias.toString()].IPAddress || false;
+			var xlocalport = this.resolver.sip[group.toString()][proto+"Port"] || false;
+			console.log('alias',alias);
+	   	}
+	   }
+
 	   var ip = regex.exec(line);
 	   if (!ip) {
 		cache = line.replace(/\[Time.*\]$/,'');
 		hold = true;
                 var regpackid = /.*\[S=([0-9]+)\].*/.exec(line);
                 seq = parseInt(regpackid[1]);
-                if (this.debug) logger.error('Cashed packet number', seq);
+                if (this.debug) logger.error('Cashed packet number', seq, line);
 		logger.error('failed parsing Outgoing SIP. Cache on!');
 		if (this.bypass) return data;
 	   } else {
-		   if (ip[3]) {
-			/* convert alias to IP:port */
+                   if (xlocalip && xlocalport){
+			   ipcache.dstIp = xlocalip;
+			   ipcache.dstPort = parseInt(xlocalport);
+		   } else if (ip[3]) {
+			   /* convert alias to IP:port */
 			   ipcache.srcIp = alias[0] || this.localip;
 			   ipcache.srcPort = alias[1] || this.localport;
 		   }
@@ -277,3 +322,45 @@ FilterAppAudiocodes.prototype.process = function(data) {
 exports.create = function() {
   return new FilterAppAudiocodes();
 };
+
+
+
+const parseIni = function(filePath){
+
+  var config = ini.parse(fs.readFileSync(filePath, 'utf-8'))
+
+  var interface = config.InterfaceTable;
+  var interface_index = interface['FORMAT Index'].split(', '); delete interface['FORMAT Index'];
+  var interface_obj = {};
+  var count = 0;
+  Object.entries(interface).forEach(entry => {
+    const [key, value] = entry;
+    var values = value.split(', ');
+    interface_obj[count] = {};
+    values.forEach(function(val, link){
+          interface_obj[count][interface_index[link]] = val.replace(/^["'](.+(?=["']$))["']$/, '$1');
+    });
+    count++;
+  });
+
+  var sipinterface = config.SIPInterface;
+  var sipinterface_index = sipinterface['FORMAT Index'].split(', '); delete sipinterface['FORMAT Index'];
+  var sipinterface_obj = {};
+  var count = 0;
+  Object.entries(sipinterface).forEach(entry => {
+    const [key, value] = entry;
+    var values = value.split(', ');
+    var realm = values[0].replace(/^["'](.+(?=["']$))["']$/, '$1'); delete values[0];
+    sipinterface_obj[realm] = {};
+    values.forEach(function(val, link){
+        sipinterface_obj[realm][sipinterface_index[link]] = val.replace(/^["'](.+(?=["']$))["']$/, '$1');
+    });
+    count++;
+  });
+
+  if (this.debug) logger.info('INI Interfaces', interface_obj);
+  if (this.debug) logger.info('INI SIP Interfaces', sipinterface_obj);
+
+  return { interfaces: interface_obj, sip: sipinterface_obj }
+
+}
