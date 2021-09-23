@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/input_random",
+  "version": "1.0.0",
+  "description": "Random Input Plugin for @pastash/pastash",
+  "main": "input_random.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "faker": "^5.5.3"
+  }
+}
