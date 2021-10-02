@@ -9,7 +9,7 @@ npm install -g @pastash/pastash @pastash/output_matrix
 
 ```
 input {
-  stdout {}
+  stdin {}
 }
 
 output {
