@@ -1,0 +1,16 @@
+{
+  "name": "@pastash/output_matrix",
+  "version": "1.0.0",
+  "description": "Matrix Output Plugin for @pastash/pastash",
+  "main": "output_matrix.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "matrix-js-sdk": "^13.0.0",
+    "olm": "https://packages.matrix.org/npm/olm/olm-3.1.4.tgz"
+  }
+}
