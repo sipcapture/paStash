@@ -13,7 +13,7 @@ input {
 }
 
 output {
-  hyperbeam {
+  matrix {
     userId => '@somebot:matrix.org'
     roomId => '#somechannel:matrix.org'
     token => 'xxxxxXXXXXxxxxxxXXXXXX'

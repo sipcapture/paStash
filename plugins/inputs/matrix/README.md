@@ -10,7 +10,7 @@ npm install -g @pastash/pastash @pastash/input_matrix
 
 ```
 input {
-  hyperbeam {
+  matrix {
     userId => '@somebot:matrix.org'
     roomId => '#somechannel:matrix.org'
     token => 'xxxxxXXXXXxxxxxxXXXXXX'
