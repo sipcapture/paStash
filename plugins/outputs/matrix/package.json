@@ -1,6 +1,6 @@
 {
   "name": "@pastash/output_matrix",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Matrix Output Plugin for @pastash/pastash",
   "main": "output_matrix.js",
   "scripts": {

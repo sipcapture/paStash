@@ -1,6 +1,6 @@
 {
   "name": "@pastash/input_matrix",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Matrix Input Plugin for @pastash/pastash",
   "main": "input_matrix.js",
   "scripts": {
