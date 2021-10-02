@@ -10,8 +10,8 @@ This example recipe parse, reassemble and convert Audiocodes SBC logs back into 
 
 #### Dependencies
 * Audiocodes Mediant SBC
-  * 7.20A.260.012 _(or lower)_
-  * 7.20A.256.511 _(or higher)_
+  * 7.20A.260.012 _(or higher)_
+  * 7.20A.256.511 _(or lower)_
 * NodeJS 10.x+ and paStash need to be installed before execution
 
 
@@ -33,7 +33,7 @@ _NOTE: Since UDP is the only transport, paStash should be deployed in close netw
 * `audiocodes` filter to parse syslog events
 * `hep` output to port `9060`
 
-Save the following recipe to a readable location, ie: `/path/to/pastash_sonus.conf`
+Save the following recipe to a readable location, ie: `/path/to/pastash_audiocodes.conf`
 
 ```
 input {
@@ -62,7 +62,7 @@ output {
 
 ## Usage
 ```
-pastash --config_file=/path/to/pastash_sonus.conf
+pastash --config_file=/path/to/pastash_audiocodes.conf
 ```
 
 To configure as a service, please follow [this guide](https://github.com/sipcapture/paStash/wiki/pastash-service#running-as-node-service)
@@ -78,7 +78,8 @@ Parameters for `app_audiocodes`:
 * `correlation_hdr`: SIP Header to use for correlation IDs. Default : false.
 * `correlation_contact`: Auto-Extract correlation from Contact x-c. Default : false.
 * `debug`: Enable debug logs. Default : false.
-* `version`: Syslog parser version. Supports `7.20A.260.012` _(or lower)_ and `7.20A.256.511` _(or higher)_. Default: 7.20A.260.012
+* `version`: Syslog parser version. Supports `7.20A.260.012` _(or higher)_ and `7.20A.256.511` _(or lower)_. Default: 7.20A.260.012
+* `ini`: Audiocodes INI path. Supports extraction and replacement of Interface aliases to IP:PORT. Default: false
 
 For full instructions consult the [plugin documentation](https://github.com/sipcapture/paStash/blob/next/plugins/filters/app_audiocodes/app_audiocodes.md)
 

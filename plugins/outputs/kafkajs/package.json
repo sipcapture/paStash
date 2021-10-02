@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/output_kafkajs",
+  "version": "1.0.1",
+  "description": "kafkajs Output Plugin for @pastash/pastash",
+  "main": "output_kafkajs.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "kafkajs": "^1.15.0"
+  }
+}
