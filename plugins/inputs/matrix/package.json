@@ -1,0 +1,15 @@
+{
+  "name": "@pastash/input_matrix",
+  "version": "1.0.0",
+  "description": "Matrix Input Plugin for @pastash/pastash",
+  "main": "input_matrix.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "matrix-js-sdk": "^13.0.0",
+    "olm": "https://packages.matrix.org/npm/olm/olm-3.1.4.tgz"
+  }
+}
