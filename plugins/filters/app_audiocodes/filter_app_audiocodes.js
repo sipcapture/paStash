@@ -19,7 +19,7 @@ function FilterAppAudiocodes() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppAudiocodes',
-    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact', 'qos', 'autolocal', 'version', 'ini'],
+    optional_params: ['correlation_hdr','bypass', 'debug', 'logs', 'localip', 'localport', 'correlation_contact', 'qos', 'autolocal', 'version', 'ini', 'iniwatch'],
     default_values: {
       'correlation_contact': false,
       'correlation_hdr': false,
@@ -31,7 +31,8 @@ function FilterAppAudiocodes() {
       'localip': '127.0.0.1',
       'localport': 5060,
       'version': '7.20A.260.012',
-      'ini': false
+      'ini': false,
+      'iniwatch': false
     },
     start_hook: this.start,
   });
@@ -47,7 +48,8 @@ logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
 	  this.resolver = parseIni(this.ini);
           logger.info('INI Loaded '+this.resolver.interfaces.lenght +' Interfaces');
           logger.info('INI Loaded '+this.resolver.sip.lenght +' SIP Profiles');
-	  //console.log(this.resolver);
+	  if (this.debug) console.log(this.resolver);
+	  if (this.iniwatch) watchIni(this.ini, this.resolver);
 	} catch(err) { logger.error(err) }
   }
 
@@ -146,10 +148,13 @@ FilterAppAudiocodes.prototype.process = function(data) {
 			var group = interface[2]; //some-group
 			var proto = interface[3]; //UDP,TCP,TLS
 
-			var ifname = this.resolver.interfaces[alias] ? this.resolver.interfaces[alias].InterfaceName : false;
+			var ifname = this.resolver.sip[group] ? this.resolver.sip[group].NetworkInterface : false;
 			if (ifname){
 			  var xlocalip = this.resolver.ifs[ifname] ? this.resolver.ifs[ifname] : false;
 			  var xlocalport = this.resolver.sip[group] ? this.resolver.sip[group][proto+"Port"] : false;
+			  if (this.debug) console.log('!!!!!!!!!!!!!!!!! IN IFNAME MATCH', group, ifname, alias, proto, xlocalip, xlocalport);
+			} else {
+			  if (this.debug) console.log('!!!!!!!!!!!!!!!!! IN IFNAME FAILURE', group, ifname, alias, proto);
 			}
 	   	}
 	   }
@@ -206,10 +211,13 @@ FilterAppAudiocodes.prototype.process = function(data) {
 			var group = interface[2]; //some-group
 			var proto = interface[3]; //UDP,TCP,TLS
 
-			var ifname = this.resolver.interfaces[alias] ? this.resolver.interfaces[alias].InterfaceName : false;
+			var ifname = this.resolver.sip[group] ? this.resolver.sip[group].NetworkInterface : false;
 			if (ifname){
-  			  var xlocalip = this.resolver.ifs[ifname] ? this.resolver.ifs[ifname] : false;
-			  var xlocalport = this.resolver.sip[group] ? this.resolver.sip[group][proto+"Port"] : 5060;
+			  var xlocalip = this.resolver.ifs[ifname] ? this.resolver.ifs[ifname] : false;
+			  var xlocalport = this.resolver.sip[group] ? this.resolver.sip[group][proto+"Port"] : false;
+			  if (this.debug) console.log('!!!!!!!!!!!!!!!!! OUT IFNAME MATCH', group, ifname, alias, proto, xlocalip, xlocalport);
+			} else {
+			  if (this.debug) console.log('!!!!!!!!!!!!!!!!! OUT IFNAME FAILURE', group, ifname, alias, proto);
 			}
 	   	}
 	   }
@@ -333,6 +341,16 @@ exports.create = function() {
 };
 
 
+
+const watchIni = function(filePath, ini){
+  logger.info('Watching INI for changes...',filePath);
+  fs.watch(filePath, (event, filename) => {
+    if (filename && event ==='change'){
+      console.log('INI file Changed! Reloading...', filename);
+      ini = parseIni(filePath);
+    }
+  });
+}
 
 const parseIni = function(filePath){
 
