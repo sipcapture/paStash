@@ -1,6 +1,6 @@
 {
   "name": "@pastash/input_prom_scraper",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Prometheus Scraper Plugin for @pastash/pastash",
   "main": "input_prom.js",
   "scripts": {
