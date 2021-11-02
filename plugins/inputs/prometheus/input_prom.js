@@ -29,7 +29,7 @@ InputProm.prototype.start = function(callback) {
   try {
 	this.scrape = async function(){
 	    const scrapeResult = await prometheusScraper.scrapePrometheusMetrics({
-	        url: this.url || 'http://demo.robustperception.io:9100/metrics'
+	        url: this.url
 	    });
 	    const convertedMetrics = prometheusScraper.convertToHecMultiMetrics(scrapeResult.metrics, {
 	        timestamp: Date.now(),
@@ -38,13 +38,15 @@ InputProm.prototype.start = function(callback) {
 	    });
 	    for (const Metrics of convertedMetrics) {
 	        console.log(Metrics);
-                 this.emit('data', { message: Metrics.measurements, ...Metrics.fields });
+                 this.emit('data', { message: JSON.stringify(Metrics.measurements), ...Metrics.fields });
 	    }
 	}.bind(this);
 
 	this.runner =  setInterval(function() {
 	    this.scrape();
 	}.bind(this), this.interval);
+	  
+	callback();
 
   } catch(e) { logger.error(e); }
 };
