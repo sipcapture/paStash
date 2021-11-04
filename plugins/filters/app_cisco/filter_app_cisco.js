@@ -8,7 +8,6 @@ var base_filter = require('@pastash/pastash').base_filter,
   util = require('util'),
   logger = require('@pastash/pastash').logger;
 
-var dns = require('dns');
 var moment = require('moment');
 
 function FilterAppCisco() {
@@ -25,28 +24,7 @@ FilterAppCisco.prototype.start = function(callback) {
   logger.info('Initialized App Cisco ISR Log to SIP/HEP parser');
   this.postProcess = function(){
 	 if(!last||!ipcache) return;
-
-		ip_regex=/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/;
-		if (!(ip_regex.exec(ipcache.srcIp))){
-			dns.lookup(ipcache.srcIp,(error, addresses) => { 
-				console.error(error); 
-				console.error(addresses);
-				 if (addresses){
-					ipcache.srcIp=addresses[1]; 
-				 }
-			});
-		}
-		if (!(ip_regex.exec(ipcache.dstIp))){
-			dns.lookup(ipcache.dstIp,(error, addresses) => { 
-				console.error(error); 
-				console.error(addresses);
-				 if (addresses){
-					ipcache.dstIp=addresses[1];
-				 }
-				});
-		}
-
-
+	
 	 var rcinfo = {
 		type: 'HEP',
 		version: 3,
