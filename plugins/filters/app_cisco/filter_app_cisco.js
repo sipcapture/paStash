@@ -9,6 +9,7 @@ var base_filter = require('@pastash/pastash').base_filter,
   logger = require('@pastash/pastash').logger;
 
 var moment = require('moment');
+var dns = require('dns');
 
 function FilterAppCisco() {
   base_filter.BaseFilter.call(this);
