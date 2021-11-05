@@ -24,7 +24,31 @@ FilterAppCisco.prototype.start = function(callback) {
   logger.info('Initialized App Cisco ISR Log to SIP/HEP parser');
   this.postProcess = function(){
 	 if(!last||!ipcache) return;
-	
+	//if the source or destination is a FQDN, try to resolve it using dns
+		ip_regex=/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/;
+		if (!(ip_regex.exec(ipcache.srcIp))){
+			//if the source fqdn is ending with the SIP port, strip it
+			srcfqdn=ipcache.srcIp.replace(/:\d+$/,'');
+			dns.lookup(srcfqdn,(error, addresses) => { 
+				console.error(error); 
+				console.error(addresses);
+				 if (addresses){
+					ipcache.srcIp=addresses[1]; 
+				 }
+			});
+		}
+		if (!(ip_regex.exec(ipcache.dstIp))){
+			//if the destination fqdn is ending with the SIP port, strip it
+			dstfqdn=ipcache.dstIp.replace(/:\d+$/,'');
+			dns.lookup(dstfqdn,(error, addresses) => { 
+				console.error(error); 
+				console.error(addresses);
+				 if (addresses){
+					ipcache.dstIp=addresses[1];
+				 }
+			});
+		}
+
 	 var rcinfo = {
 		type: 'HEP',
 		version: 3,
