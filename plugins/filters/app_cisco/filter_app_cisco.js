@@ -8,8 +8,8 @@ var base_filter = require('@pastash/pastash').base_filter,
   util = require('util'),
   logger = require('@pastash/pastash').logger;
 
-var dns = require('dns');
 var moment = require('moment');
+var dns = require('dns');
 
 function FilterAppCisco() {
   base_filter.BaseFilter.call(this);
@@ -25,10 +25,12 @@ FilterAppCisco.prototype.start = function(callback) {
   logger.info('Initialized App Cisco ISR Log to SIP/HEP parser');
   this.postProcess = function(){
 	 if(!last||!ipcache) return;
-
+	//if the source or destination is a FQDN, try to resolve it using dns
 		ip_regex=/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/;
 		if (!(ip_regex.exec(ipcache.srcIp))){
-			dns.lookup(ipcache.srcIp,(error, addresses) => { 
+			//if the source fqdn is ending with the SIP port, strip it
+			srcfqdn=ipcache.srcIp.replace(/:\d+$/,'');
+			dns.lookup(srcfqdn,(error, addresses) => { 
 				console.error(error); 
 				console.error(addresses);
 				 if (addresses){
@@ -37,15 +39,16 @@ FilterAppCisco.prototype.start = function(callback) {
 			});
 		}
 		if (!(ip_regex.exec(ipcache.dstIp))){
-			dns.lookup(ipcache.dstIp,(error, addresses) => { 
+			//if the destination fqdn is ending with the SIP port, strip it
+			dstfqdn=ipcache.dstIp.replace(/:\d+$/,'');
+			dns.lookup(dstfqdn,(error, addresses) => { 
 				console.error(error); 
 				console.error(addresses);
 				 if (addresses){
 					ipcache.dstIp=addresses[1];
 				 }
-				});
+			});
 		}
-
 
 	 var rcinfo = {
 		type: 'HEP',
