@@ -1,6 +1,6 @@
 {
   "name": "@pastash/filter_app_cisco",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Cisco ISR Log plugin for @pastash/pastash",
   "main": "filter_app_cisco.js",
   "scripts": {
