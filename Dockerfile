@@ -1,5 +1,5 @@
 # PaStash Docker Example
-FROM node:latest
+FROM node:14-slim
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
