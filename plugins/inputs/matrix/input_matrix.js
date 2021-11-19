@@ -55,7 +55,7 @@ InputMatrix.prototype.start = function(callback) {
 	}.bind(this));
 
 	matrixClient.on("Room.timeline", function(event, room, toStartOfTimeline) {
-	        this.emit('data', { message: event.event, source: 'matrix' });
+	        this.emit('data', { message: JSON.stringify(event.event), source: 'matrix' });
 	}.bind(this));
 
 	matrixClient.startClient(0);
