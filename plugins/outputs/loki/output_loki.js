@@ -31,7 +31,10 @@ LokiPost.prototype.start = function(callback) {
              value.list.forEach(function(row){
                 // add to array
                 row = row.record;
-                line.streams[0].entries.push({ "ts": row['@timestamp']||new Date().toISOString(), "line": row.message  });
+                var resp = { "ts": row['@timestamp']||new Date().toISOString() };
+                if (row.message){ resp.line = row.message; }
+                if (row.value)  { resp.value = row.value; }
+                line.streams[0].entries.push(resp);
              });
              line = JSON.stringify(line);
              var path = this.replaceByFields(data, this.path);
@@ -66,7 +69,6 @@ LokiPost.prototype.start = function(callback) {
           onStale: this.onStale
   })
   cache = this.cache;
-
   callback();
 };
 
