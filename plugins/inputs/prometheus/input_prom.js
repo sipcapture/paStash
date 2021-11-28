@@ -31,15 +31,15 @@ InputProm.prototype.start = function(callback) {
 	    const scrapeResult = await prometheusScraper.scrapePrometheusMetrics({
 	        url: this.url
 	    });
-	    const convertedMetrics = prometheusScraper.convertToHecMultiMetrics(scrapeResult.metrics, {
-	        timestamp: Date.now(),
-	        namePrefix: this.prefix || '',
-	        metadata: this.meta || {}
-	    });
-	    for (const Metrics of convertedMetrics) {
-	        console.log(Metrics);
-                 this.emit('data', { message: JSON.stringify(Metrics.measurements), ...Metrics.fields });
-	    }
+	    if (scrapeResult.metrics){
+              for (const Metrics of scrapeResult.metrics) {
+                const labels = Metrics.labels.reduce((acc, it) => {
+                  acc[it.name] = it.value;
+                  return acc;
+                }, { name: Metrics.name, metric: Metrics.type });
+                this.emit('data', { labels: labels, value: parseFloat(Metrics.value)} );
+              }
+            }
 	}.bind(this);
 
 	this.runner =  setInterval(function() {
