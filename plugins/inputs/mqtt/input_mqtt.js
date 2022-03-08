@@ -17,6 +17,7 @@ function InputMQTT() {
 util.inherits(InputMQTT, base_input.BaseInput);
 
 InputMQTT.prototype.start = function(callback) {
+  if(!this.topic||!this.address) return;
   logger.info('Connecting to MQTT Server', this.address);
 
   this.socket = mqtt.connect(this.address);
