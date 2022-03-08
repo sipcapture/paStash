@@ -1,13 +1,13 @@
 {
   "name": "@pastash/input_mqtt",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MQTT Input Plugin for @pastash/pastash",
   "main": "input_mqtt.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "optionalDependencies": {
-    "mqtt": "*"
+    "mqtt": "^4.3.6"
   },
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC"
