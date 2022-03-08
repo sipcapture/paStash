@@ -21,27 +21,26 @@ InputMQTT.prototype.start = function(callback) {
 
   this.socket = mqtt.connect(this.address);
 
-  this.socket.on('connect', function(data) {
-	logger.info('Connected to MQTT Server', this.address);
-	this.socket.subscribe(this.topic);
-  });
+  this.socket.on('connect', function() {
+        logger.info('Connected to MQTT Server', this.address);
+        this.socket.subscribe(this.topic);
+        callback();
+  }.bind(this));
 
-  this.socket.on('message', function(data) {
-    this.unserialize_data(data, function(parsed) {
-      this.emit('data', parsed);
-    }.bind(this), function(data) {
-      var obj = {
-        'message': data.toString().trim(),
-        'mqtt_from': this.address
-      };
+  this.socket.on('message', function(topic, data) {
+    try {
+      var obj = JSON.parse(data.toString());
+      obj.topic = topic;
       this.emit('data', obj);
-    }.bind(this));
+    } catch(e) {
+      this.emit('data', data.toString());
+    }
   }.bind(this));
 };
 
 InputMQTT.prototype.close = function(callback) {
   logger.info('Closing input MQTT', this.address);
-  this.socket.close();
+  try { this.socket.end() } catch(e) {}
   callback();
 };
 
