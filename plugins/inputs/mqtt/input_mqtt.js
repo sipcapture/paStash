@@ -9,7 +9,7 @@ function InputMQTT() {
   this.mergeConfig({
     name: 'MQTT',
     host_field: 'address',
-    optional_params: ['topic'],
+    optional_params: ['topic', 'json'],
     start_hook: this.start,
   });
 }
@@ -29,12 +29,11 @@ InputMQTT.prototype.start = function(callback) {
   }.bind(this));
 
   this.socket.on('message', function(topic, data) {
-    try {
-      var obj = JSON.parse(data.toString());
-      obj.topic = topic;
+   try {
+      var obj = { message: this.json ? data : data.toString(), topic: topic }
       this.emit('data', obj);
     } catch(e) {
-      this.emit('data', data.toString());
+      this.emit('data', { message: data });
     }
   }.bind(this));
 };
