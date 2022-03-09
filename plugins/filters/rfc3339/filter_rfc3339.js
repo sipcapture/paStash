@@ -28,7 +28,6 @@ util.inherits(FilterRFC3339, base_filter.BaseFilter);
 
 FilterRFC3339.prototype.start = function(callback) {
   logger.info('Initialized RFC3339 parser');
-  this.process;
   switch (this.mode) {
   case 0:
     this.process = parse_rfc3339;
@@ -48,7 +47,7 @@ FilterRFC3339.prototype.start = function(callback) {
 FilterRFC3339.prototype.process = function(data) {
   try {
      if (data[this.source]) {
-       data[this.target] = this.process(data[this.source].toString());
+      data[this.target] = this.process(data[this.source].toString());
      }
      return data;
   } catch(e){
