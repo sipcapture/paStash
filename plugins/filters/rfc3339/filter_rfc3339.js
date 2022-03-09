@@ -48,7 +48,7 @@ FilterRFC3339.prototype.start = function(callback) {
 FilterRFC3339.prototype.process = function(data) {
   try {
      if (data[this.source]) {
-      data[this.target] = this.process(data[this.source]);
+       data[this.target] = this.process(data[this.source].toString());
      }
      return data;
   } catch(e){
