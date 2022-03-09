@@ -28,19 +28,19 @@ util.inherits(FilterRFC3339, base_filter.BaseFilter);
 
 FilterRFC3339.prototype.start = function(callback) {
   logger.info('Initialized RFC3339 parser');
-  var process;
-  switch (expr) {
+  this.process;
+  switch (this.mode) {
   case 0:
-    process = parse_rfc3339;
+    this.process = parse_rfc3339;
     break;
   case 1:
-    process = parse_nanos;
+    this.process = parse_nanos;
     break;
   case 2:
-    process = parse_micros;
+    this.process = parse_micros;
     break;
   default:
-    process = parse_rfc3339;
+    this.process = parse_rfc3339;
   }
   callback();
 };
@@ -48,7 +48,7 @@ FilterRFC3339.prototype.start = function(callback) {
 FilterRFC3339.prototype.process = function(data) {
   try {
      if (data[this.source]) {
-      data[this.target] = process(data[this.source]);
+      data[this.target] = this.process(data[this.source]);
      }
      return data;
   } catch(e){
