@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/filter_rfc3339",
+  "version": "1.0.2",
+  "description": "RFC3339 plugin for @pastash/pastash",
+  "main": "filter_rfc3339.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@qxip/chrono-parse-rfc3339": "^0.1.2"
+  }
+}
