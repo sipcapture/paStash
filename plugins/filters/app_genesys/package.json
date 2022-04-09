@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "optionalDependencies": {
-    "moment": "2.19.3"
+    "moment": "2.29.2"
   },
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC",
