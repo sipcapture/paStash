@@ -9,12 +9,13 @@ function InputProm() {
   this.mergeConfig(this.unserializer_config());
   this.mergeConfig({
     name: 'Prom',
-    optional_params: ['url', 'interval', 'debug', 'meta', 'prefix'],
+    optional_params: ['url', 'interval', 'debug', 'meta', 'prefix', 'flat'],
     default_values: {
       'url': false,
       'meta': false,
       'prefix': false,
       'interval': 5000,
+      'flat': true,
       'debug': false
     },
     start_hook: this.start,
@@ -24,8 +25,8 @@ function InputProm() {
 util.inherits(InputProm, base_input.BaseInput);
 
 InputProm.prototype.start = function(callback) {
-  if (!this.url) { logger.info('Missing Endpoint!'); return; }
-  logger.info('Start Prom Scraper...', this.url);
+  if (!this.url) { logger.info('Missing /metrics endpoint!'); return; }
+  logger.info('Start Prometheus Scraper...', this.url);
   try {
 	this.scrape = async function(){
 	    const scrapeResult = await prometheusScraper.scrapePrometheusMetrics({
@@ -37,7 +38,13 @@ InputProm.prototype.start = function(callback) {
                   acc[it.name] = it.value;
                   return acc;
                 }, { name: Metrics.name, metric: Metrics.type });
-                this.emit('data', { labels: labels, value: parseFloat(Metrics.value)} );
+		if (this.flat) {
+			labels.value = parseFloat(Metrics.value);
+                	this.emit('data', labels );
+
+		} else {
+                	this.emit('data', { labels: labels, value: parseFloat(Metrics.value)} );
+		}
               }
             }
 	}.bind(this);
@@ -45,7 +52,6 @@ InputProm.prototype.start = function(callback) {
 	this.runner =  setInterval(function() {
 	    this.scrape();
 	}.bind(this), this.interval);
-	  
 	callback();
 
   } catch(e) { logger.error(e); }
