@@ -52,7 +52,7 @@ logger.info('Initialized App Sonus SysLog to SIP/HEP parser');
 	 }
 	 */
 
-	 if (last.indexOf('2.0/TCP') !== -1){
+	 if (last.indexOf('2.0/TCP') !== -1 || last.indexOf('2.0/TLS') !== -1){
 		rcinfo.protocol = 6;
          }
 
@@ -75,7 +75,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 
    if (line.indexOf('sent msg for CallId') !== -1) {
 	   var regex = /<147> [0-9] (.*)(?:usec| USEC)(.*?)sent msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
-	   if (this.type == 1) regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) (.*)msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
+	   if (this.type == 1) regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) (.*)msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)#012.*RAW PDU:#012(.*)/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
 	   ipcache = {};
@@ -90,13 +90,13 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   last = ip[9];
            last = last.replace(/#015#012/g, '\r\n');
            last = last.replace(/#012/g, '\r\n');
-   	   last += line + '\r\n';
+   	   last += '\r\n';
 	   logger.info('out',ipcache);
 	   this.postProcess();
 
    } else if (line.indexOf('received msg for CallId') !== -1) {
 	   var regex = /<147> [0-9] (.*)(?:usec| USEC)(.*?)received msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
-	   if (this.type == 1) regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) (.*)msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)/g;
+	   if (this.type == 1) regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) (.*)msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)#012.*RAW PDU:#012(.*)/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
 	   logger.log('receive',ipcache);
@@ -111,7 +111,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   last = ip[9];
            last = last.replace(/#015#012/g, '\r\n');
            last = last.replace(/#012/g, '\r\n');
-   	   last += line + '\r\n';
+   	   last += '\r\n';
 	   logger.info('out',ipcache);
 	   this.postProcess();
    }
