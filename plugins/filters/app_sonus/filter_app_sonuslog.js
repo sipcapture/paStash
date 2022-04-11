@@ -90,7 +90,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   last = ip[9];
            last = last.replace(/#015#012/g, '\r\n');
            last = last.replace(/#012/g, '\r\n');
-   	   last += line + '\r\n';
+   	   last += '\r\n';
 	   logger.info('out',ipcache);
 	   this.postProcess();
 
@@ -111,7 +111,7 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   last = ip[9];
            last = last.replace(/#015#012/g, '\r\n');
            last = last.replace(/#012/g, '\r\n');
-   	   last += line + '\r\n';
+   	   last += '\r\n';
 	   logger.info('out',ipcache);
 	   this.postProcess();
    }
