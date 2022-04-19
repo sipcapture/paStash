@@ -18,7 +18,6 @@ Example 2: parse HSP CDRs w/ Pseudo Rate field resolution.
 filter {
   app_hsp {
     default_cc => '31' 
-    sqlite_db => '/usr/local/hspserver/etc/prefix_data.sqlite'
     strip_local => '^0[1-9]'
     strip_dialprefix => '^00'
     strip_testuser => '^5000'
@@ -32,7 +31,6 @@ Example 3: parse HSP CDRs w/ IP Group resolution.
 filter {
   app_hsp {
     default_cc => '31' 
-    sqlite_db => '/usr/local/hspserver/etc/prefix_data.sqlite'
     hepic_host => '127.0.0.1'
     hepic_port => '8087'
     hepic_path => '/api/v2/admin/groupip'
@@ -45,7 +43,6 @@ filter {
 Parameters:
 
 * ``default_cc``: default country code for pseudo-rating.
-* ``sqlite_db``: default sqlite db for pseudo-rating.
 * ``strip_local``: regex rule for local prefix matching.
 * ``strip_dialprefix``: regex rule for international prefix matching.
 * ``strip_testuser``: regex rule for test user matching.

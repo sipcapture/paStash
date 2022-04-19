@@ -6,7 +6,6 @@
    Changelog:
 
 	- 07/09/2017: IP Grouping via HEPIC API hooks
-	- 06/09/2017: CDR Pseudo rating via local SQLITE db
 	- 04/09/2017: HSP/bencodefloat parsing
 */
 
@@ -16,8 +15,6 @@ var base_filter = require('@pastash/pastash').base_filter,
 
 var omit = require('object.omit');
 var Bencode = require('@qxip/bencode');
-var sqlite3 = require('sqlite3');
-var sqlite;
 
 var qrelate = require('qrelate');
 /* vectors */
@@ -52,7 +49,7 @@ function FilterAppHsp() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppHsp',
-    optional_params: ['correlation_hdr', 'sqlite_db','default_cc','strip_local','strip_dialprefix','strip_testuser','hepic_port','hepic_path', 'hepic_token','hepic_host', 'groupby', 'omit', 'links', 'links_size', 'links_age', 'links_threshold', 'links_vectors'],
+    optional_params: ['correlation_hdr', 'default_cc','strip_local','strip_dialprefix','strip_testuser','hepic_port','hepic_path', 'hepic_token','hepic_host', 'groupby', 'omit', 'links', 'links_size', 'links_age', 'links_threshold', 'links_vectors'],
     default_values: {
       'links': false,
       'correlation_hdr': 'Call-ID|Call-Id',
@@ -75,10 +72,6 @@ util.inherits(FilterAppHsp, base_filter.BaseFilter);
 
 FilterAppHsp.prototype.start = function(callback) {
 
-  if (this.sqlite_db) { 
-	sqlite = new sqlite3.cached.Database(this.sqlite_db);
-  	logger.info('Initializing App HSP SQLITE:',this.sqlite_db);
-  }
   if (this.strip_local) { 
 	this.strip_local = new RegExp(this.strip_local); 
   	logger.info('Initializing App HSP RegExp:',this.strip_local);
@@ -199,37 +192,6 @@ FilterAppHsp.prototype.process = function(raw) {
 				  }
 				}
 			}
-
-		// CDR Rating
-		if (this.sqlite_db && raw.message.duration > 0 && raw.message.ruri_user) {
-
-			var bnumber = raw.message.ruri_user;
-			var country = this.default_cc;
-
-			try {
-				bnumber = bnumber.replace(this.strip_local, country + "\$1");
-				bnumber = bnumber.replace(this.strip_prefix, "");
-				bnumber = bnumber.replace(this.strip_testuser, country);
-				bnumber = bnumber.replace(/^([A-Za-z])/, country);
-			} catch(e) {}
-
-			if (bnumber.length > 6) bnumber = bnumber.trim(0,6);
-
-			var table = 'prices_'+bnumber.trim(0, 2);
-
-			var query = "SELECT price,country,description FROM "+table+" WHERE dest_prefix = "+bnumber;
-			sqlite.get(query, function(err, row) {
-				if (!row) return raw;
-				else {
-					raw.message.d_description = row.description;
-					raw.message.d_total_cost = ((raw.message.duration * row.price) / 60) / 100;
-					raw.message.d_country = row.country;
-					raw.message.d_prefix = bnumber;
-					raw.message.d_price = row.price;
-					// Ship Back!
-					this.emit('output', raw.message);
-				}
-			}.bind(this));
 
 		} else { return raw.message; }
 
