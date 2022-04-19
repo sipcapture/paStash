@@ -1,6 +1,6 @@
 {
   "name": "@pastash/filter_app_hsp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "HSP Filter Plugin for @pastash/pastash",
   "main": "filter_app_hsp.js",
   "scripts": {

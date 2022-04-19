@@ -193,8 +193,6 @@ FilterAppHsp.prototype.process = function(raw) {
 				}
 			}
 
-		} else { return raw.message; }
-
 	    }  else { return raw.message; }
 
 	} catch(e) { console.log('ERROR:',e); return raw.message; }
