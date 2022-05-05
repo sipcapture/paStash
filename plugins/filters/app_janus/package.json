@@ -1,0 +1,15 @@
+{
+  "name": "@pastash/filter_app_janus_tracer",
+  "version": "1.0.0",
+  "description": "Janus Tracing Plugin for @pastash/pastash",
+  "main": "filter_app_janus_tracer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "record-cache": "^1.2.0",
+    "xxhash-wasm": "^1.0.1"
+  }
+}
