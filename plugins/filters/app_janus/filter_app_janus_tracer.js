@@ -95,6 +95,17 @@ FilterAppJanusTracer.prototype.process = function(data) {
 	this.emit('output', trace)
 	// update ts
         this.cache.add(fingerprint, just_now());
+   } else if(line.type == 2) {
+	if (!line.event.data) return;
+	var event = { name: line.event.name }
+	if(event.name == "attached") {
+		// session_id, handle_id, opaque_id
+		this.cache.add(event.name, session_id);
+	} else if (event.name == "detached") {
+		// session_id, handle_id, opaque_id
+		event.session_id = this.cache.get(fingerprint_event, 1)[0] || false;
+		this.cache.delete(event.name)
+	}
    }
    return data;
 };
