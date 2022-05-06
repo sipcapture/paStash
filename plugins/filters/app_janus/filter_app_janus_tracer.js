@@ -8,7 +8,7 @@ var base_filter = require('@pastash/pastash').base_filter,
   logger = require('@pastash/pastash').logger;
 
 var recordCache = require("record-cache");
-var fetch = require('node-fetch');
+var fetch = require('cross-fetch');
 
 
 function nano_now(date){ return (date * 1000) + '000' }
@@ -26,7 +26,7 @@ function FilterAppJanusTracer() {
       'bypass': true,
       'debug': false
     },
-    start_hook: this.start,
+    start_hook: this.start.bind(this)
   });
 }
 
@@ -96,12 +96,12 @@ FilterAppJanusTracer.prototype.process = function(data) {
 	if (event.event == "joined"){
 		// session_id, handle_id, opaque_id, event.data.id
 		// correlate: session_id --> event.data.id
-		this.cache.add(event.data.id, session_id);
+		this.cache.add(event.data.id, event.session_id);
 	} else if (event.event == "configured"){
 		// session_id, handle_id, opaque_id, event.data.id
 	} else if (event.event == "published"){
 		// session_id, handle_id, opaque_id, event.data.id
-		this.cache.add(event.data.id, session_id);
+		this.cache.add(event.data.id, event.session_id);
 	} else if (event.event == "unpublished"){
 		// correlate: event.data.id --> session_id
 		event.session_id = this.cache.get(fingerprint_event, 1)[0] || false;
