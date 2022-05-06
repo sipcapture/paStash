@@ -1,7 +1,4 @@
-/*
-   Janus Event Tracer
-   (C) 2022 QXIP BV
-*/
+/* Janus Event Tracer (C) 2022 QXIP BV */
 
 var base_filter = require('@pastash/pastash').base_filter,
   util = require('util'),
@@ -9,16 +6,16 @@ var base_filter = require('@pastash/pastash').base_filter,
 
 var recordCache = require("record-cache");
 var fetch = require('cross-fetch');
-const debug = false;
 
 function nano_now(date){ return (date * 1000) + '000' }
 function just_now(){ return new Date().getTime() }
+function uuid(){ return (new Date()).getTime().toString(36) + Math.random().toString(36).slice(2) );
 
 function FilterAppJanusTracer() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppJanusTracer',
-    optional_params: ['debug', 'cacheSize', 'cacheAge', 'endpoint'],
+    optional_params: ['debug', 'cacheSize', 'cacheAge', 'endpoint', 'bypass'],
     default_values: {
       'cacheSize': 50000,
       'cacheAge':  60000,
@@ -56,25 +53,28 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
 
 FilterAppJanusTracer.prototype.process = function(data) {
    if (!data.message) return data;
-   if(debug) console.log('message: ' + data.message);
    var line = JSON.parse(data.message);
-   if(debug) console.log('line type before: ', line.session_id, line.type)
    if (!line.session_id || !line.handle_id) return data
-   if(debug) console.log('line type: ' + line.type);
+	
    if (line.type == 1){
 	var event = { name: line.event.name, event: line.event.name, id: line.session_id }
+	event.traceId = uuid()
+	event.duration = 0
 	if (line.event.name == "created"){
 		// start root trace, do not update
 		this.sessions.add(event.session_id, just_now());
+		this.session.add('uuid_'+event.session_id, event.traceId)
 	} else if (line.event.name == "destroyed"){
 		// end root trace
 		this.sessions.remove(event.session_id);
+		this.sessions.remove('uuid_'+event.session_id);
 	}
 
    } else if (line.type == 2) {
 	if (!line.event.data) return;
 	var event = { name: line.event.name, event: line.event.name, id: line.session_id, handle: line.handle_id }
 	// session tracing + reset
+	event.traceId = this.sessions.get('uuid_'+event.session_id, 1)[0] || uuid();
 	var previous_ts = this.sessions.get(event.session_id, 1)[0] || 0;
 	event.duration = just_now() - parseInt(previous_ts);
 	this.sessions.add(event.session_id, just_now());
@@ -85,11 +85,13 @@ FilterAppJanusTracer.prototype.process = function(data) {
 		// session_id, handle_id, opaque_id
 		this.sessions.remove(event.handle_id);
 	}
+	event.parentId = event.id
 
    } else if (line.type == 64){
 	if (!line.event.data) return data;
 	var event = { name: line.event.plugin, event: line.event.data.event, id: line.event.data.id, handle: line.handle_id }
 	// session tracing + reset
+	event.traceId = this.sessions.get('uuid_'+event.session_id, 1)[0] || uuid();
 	var previous_ts = this.sessions.get(event.session_id, 1)[0] || 0;
 	event.duration = just_now() - parseInt(previous_ts);
 	this.sessions.add(event.session_id, just_now());
@@ -113,15 +115,16 @@ FilterAppJanusTracer.prototype.process = function(data) {
 		line.session_id = event.session_id;
 		this.cache.delete(event.id)
 	}
-
         event.parentId = event.session_id
-	event.traceId = event.session_id
    }
-	if(event)event.timestamp = line.timestamp;
-	if(event)event.service = 'janus'
-	if(event) var trace = tracegen(event, this.endpoint)
-	if (!this.bypass) this.emit('output', trace)
-        else if (this.bypass) this.emit('output', data);
+	
+   if(event){
+	event.timestamp = line.timestamp;
+	event.body = line;
+   }
+   if(event) var trace = tracegen(event, this.endpoint)
+   if (!this.bypass) this.emit('output', trace)
+   else if (this.bypass) this.emit('output', data);
 
 };
 
@@ -138,25 +141,24 @@ async function tracegen(event, endpoint){
 	 "duration": event.duration,
 	 "name": event.name,
 	  "localEndpoint": {
-	    "serviceName": event.service
+	    "serviceName": event.event
 	  }
     }]
-    if (event.parentId){ trace[0].parentId }
-    if (event.tags){ trace[0].tags }
-    if(debug) console.log("trace: ", trace);
+    if (event.parentId){ trace[0].parentId = event.parentId }
+    if (event.tags){ trace[0].tags = event.tags }
+    logger.info("trace: ", trace);
     // send event to endpoint
     if(endpoint){
-
 	const response = fetch(endpoint, {
 	  method: 'POST',
 	  body: JSON.stringify(trace),
 	  headers: {'Content-Type': 'application/json'}
 	})
   .then(res => {
-    if(debug)console.log(res.json())
+    logger.info(res.json())
   })
   .catch(err => {
-    console.log(err)
+    logger.error(err)
   });
 
   } catch(e) { console.log(e); return; }
