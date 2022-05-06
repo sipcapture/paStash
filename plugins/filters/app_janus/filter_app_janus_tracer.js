@@ -80,7 +80,7 @@ FilterAppJanusTracer.prototype.process = function(data) {
 		// session_id, handle_id, opaque_id
 	} else if (event.name == "detached") {
 		// session_id, handle_id, opaque_id
-		this.cache.add(event.handle_id, just_now());
+		this.sessions.remove(event.handle_id);
 	}
 
    } else if (line.type == 64){
