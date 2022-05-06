@@ -9,7 +9,7 @@
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "record-cache": "^1.2.0",
-    "xxhash-wasm": "^1.0.1"
+    "node-fetch": "^3.2.4",
+    "record-cache": "^1.2.0"
   }
 }
