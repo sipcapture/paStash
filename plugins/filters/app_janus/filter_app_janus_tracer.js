@@ -9,7 +9,7 @@ var fetch = require('cross-fetch');
 
 function nano_now(date){ return (date * 1000) + '000' }
 function just_now(){ return new Date().getTime() }
-function uuid(){ return (new Date()).getTime().toString(36) + Math.random().toString(36).slice(2) );
+function uuid(){ return (new Date()).getTime().toString(36) + Math.random().toString(36).slice(2) };
 
 function FilterAppJanusTracer() {
   base_filter.BaseFilter.call(this);
@@ -133,7 +133,7 @@ exports.create = function() {
 };
 
 async function tracegen(event, endpoint){
-  try {
+
     var trace = [{
 	 "id": event.id,
 	 "traceId": event.traceId,
@@ -161,5 +161,6 @@ async function tracegen(event, endpoint){
     logger.error(err)
   });
 
-  } catch(e) { console.log(e); return; }
+  }
+
 }
