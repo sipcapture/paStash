@@ -1,6 +1,6 @@
 {
   "name": "@pastash/filter_app_janus_tracer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Janus Tracing Plugin for @pastash/pastash",
   "main": "filter_app_janus_tracer.js",
   "scripts": {
@@ -9,7 +9,7 @@
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "node-fetch": "^3.2.4",
+    "cross-fetch": "^3.1.5",
     "record-cache": "^1.2.0"
   }
 }
