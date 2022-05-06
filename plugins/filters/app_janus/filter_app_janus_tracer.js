@@ -34,6 +34,7 @@ util.inherits(FilterAppJanusTracer, base_filter.BaseFilter);
 
 FilterAppJanusTracer.prototype.start = async function(callback) {
 
+  // Event cache
   var cache = recordCache({
     maxSize: this.cacheSize,
     maxAge: this.cacheAge,
@@ -41,6 +42,7 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
   });
   this.cache = cache;
 
+  // Session cache
   var sessions = recordCache({
     maxSize: this.cacheSize,
     maxAge: this.cacheAge,
@@ -72,9 +74,9 @@ FilterAppJanusTracer.prototype.process = function(data) {
 	if (!line.event.data) return;
 	var event = { name: line.event.name, event: line.event.name, id: line.session_id, handle: line.handle_id }
 	// session tracing + reset
-	var previous_ts = this.cache.get(event.session_id, 1)[0] || 0;
+	var previous_ts = this.sessions.get(event.session_id, 1)[0] || 0;
 	event.duration = just_now() - parseInt(previous_ts);
-	this.cache.add(event.session_id, just_now());
+	this.sessions.add(event.session_id, just_now());
 
 	if(event.name == "attached") {
 		// session_id, handle_id, opaque_id
@@ -87,9 +89,9 @@ FilterAppJanusTracer.prototype.process = function(data) {
 	if (!line.event.data) return data;
 	var event = { name: line.event.plugin, event: line.event.data.event, id: line.event.data.id, handle: line.handle_id }
 	// session tracing + reset
-	var previous_ts = this.cache.get(event.session_id, 1)[0] || 0;
+	var previous_ts = this.sessions.get(event.session_id, 1)[0] || 0;
 	event.duration = just_now() - parseInt(previous_ts);
-	this.cache.add(event.session_id, just_now());
+	this.sessions.add(event.session_id, just_now());
 
 	if (event.event == "joined"){
 		// session_id, handle_id, opaque_id, event.data.id
