@@ -78,10 +78,10 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
     // this.counters['e'].add(1, { pid: process.pid });
     // this.counters['e'].add(-1, { pid: process.pid });
 
-    logger.info('Initialized App Janus Event Prometheus Exporter');
+    logger.info('Initialized Janus Prometheus Exporter :' + this.port + '/metrics' );
 
   }
-  logger.info('Initialized App Janus Event Zipkin Span Tracer');
+  logger.info('Initialized App Janus Span Tracer with: ' +this.endpoint );
   callback();
 };
 
@@ -141,6 +141,7 @@ FilterAppJanusTracer.prototype.process = function(data) {
 		// session_id, handle_id, opaque_id, event.data.id
 		// correlate: session_id --> event.data.id
 		this.cache.add(event.id, event.session_id);
+		// increase tag counter
 		if (this.metrics) this.counters['e'].add(1, line.event.data);
 	} else if (event.event == "configured"){
 		// session_id, handle_id, opaque_id, event.data.id
@@ -156,6 +157,7 @@ FilterAppJanusTracer.prototype.process = function(data) {
 		event.session_id = this.cache.get(fingerprint_event, 1)[0] || false;
 		line.session_id = event.session_id;
 		this.cache.delete(event.id)
+		// decrease tag counter
 		if (this.metrics) this.counters['e'].add(-1, line.event.data);
 	}
         event.parentId = event.session_id
