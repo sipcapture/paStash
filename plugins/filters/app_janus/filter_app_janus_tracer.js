@@ -7,8 +7,8 @@ var base_filter = require('@pastash/pastash').base_filter,
 var recordCache = require("record-cache");
 var fetch = require('cross-fetch');
 
-function nano_now(date){ return (date * 1000) + '000' }
-function just_now(){ return new Date().getTime() }
+function nano_now(date){ return parseInt(date.toString().padEnd(16, '0')) }
+function just_now(date){ return nano_now( date || new Date().getTime() ) }
 function uuid(){ return (new Date()).getTime().toString(36) + Math.random().toString(36).slice(2) };
 
 function FilterAppJanusTracer() {
@@ -52,9 +52,12 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
 };
 
 FilterAppJanusTracer.prototype.process = function(data) {
-   if (!data.message) return data;
+   // bypass
+   if (this.bypass) this.emit('output', data)
+
+   if (!data.message) return;
    var line = JSON.parse(data.message);
-   if (!line.session_id || !line.handle_id) return data
+   if (!line.session_id || !line.handle_id) return;
 	
    if (line.type == 1){
 	var event = { name: line.event.name, event: line.event.name, id: line.session_id }
@@ -62,7 +65,7 @@ FilterAppJanusTracer.prototype.process = function(data) {
 	event.duration = 0
 	if (line.event.name == "created"){
 		// start root trace, do not update
-		this.sessions.add(event.session_id, just_now());
+		this.sessions.add(event.session_id, just_now(line.timestamp));
 		this.session.add('uuid_'+event.session_id, event.traceId)
 	} else if (line.event.name == "destroyed"){
 		// end root trace
@@ -76,8 +79,8 @@ FilterAppJanusTracer.prototype.process = function(data) {
 	// session tracing + reset
 	event.traceId = this.sessions.get('uuid_'+event.session_id, 1)[0] || uuid();
 	var previous_ts = this.sessions.get(event.session_id, 1)[0] || 0;
-	event.duration = just_now() - parseInt(previous_ts);
-	this.sessions.add(event.session_id, just_now());
+	event.duration = just_now(line.timestamp) - parseInt(previous_ts);
+	this.sessions.add(event.session_id, just_now(line.timestamp));
 
 	if(event.name == "attached") {
 		// session_id, handle_id, opaque_id
@@ -88,13 +91,13 @@ FilterAppJanusTracer.prototype.process = function(data) {
 	event.parentId = event.id
 
    } else if (line.type == 64){
-	if (!line.event.data) return data;
+	if (!line.event.data) return;
 	var event = { name: line.event.plugin, event: line.event.data.event, id: line.event.data.id, handle: line.handle_id }
 	// session tracing + reset
 	event.traceId = this.sessions.get('uuid_'+event.session_id, 1)[0] || uuid();
 	var previous_ts = this.sessions.get(event.session_id, 1)[0] || 0;
-	event.duration = just_now() - parseInt(previous_ts);
-	this.sessions.add(event.session_id, just_now());
+	event.duration = just_now(event.timestamp) - parseInt(previous_ts);
+	this.sessions.add(event.session_id, just_now(line.timestamp));
 
 	if (event.event == "joined"){
 		// session_id, handle_id, opaque_id, event.data.id
@@ -121,10 +124,8 @@ FilterAppJanusTracer.prototype.process = function(data) {
    if(event){
 	event.timestamp = line.timestamp;
 	event.body = line;
+	tracegen(event, this.endpoint)
    }
-   if(event) var trace = tracegen(event, this.endpoint)
-   if (!this.bypass) this.emit('output', trace)
-   else if (this.bypass) this.emit('output', data);
 
 };
 
@@ -133,7 +134,7 @@ exports.create = function() {
 };
 
 async function tracegen(event, endpoint){
-
+    // mock a zipkin span
     var trace = [{
 	 "id": event.id,
 	 "traceId": event.traceId,
