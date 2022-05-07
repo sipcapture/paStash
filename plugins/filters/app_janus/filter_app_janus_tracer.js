@@ -197,13 +197,13 @@ async function tracegen(event, endpoint){
 	  body: JSON.stringify(trace),
 	  headers: {'Content-Type': 'application/json'}
 	})
-  .then(res => {
-    logger.info(res.json())
-  })
-  .catch(err => {
-    logger.error(err)
-  });
-
+  	.then(res => {
+  	   return res.json()
+  	})
+  	.catch(err => {
+  	  logger.error(err)
+  	});
+	if (this.debug) logger.info(response);
   }
 
 }
