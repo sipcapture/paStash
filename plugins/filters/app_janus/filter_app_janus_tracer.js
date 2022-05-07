@@ -160,7 +160,7 @@ FilterAppJanusTracer.prototype.process = function(data) {
 		// decrease tag counter
 		if (this.metrics) this.counters['e'].add(-1, line.event.data);
 	}
-        event.parentId = event.session_id
+        event.parentId = line.session_id
    }
 
    if(event){
