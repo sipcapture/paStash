@@ -4,6 +4,9 @@ var base_filter = require('@pastash/pastash').base_filter,
   util = require('util'),
   logger = require('@pastash/pastash').logger;
 
+const QuickLRU = require("quick-lru");
+const lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false });
+
 const recordCache = require("record-cache");
 const fetch = require('cross-fetch');
 
