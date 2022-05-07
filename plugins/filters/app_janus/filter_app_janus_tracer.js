@@ -70,13 +70,9 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
     this.counters['s'] = this.meter.createUpDownCounter('sessions', {
       description: 'Session Counters',
     });
-    // this.counters['s'].add(10, { pid: process.pid });
-
     this.counters['e'] = this.meter.createUpDownCounter('events', {
       description: 'Event Counters',
     });
-    // this.counters['e'].add(1, { pid: process.pid });
-    // this.counters['e'].add(-1, { pid: process.pid });
 
     logger.info('Initialized Janus Prometheus Exporter :' + this.port + '/metrics' );
 
@@ -174,6 +170,9 @@ FilterAppJanusTracer.prototype.process = function(data) {
 exports.create = function() {
   return new FilterAppJanusTracer();
 };
+
+// TODO: replace trace mocker with opentelemetry-js
+// Link: https://github.com/open-telemetry/opentelemetry-js/blob/main/packages/opentelemetry-exporter-zipkin/README.md
 
 async function tracegen(event, endpoint){
     // mock a zipkin span
