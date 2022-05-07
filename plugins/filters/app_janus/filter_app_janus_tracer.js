@@ -4,8 +4,11 @@ var base_filter = require('@pastash/pastash').base_filter,
   util = require('util'),
   logger = require('@pastash/pastash').logger;
 
-var recordCache = require("record-cache");
-var fetch = require('cross-fetch');
+const recordCache = require("record-cache");
+const fetch = require('cross-fetch');
+
+const { PrometheusExporter } = require('@opentelemetry/exporter-prometheus');
+const { MeterProvider }  = require('@opentelemetry/sdk-metrics-base');
 
 function nano_now(date){ return parseInt(date.toString().padEnd(16, '0')) }
 function just_now(date){ return nano_now( date || new Date().getTime() ) }
@@ -15,11 +18,15 @@ function FilterAppJanusTracer() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppJanusTracer',
-    optional_params: ['debug', 'cacheSize', 'cacheAge', 'endpoint', 'bypass'],
+    optional_params: ['debug', 'cacheSize', 'cacheAge', 'endpoint', 'bypass', 'port', 'metrics', 'service_name', 'interval'],
     default_values: {
       'cacheSize': 50000,
       'cacheAge':  60000,
       'endpoint': 'http://localhost:3100/tempo/api/push',
+      'metrics': false,
+      'service_name': 'pastash-janus',
+      'interval': 10000,
+      'port': 9090,
       'bypass': true,
       'debug': false
     },
@@ -47,7 +54,34 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
   });
   this.sessions = sessions;
 
-  logger.info('Initialized App Janus Event Tracer');
+  if (this.metrics){
+    // Initialize Service
+    const options = {port: this.port, startServer: true};
+    const exporter = new PrometheusExporter(options);
+
+    // Register the exporter
+    this.meter = new MeterProvider({
+      exporter,
+      interval: this.interval,
+    }).getMeter(this.service_name)
+    this.counters = {};
+
+    // Register counters
+    this.counters['s'] = this.meter.createUpDownCounter('sessions', {
+      description: 'Session Counters',
+    });
+    // this.counters['s'].add(10, { pid: process.pid });
+
+    this.counters['e'] = this.meter.createUpDownCounter('events', {
+      description: 'Event Counters',
+    });
+    // this.counters['e'].add(1, { pid: process.pid });
+    // this.counters['e'].add(-1, { pid: process.pid });
+
+    logger.info('Initialized App Janus Event Prometheus Exporter');
+
+  }
+  logger.info('Initialized App Janus Event Zipkin Span Tracer');
   callback();
 };
 
@@ -58,7 +92,7 @@ FilterAppJanusTracer.prototype.process = function(data) {
    if (!data.message) return;
    var line = JSON.parse(data.message);
    if (!line.session_id || !line.handle_id) return;
-	
+
    if (line.type == 1){
 	var event = { name: line.event.name, event: line.event.name, id: line.session_id }
 	event.traceId = uuid()
@@ -67,10 +101,13 @@ FilterAppJanusTracer.prototype.process = function(data) {
 		// start root trace, do not update
 		this.sessions.add(event.session_id, just_now(line.timestamp));
 		this.session.add('uuid_'+event.session_id, event.traceId)
+    		if (this.metrics) this.counters['s'].add(1, line.event);
+
 	} else if (line.event.name == "destroyed"){
 		// end root trace
 		this.sessions.remove(event.session_id);
 		this.sessions.remove('uuid_'+event.session_id);
+    		if (this.metrics) this.counters['s'].add(-1, line.event);
 	}
 
    } else if (line.type == 2) {
@@ -99,10 +136,12 @@ FilterAppJanusTracer.prototype.process = function(data) {
 	event.duration = just_now(event.timestamp) - parseInt(previous_ts);
 	this.sessions.add(event.session_id, just_now(line.timestamp));
 
+
 	if (event.event == "joined"){
 		// session_id, handle_id, opaque_id, event.data.id
 		// correlate: session_id --> event.data.id
 		this.cache.add(event.id, event.session_id);
+		if (this.metrics) this.counters['e'].add(1, line.event.data);
 	} else if (event.event == "configured"){
 		// session_id, handle_id, opaque_id, event.data.id
 	} else if (event.event == "published"){
@@ -117,10 +156,11 @@ FilterAppJanusTracer.prototype.process = function(data) {
 		event.session_id = this.cache.get(fingerprint_event, 1)[0] || false;
 		line.session_id = event.session_id;
 		this.cache.delete(event.id)
+		if (this.metrics) this.counters['e'].add(-1, line.event.data);
 	}
         event.parentId = event.session_id
    }
-	
+
    if(event){
 	event.timestamp = line.timestamp;
 	event.body = line;
