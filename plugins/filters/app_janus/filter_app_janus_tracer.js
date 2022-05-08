@@ -5,7 +5,6 @@ var base_filter = require('@pastash/pastash').base_filter,
   logger = require('@pastash/pastash').logger;
 
 const QuickLRU = require("quick-lru");
-const lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false });
 
 const recordCache = require("record-cache");
 const fetch = require('cross-fetch');
@@ -16,6 +15,7 @@ const { MeterProvider }  = require('@opentelemetry/sdk-metrics-base');
 function nano_now(date){ return parseInt(date.toString().padEnd(16, '0')) }
 function just_now(date){ return nano_now( date || new Date().getTime() ) }
 function uuid(){ return (new Date()).getTime().toString(36) + Math.random().toString(36).slice(2) };
+function spanid() { return (new Date()).getTime().toString(36) + Math.random().toString(36).slice(5) };
 
 function FilterAppJanusTracer() {
   base_filter.BaseFilter.call(this);
@@ -56,6 +56,7 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
     onStale: false
   });
   this.sessions = sessions;
+  this.lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false });
 
   if (this.metrics){
     // Initialize Service
@@ -93,16 +94,20 @@ FilterAppJanusTracer.prototype.process = function(data) {
    if (!line.session_id || !line.handle_id) return;
 
    if (line.type == 1){
-	var event = { name: line.event.name, event: line.event.name, id: line.session_id }
+	var event = { name: line.event.name, event: line.event.name, id: line.session_id, spanId: spanid(), timestamp: line.timestamp }
 	event.traceId = uuid()
 	event.duration = 0
 	if (line.event.name == "created"){
+		// create root span
+		this.lru.set(line.session_id, event);
 		// start root trace, do not update
 		this.sessions.add(event.session_id, just_now(line.timestamp));
 		this.session.add('uuid_'+event.session_id, event.traceId)
     		if (this.metrics) this.counters['s'].add(1, line.event);
 
 	} else if (line.event.name == "destroyed"){
+		// delete root span
+		this.lru.delete(line.session_id);
 		// end root trace
 		this.sessions.remove(event.session_id);
 		this.sessions.remove('uuid_'+event.session_id);
@@ -180,7 +185,7 @@ exports.create = function() {
 async function tracegen(event, endpoint){
     // mock a zipkin span
     var trace = [{
-	 "id": event.id,
+	 "id": spanid(),
 	 "traceId": event.traceId,
 	 "timestamp": nano_now(event.timestamp),
 	 "duration": event.duration,
