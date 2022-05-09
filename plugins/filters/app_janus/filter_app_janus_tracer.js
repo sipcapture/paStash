@@ -6,9 +6,9 @@
 /* eslint-disable quote-props */
 /* eslint-disable dot-notation */
 
-const base_filter = require('@pastash/pastash').base_filter
-const util = require('util')
-const logger = require('@pastash/pastash').logger
+var base_filter = require('@pastash/pastash').base_filter
+var util = require('util')
+var logger = require('@pastash/pastash').logger
 
 const QuickLRU = require("quick-lru");
 
@@ -94,6 +94,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
   if (!data.message) return;
   var event = {};
   var line = JSON.parse(data.message);
+  logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
   if (line.type !== 1 || line.type !== 2 || line.type !== 64) return;
   logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
