@@ -195,7 +195,7 @@ async function tracegen(event, endpoint){
 	  }
     }]
     if (event.parentId){ trace[0].parentId = event.parentId }
-    if (event.tags){ trace[0].tags = event.tags }
+    if (event.tags){ trace[0].tags = event.tags } else { trace[0].tags = event }
     logger.info("trace: ", trace);
     // send event to endpoint
     if(endpoint){
