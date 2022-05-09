@@ -129,6 +129,8 @@ FilterAppJanusTracer.prototype.process = function (data) {
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
+      // crazy experiment
+      event.spanId = this.sessions.get('parent_' + event.session_id, 1)[0]
       event.duration = just_now(event.timestamp) - parseInt(previous_ts);
       /* name the event Session */
       event.name = "Session " + event.session_id
