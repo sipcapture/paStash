@@ -139,7 +139,7 @@ FilterAppJanusTracer.prototype.process = function(data) {
     event.duration = just_now(event.timestamp) - parseInt(previous_ts);
     this.sessions.add(event.session_id, just_now(line.timestamp));
 
-
+    logger.info("trace 64: ", line)
     if (event.event == "joined"){
       // session_id, handle_id, opaque_id, event.data.id
       // correlate: session_id --> event.data.id
@@ -157,9 +157,9 @@ FilterAppJanusTracer.prototype.process = function(data) {
       line.session_id = event.session_id;
     } else if (event.event == "leaving"){
       // correlate: event.data.id --> session_id
-      console.log("missing session id", event.id)
+      logger.info("missing session id", event.id)
       event.session_id = this.cache.get(event.id, 1)[0] || false;
-      console.log("fetched event id")
+      logger.info("fetched event id")
       line.session_id = event.session_id;
       this.cache.delete(event.id)
       // decrease tag counter
