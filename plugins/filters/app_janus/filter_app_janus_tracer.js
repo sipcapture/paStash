@@ -98,15 +98,6 @@ FilterAppJanusTracer.prototype.process = function (data) {
   /* Ignore all other events */
   if (line.type === 128 || line.type === 8 || line.type === 16 || line.type === 32) return;
   logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
-  event = {
-    name: line.event.name,
-    event: line.event.data.event || line.event.name,
-    session_id: line.session_id || line.event.data.id,
-    id: line.event.data.id || line.session_id,
-    spanId: spanid(),
-    timestamp: line.timestamp || nano_now(new Date().getTime())
-  }
-  logger.info('created event', event)
   /*
   TYPE 1
 
