@@ -87,11 +87,12 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
 FilterAppJanusTracer.prototype.process = function(data) {
    // bypass
   if (this.bypass) this.emit('output', data)
-
+  logger.info(data)
   if (!data.message) return;
   var line = JSON.parse(data.message);
+  logger.info('before check', line, line.session_id, line.handle_id)
   if (!line.session_id || !line.handle_id) return;
-
+  logger.info('after check', line, line.session_id, line.handle_id)
   if (line.type == 1) {
     var event = { name: line.event.name, event: line.event.name, id: line.session_id, spanId: spanid(), timestamp: line.timestamp }
     event.traceId = line.session_id
