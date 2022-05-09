@@ -106,12 +106,13 @@ FilterAppJanusTracer.prototype.process = function (data) {
     spanId: spanid(),
     timestamp: line.timestamp || nano_now(new Date().getTime())
   }
+  logger.info('created event', event)
   /*
   TYPE 1
 
   Create Session and Destroy Session events are tracked
   */
-  if (line.type === 1) {
+  if (line.type == 1) {
     event.traceId = event.session_id
     event.duration = 1000
     /* CREATE event */
