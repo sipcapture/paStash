@@ -96,7 +96,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
   var line = JSON.parse(data.message);
   logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
-  if (line.type !== 1 || line.type !== 2 || line.type !== 64) return;
+  if (line.type === 128 || line.type === 8 || line.type === 16 || line.type === 32) return;
   logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
   event = {
     name: line.event.name,
