@@ -153,11 +153,13 @@ FilterAppJanusTracer.prototype.process = function(data) {
       this.cache.add(event.id, event.session_id);
     } else if (event.event == "unpublished"){
       // correlate: event.data.id --> session_id
-      event.session_id = this.cache.get(fingerprint_event, 1)[0] || false;
+      event.session_id = this.cache.get(event.id, 1)[0] || false;
       line.session_id = event.session_id;
     } else if (event.event == "leaving"){
       // correlate: event.data.id --> session_id
-      event.session_id = this.cache.get(fingerprint_event, 1)[0] || false;
+      console.log("missing session id", event.id)
+      event.session_id = this.cache.get(event.id, 1)[0] || false;
+      console.log("fetched event id")
       line.session_id = event.session_id;
       this.cache.delete(event.id)
       // decrease tag counter
