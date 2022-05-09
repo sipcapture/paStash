@@ -87,12 +87,10 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
 FilterAppJanusTracer.prototype.process = function(data) {
    // bypass
   if (this.bypass) this.emit('output', data)
-  logger.info(data)
   if (!data.message) return;
   var line = JSON.parse(data.message);
-  logger.info('before check', line, line.session_id, line.handle_id)
-  if (!line.session_id || !line.handle_id) return;
-  logger.info('after check', line, line.session_id, line.handle_id)
+  //if (!line.session_id || !line.handle_id) return;
+  logger.info('after check', line.type, line.session_id, line.handle_id)
   if (line.type == 1) {
     var event = { name: line.event.name, event: line.event.name, id: line.session_id, spanId: spanid(), timestamp: line.timestamp }
     event.traceId = line.session_id
@@ -102,8 +100,8 @@ FilterAppJanusTracer.prototype.process = function(data) {
       this.lru.set(line.session_id, event);
       // start root trace, do not update
       this.sessions.add(event.session_id, just_now(line.timestamp));
-      this.session.add('uuid_'+event.session_id, event.traceId)
-      this.session.add('span_'+event.session_id, event.spanId)
+      this.sessions.add('uuid_'+event.session_id, event.traceId)
+      this.sessions.add('span_'+event.session_id, event.spanId)
       if (this.metrics) this.counters['s'].add(1, line.event);
     } else if (line.event.name == "destroyed") {
       // delete root span
@@ -160,7 +158,7 @@ FilterAppJanusTracer.prototype.process = function(data) {
       // correlate: event.data.id --> session_id
       logger.info("missing session id", event.id)
       event.session_id = this.cache.get(event.id, 1)[0] || false;
-      logger.info("fetched event id")
+      logger.info("fetched event id", event.session_id)
       line.session_id = event.session_id;
       this.cache.delete(event.id)
       // decrease tag counter
