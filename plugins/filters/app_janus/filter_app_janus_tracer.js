@@ -111,8 +111,9 @@ FilterAppJanusTracer.prototype.process = function(data) {
       // end root trace
       this.sessions.remove(event.session_id);
       this.sessions.remove('uuid_'+event.session_id);
+      this.sessions.remove('span_'+event.session_id);
       if (this.metrics) this.counters['s'].add(-1, line.event);
-  	}
+    }
   } else if (line.type == 2) {
     if (!line.event.data) return;
     var event = { name: line.event.name, event: line.event.name, id: line.session_id, handle: line.handle_id }
@@ -140,7 +141,6 @@ FilterAppJanusTracer.prototype.process = function(data) {
     event.duration = just_now(event.timestamp) - parseInt(previous_ts);
     this.sessions.add(event.session_id, just_now(line.timestamp));
 
-    logger.info("trace 64: ", line)
     if (event.event == "joined"){
       // session_id, handle_id, opaque_id, event.data.id
       // correlate: session_id --> event.data.id
@@ -160,7 +160,6 @@ FilterAppJanusTracer.prototype.process = function(data) {
       // correlate: event.data.id --> session_id
       logger.info("missing session id", event.id)
       event.session_id = this.cache.get(event.id, 1)[0] || false;
-      logger.info("fetched event id")
       line.session_id = event.session_id;
       this.cache.delete(event.id)
       // decrease tag counter
@@ -171,7 +170,6 @@ FilterAppJanusTracer.prototype.process = function(data) {
 
   if(event){
     event.timestamp = line.timestamp;
-    // event.body = line;
     tracegen(event, this.endpoint)
   }
 
