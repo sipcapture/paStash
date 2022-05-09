@@ -14,8 +14,7 @@ const { MeterProvider }  = require('@opentelemetry/sdk-metrics-base');
 
 function nano_now(date){ return parseInt(date.toString().padEnd(16, '0')) }
 function just_now(date){ return nano_now( date || new Date().getTime() ) }
-function uuid(){ return (new Date()).getTime().toString(36) + Math.random().toString(36).slice(2) };
-function spanid() { return (new Date()).getTime().toString(36) + Math.random().toString(36).slice(5) };
+function spanid() { return Math.floor(10000000 + Math.random() * 90000000).toString() }
 
 function FilterAppJanusTracer() {
   base_filter.BaseFilter.call(this);
@@ -87,91 +86,94 @@ FilterAppJanusTracer.prototype.start = async function(callback) {
 
 FilterAppJanusTracer.prototype.process = function(data) {
    // bypass
-   if (this.bypass) this.emit('output', data)
+  if (this.bypass) this.emit('output', data)
+  logger.info(data)
+  if (!data.message) return;
+  var line = JSON.parse(data.message);
+  logger.info('before check', line, line.session_id, line.handle_id)
+  if (!line.session_id || !line.handle_id) return;
+  logger.info('after check', line, line.session_id, line.handle_id)
+  if (line.type == 1) {
+    var event = { name: line.event.name, event: line.event.name, id: line.session_id, spanId: spanid(), timestamp: line.timestamp }
+    event.traceId = line.session_id
+    event.duration = 1000
+    if (line.event.name == "created"){
+      // create root span
+      this.lru.set(line.session_id, event);
+      // start root trace, do not update
+      this.sessions.add(event.session_id, just_now(line.timestamp));
+      this.session.add('uuid_'+event.session_id, event.traceId)
+      this.session.add('span_'+event.session_id, event.spanId)
+      if (this.metrics) this.counters['s'].add(1, line.event);
+    } else if (line.event.name == "destroyed") {
+      // delete root span
+      this.lru.delete(line.session_id);
+      // end root trace
+      this.sessions.remove(event.session_id);
+      this.sessions.remove('uuid_'+event.session_id);
+      if (this.metrics) this.counters['s'].add(-1, line.event);
+  	}
+  } else if (line.type == 2) {
+    if (!line.event.data) return;
+    var event = { name: line.event.name, event: line.event.name, id: line.session_id, handle: line.handle_id }
+    // session tracing + reset
+    event.traceId = this.sessions.get('uuid_'+event.session_id, 1)[0] || line.session_id;
+    event.spanId = this.sessions.get('span_'+event.session_id, 1)[0] || spanid();
+    var previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
+    event.duration = just_now(line.timestamp) - parseInt(previous_ts);
+    this.sessions.add(event.session_id, just_now(line.timestamp));
 
-   if (!data.message) return;
-   var line = JSON.parse(data.message);
-   if (!line.session_id || !line.handle_id) return;
+    if(event.name == "attached") {
+    	// session_id, handle_id, opaque_id
+    } else if (event.name == "detached") {
+    	// session_id, handle_id, opaque_id
+    	this.sessions.remove(event.handle_id);
+    }
+    event.parentId = line.session_id
+  } else if (line.type == 64) {
+    if (!line.event.data) return;
+    var event = { name: line.event.plugin, event: line.event.data.event, id: line.event.data.id, handle: line.handle_id }
+    // session tracing + reset
+    event.traceId = this.sessions.get('uuid_'+event.session_id, 1)[0] || line.session_id;
+    event.spanId = this.sessions.get('span_'+event.session_id, 1)[0] || spanid();
+    var previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
+    event.duration = just_now(event.timestamp) - parseInt(previous_ts);
+    this.sessions.add(event.session_id, just_now(line.timestamp));
 
-   if (line.type == 1){
-	var event = { name: line.event.name, event: line.event.name, id: line.session_id, spanId: spanid(), timestamp: line.timestamp }
-	event.traceId = uuid()
-	event.duration = 0
-	if (line.event.name == "created"){
-		// create root span
-		this.lru.set(line.session_id, event);
-		// start root trace, do not update
-		this.sessions.add(event.session_id, just_now(line.timestamp));
-		this.session.add('uuid_'+event.session_id, event.traceId)
-    		if (this.metrics) this.counters['s'].add(1, line.event);
+    logger.info("trace 64: ", line)
+    if (event.event == "joined"){
+      // session_id, handle_id, opaque_id, event.data.id
+      // correlate: session_id --> event.data.id
+      this.cache.add(event.id, event.session_id);
+      // increase tag counter
+      if (this.metrics) this.counters['e'].add(1, line.event.data);
+    } else if (event.event == "configured"){
+      // session_id, handle_id, opaque_id, event.data.id
+    } else if (event.event == "published"){
+      // session_id, handle_id, opaque_id, event.data.id
+      this.cache.add(event.id, event.session_id);
+    } else if (event.event == "unpublished"){
+      // correlate: event.data.id --> session_id
+      event.session_id = this.cache.get(event.id, 1)[0] || false;
+      line.session_id = event.session_id;
+    } else if (event.event == "leaving"){
+      // correlate: event.data.id --> session_id
+      logger.info("missing session id", event.id)
+      event.session_id = this.cache.get(event.id, 1)[0] || false;
+      logger.info("fetched event id")
+      line.session_id = event.session_id;
+      this.cache.delete(event.id)
+      // decrease tag counter
+    if (this.metrics) this.counters['e'].add(-1, line.event.data);
+    }
+    event.parentId = line.session_id
+  }
 
-	} else if (line.event.name == "destroyed"){
-		// delete root span
-		this.lru.delete(line.session_id);
-		// end root trace
-		this.sessions.remove(event.session_id);
-		this.sessions.remove('uuid_'+event.session_id);
-    		if (this.metrics) this.counters['s'].add(-1, line.event);
-	}
-
-   } else if (line.type == 2) {
-	if (!line.event.data) return;
-	var event = { name: line.event.name, event: line.event.name, id: line.session_id, handle: line.handle_id }
-	// session tracing + reset
-	event.traceId = this.sessions.get('uuid_'+event.session_id, 1)[0] || uuid();
-	var previous_ts = this.sessions.get(event.session_id, 1)[0] || 0;
-	event.duration = just_now(line.timestamp) - parseInt(previous_ts);
-	this.sessions.add(event.session_id, just_now(line.timestamp));
-
-	if(event.name == "attached") {
-		// session_id, handle_id, opaque_id
-	} else if (event.name == "detached") {
-		// session_id, handle_id, opaque_id
-		this.sessions.remove(event.handle_id);
-	}
-	event.parentId = event.id
-
-   } else if (line.type == 64){
-	if (!line.event.data) return;
-	var event = { name: line.event.plugin, event: line.event.data.event, id: line.event.data.id, handle: line.handle_id }
-	// session tracing + reset
-	event.traceId = this.sessions.get('uuid_'+event.session_id, 1)[0] || uuid();
-	var previous_ts = this.sessions.get(event.session_id, 1)[0] || 0;
-	event.duration = just_now(event.timestamp) - parseInt(previous_ts);
-	this.sessions.add(event.session_id, just_now(line.timestamp));
-
-
-	if (event.event == "joined"){
-		// session_id, handle_id, opaque_id, event.data.id
-		// correlate: session_id --> event.data.id
-		this.cache.add(event.id, event.session_id);
-		// increase tag counter
-		if (this.metrics) this.counters['e'].add(1, line.event.data);
-	} else if (event.event == "configured"){
-		// session_id, handle_id, opaque_id, event.data.id
-	} else if (event.event == "published"){
-		// session_id, handle_id, opaque_id, event.data.id
-		this.cache.add(event.id, event.session_id);
-	} else if (event.event == "unpublished"){
-		// correlate: event.data.id --> session_id
-		event.session_id = this.cache.get(fingerprint_event, 1)[0] || false;
-		line.session_id = event.session_id;
-	} else if (event.event == "leaving"){
-		// correlate: event.data.id --> session_id
-		event.session_id = this.cache.get(fingerprint_event, 1)[0] || false;
-		line.session_id = event.session_id;
-		this.cache.delete(event.id)
-		// decrease tag counter
-		if (this.metrics) this.counters['e'].add(-1, line.event.data);
-	}
-        event.parentId = line.session_id
-   }
-
-   if(event){
-	event.timestamp = line.timestamp;
-	event.body = line;
-	tracegen(event, this.endpoint)
-   }
+  if(event){
+    event.timestamp = line.timestamp;
+    // event.body = line;
+    tracegen(event, this.endpoint)
+  }
 
 };
 
@@ -185,8 +187,8 @@ exports.create = function() {
 async function tracegen(event, endpoint){
     // mock a zipkin span
     var trace = [{
-	 "id": spanid(),
-	 "traceId": event.traceId,
+	 "id": event.spanId || spanid(),
+	 "traceId": event.traceId.toString(),
 	 "timestamp": nano_now(event.timestamp),
 	 "duration": event.duration,
 	 "name": event.name,
@@ -195,7 +197,7 @@ async function tracegen(event, endpoint){
 	  }
     }]
     if (event.parentId){ trace[0].parentId = event.parentId }
-    if (event.tags){ trace[0].tags = event.tags } else { trace[0].tags = event }
+    if (event.tags){ trace[0].tags = event.tags } else { trace[0].tags = { event: 'hello' } }
     logger.info("trace: ", trace);
     // send event to endpoint
     if(endpoint){
