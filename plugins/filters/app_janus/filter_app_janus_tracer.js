@@ -205,7 +205,7 @@ async function tracegen(event, endpoint){
 	  headers: {'Content-Type': 'application/json'}
 	})
   	.then(res => {
-  	   return res.json()
+  	   return res
   	})
   	.catch(err => {
   	  logger.error(err)
