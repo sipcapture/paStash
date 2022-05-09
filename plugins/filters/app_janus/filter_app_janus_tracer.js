@@ -124,8 +124,6 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.sessions.add('span_' + event.session_id, event.spanId)
       this.sessions.add('parent_' + event.session_id, event.spanId)
       if (this.metrics) this.counters['s'].add(1, line.event);
-      logger.info('type 1 created sending', event)
-      tracegen(event, this.endpoint)
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
@@ -144,7 +142,6 @@ FilterAppJanusTracer.prototype.process = function (data) {
       tracegen(createEvent, this.endpoint)
     }
     logger.info('type 1 sending', event)
-    tracegen(event, this.endpoint)
   /*
   TYPE 2
 
@@ -170,8 +167,6 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
       // session_id, handle_id, opaque_id
       this.sessions.add(event.session_id, just_now(line.timestamp));
-      logger.info('type 2 attached sending', event)
-      tracegen(event, this.endpoint)
     } else if (event.name === "detached") {
       event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
       // session_id, handle_id, opaque_id
@@ -179,8 +174,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       logger.info('type 2 detached sending', event)
       tracegen(event, this.endpoint)
     }
-    logger.info('type 2 sending', event)
-    tracegen(event, this.endpoint)
+
   /*
   TYPE 64
 
@@ -242,8 +236,6 @@ FilterAppJanusTracer.prototype.process = function (data) {
       logger.info('type 64 leaving sending', event)
       tracegen(event, this.endpoint)
     }
-    logger.info('type 64 sending', event)
-    tracegen(event, this.endpoint)
   }
 };
 
