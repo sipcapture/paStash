@@ -130,8 +130,10 @@ FilterAppJanusTracer.prototype.process = function (data) {
     } else if (event.name === "destroyed") {
       const previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
       event.duration = just_now(event.timestamp) - parseInt(previous_ts);
+      const createEvent = this.lru.get(event.session_id)
       /* name the event Session */
-      event.name = "Session " + event.session_id
+      createEvent.name = "Session " + event.session_id
+      createEvent.duration = event.duration
       // delete root span
       this.lru.delete(event.session_id);
       // end root trace
@@ -139,7 +141,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.sessions.remove('uuid_' + event.session_id);
       if (this.metrics) this.counters['s'].add(-1, line.event);
       logger.info('type 1 destroyed sending', event)
-      tracegen(event, this.endpoint)
+      tracegen(createEvent, this.endpoint)
     }
     logger.info('type 1 sending', event)
     tracegen(event, this.endpoint)
