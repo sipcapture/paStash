@@ -94,7 +94,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
   if (!data.message) return;
   var event = {};
   var line = JSON.parse(data.message);
-  //logger.info('Incoming line', line.type, line.event)
+  // logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
   if (line.type === 128 || line.type === 8 || line.type === 16 || line.type === 32) return;
   logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
@@ -126,22 +126,21 @@ FilterAppJanusTracer.prototype.process = function (data) {
       if (this.metrics) this.counters['s'].add(1, line.event);
     /* DESTROY event */
     } else if (event.name === "destroyed") {
-      const previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
-      event.duration = just_now(event.timestamp) - parseInt(previous_ts);
       const createEvent = this.lru.get(event.session_id)
+      createEvent.duration = just_now(event.timestamp) - just_now(createEvent.timestamp);
       /* name the event Session */
       createEvent.name = "Session " + event.session_id
-      createEvent.duration = event.duration
       // delete root span
       this.lru.delete(event.session_id);
       // end root trace
       this.sessions.remove(event.session_id);
       this.sessions.remove('uuid_' + event.session_id);
+      this.sessions.remove('span_' + event.session_id, event.spanId)
+      this.sessions.remove('parent_' + event.session_id, event.spanId)
       if (this.metrics) this.counters['s'].add(-1, line.event);
       logger.info('type 1 destroyed sending', event)
       tracegen(createEvent, this.endpoint)
     }
-    logger.info('type 1 sending', event)
   /*
   TYPE 2
 
@@ -202,20 +201,26 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.lru.set("join_" + event.id, event);
       // increase tag counter
       if (this.metrics) this.counters['e'].add(1, line.event.data);
-
     } else if (event.event === "configured") {
+      /* Set start time of configured,
+         emit span when published is received */
       event.session_id = line.session_id
       event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
       event.spanId = this.sessions.get('span_' + event.session_id, 1)[0] || spanid();
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
-      // session_id, handle_id, opaque_id, event.data.id
+      /* emit configured event */
+      const joinEvent = this.lru.get("join_" + event.session_id)
+      event.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
+      event.timestamp = joinEvent.timestamp
+      event.name = "Configured " + event.id
+      logger.info('type 64 configured sending', event)
+      tracegen(event, this.endpoint)
     } else if (event.event === "published") {
       event.session_id = line.session_id
       event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
       event.spanId = this.sessions.get('span_' + event.session_id, 1)[0] || spanid();
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
       // session_id, handle_id, opaque_id, event.data.id
-      this.cache.add(event.id, event.session_id);
       this.lru.set("pub_" + event.id, event.session_id);
     } else if (event.event === "unpublished") {
       // correlate: event.data.id --> session_id
