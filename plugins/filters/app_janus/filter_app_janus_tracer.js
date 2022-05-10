@@ -199,11 +199,10 @@ FilterAppJanusTracer.prototype.process = function (data) {
       // correlate: session_id --> event.data.id
       this.cache.add(event.session_id, just_now(event.timestamp));
       this.cache.add("uuid_" + event.id, event.session_id);
-      this.lru.set(event.id, event.session_id);
+      this.lru.set("join_" + event.id, event);
       // increase tag counter
       if (this.metrics) this.counters['e'].add(1, line.event.data);
-      logger.info('type 64 joined sending', event)
-      tracegen(event, this.endpoint)
+
     } else if (event.event === "configured") {
       event.session_id = line.session_id
       event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
@@ -217,24 +216,30 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
       // session_id, handle_id, opaque_id, event.data.id
       this.cache.add(event.id, event.session_id);
-      this.lru.set(event.id, event.session_id);
+      this.lru.set("pub_" + event.id, event.session_id);
     } else if (event.event === "unpublished") {
       // correlate: event.data.id --> session_id
       event.session_id = line.event.data.id
       const previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
       event.duration = just_now(event.timestamp) - parseInt(previous_ts);
+      const pubEvent = this.lru.get("pub_" + event.id)
+      pubEvent.duration = event.duration
+      pubEvent.name = "Published " + event.id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
+      logger.info('type 64 unpublished sending', event)
+      tracegen(pubEvent, this.endpoint)
     } else if (event.event === "leaving") {
       // correlate: event.data.id --> session_id
       event.session_id = this.cache.get("uuid_" + event.id, 1)[0]
       event.traceId = event.session_id
       const previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
       event.duration = just_now(event.timestamp) - parseInt(previous_ts);
+      const joinEvent = this.lru.get('join_' + event.id)
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
       // decrease tag counter
       if (this.metrics) this.counters['e'].add(-1, line.event.data);
       logger.info('type 64 leaving sending', event)
-      tracegen(event, this.endpoint)
+      tracegen(joinEvent, this.endpoint)
     }
   }
 };
