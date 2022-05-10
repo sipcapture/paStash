@@ -3,7 +3,7 @@ App Janus Tracer
 
 Status : functional, experimental plugin.
 
-This pass-through plugin produces OTLP-like tracing from Janus events
+This pass-through plugin produces Zipkin-like OTLP tracing from Janus events
 
 Example 1: parse janus logs.
 ````
