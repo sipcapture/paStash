@@ -192,6 +192,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
 
     logger.info("trace 64: ", line)
     if (event.event === "joined") {
+      event.display = line.data.display
       event.session_id = line.session_id
       event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
@@ -235,7 +236,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       // correlate: event.data.id --> session_id
       const joinEvent = this.lru.get('join_' + event.id)
       joinEvent.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
-      joinEvent.name = "User " + event.id + " / " + event.data.display + ", Room " + event.room
+      joinEvent.name = "User " + event.id + " / " + joinEvent.display + ", Room " + event.room
       this.lru.delete("join_" + event.id)
       // decrease tag counter
       if (this.metrics) this.counters['e'].add(-1, line.event.data);
