@@ -179,6 +179,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event: line.event.data.event,
       id: line.event.data.id,
       spanId: spanid(),
+      room: line.event.data.room,
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
     if (!line.event.data) return;
@@ -203,7 +204,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       const joinEvent = this.lru.get("join_" + event.id)
       event.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
       event.timestamp = joinEvent.timestamp
-      event.name = "Configured " + event.id
+      event.name = "Configured " + event.id + ", Room " + event.room
       logger.info('type 64 configured sending', event)
       tracegen(event, this.endpoint)
     } else if (event.event === "published") {
@@ -214,8 +215,9 @@ FilterAppJanusTracer.prototype.process = function (data) {
     } else if (event.event === "unpublished") {
       // correlate: event.data.id --> session_id
       const pubEvent = this.lru.get("pub_" + event.id)
+      if (!pubEvent) return
       pubEvent.duration = just_now(event.timestamp) - just_now(pubEvent.timestamp);
-      pubEvent.name = "Published " + event.id
+      pubEvent.name = "Published " + event.id + ", Room " + event.room
       this.lru.delete("pub_" + event.id)
       logger.info('type 64 unpublished sending', pubEvent)
       tracegen(pubEvent, this.endpoint)
@@ -223,7 +225,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       // correlate: event.data.id --> session_id
       const joinEvent = this.lru.get('join_' + event.id)
       joinEvent.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
-      joinEvent.name = "User " + event.id
+      joinEvent.name = "User " + event.id + ", Room " + event.room
       this.lru.delete("join_" + event.id)
       // decrease tag counter
       if (this.metrics) this.counters['e'].add(-1, line.event.data);
