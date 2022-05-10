@@ -156,22 +156,16 @@ FilterAppJanusTracer.prototype.process = function (data) {
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
     if (!line.event.data) return;
-    // session tracing + reset
-    event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
-    event.spanId = this.sessions.get('span_' + event.session_id, 1)[0] || spanid();
-    var previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
-    event.duration = just_now(line.timestamp) - parseInt(previous_ts);
-
     if (event.name === "attached") {
       event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
-      // session_id, handle_id, opaque_id
-      this.sessions.add(event.session_id, just_now(line.timestamp));
+      event.traceId = event.session_id
+      this.lru.set("att_" + event.session_id, event);
     } else if (event.name === "detached") {
-      event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
-      // session_id, handle_id, opaque_id
-      this.sessions.remove(event.handle_id);
+      const attEvent = this.lru.get("att_" + event.session_id)
+      attEvent.duration = just_now(event.timestamp) - just_now(attEvent.timestamp)
+      this.lru.delete("att_" + event.session_id)
       logger.info('type 2 detached sending', event)
-      tracegen(event, this.endpoint)
+      tracegen(attEvent, this.endpoint)
     }
 
   /*
@@ -192,21 +186,18 @@ FilterAppJanusTracer.prototype.process = function (data) {
     logger.info("trace 64: ", line)
     if (event.event === "joined") {
       event.session_id = line.session_id
-      event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
+      event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
       // session_id, handle_id, opaque_id, event.data.id
       // correlate: session_id --> event.data.id
-      this.cache.add(event.session_id, just_now(event.timestamp));
-      this.cache.add("uuid_" + event.id, event.session_id);
       this.lru.set("join_" + event.id, event);
       // increase tag counter
       if (this.metrics) this.counters['e'].add(1, line.event.data);
     } else if (event.event === "configured") {
-      /* Set start time of configured,
+      /* Set start time of configured as start of join,
          emit span when published is received */
       event.session_id = line.session_id
-      event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
-      event.spanId = this.sessions.get('span_' + event.session_id, 1)[0] || spanid();
+      event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
       /* emit configured event */
       const joinEvent = this.lru.get("join_" + event.id)
@@ -217,8 +208,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       tracegen(event, this.endpoint)
     } else if (event.event === "published") {
       event.session_id = line.session_id
-      event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
-      event.spanId = this.sessions.get('span_' + event.session_id, 1)[0] || spanid();
+      event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
       this.lru.set("pub_" + event.id, event);
     } else if (event.event === "unpublished") {
@@ -227,7 +217,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       pubEvent.duration = just_now(event.timestamp) - just_now(pubEvent.timestamp);
       pubEvent.name = "Published " + event.id
       this.lru.delete("pub_" + event.id)
-      logger.info('type 64 unpublished sending', event)
+      logger.info('type 64 unpublished sending', pubEvent)
       tracegen(pubEvent, this.endpoint)
     } else if (event.event === "leaving") {
       // correlate: event.data.id --> session_id
