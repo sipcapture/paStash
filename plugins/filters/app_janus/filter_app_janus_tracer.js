@@ -138,8 +138,10 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.sessions.remove('span_' + event.session_id, event.spanId)
       this.sessions.remove('parent_' + event.session_id, event.spanId)
       if (this.metrics) this.counters['s'].add(-1, line.event);
-      logger.info('type 1 destroyed sending', event)
+      logger.info('type 1 destroyed sending', createEvent)
       tracegen(createEvent, this.endpoint)
+      event.duration = 1
+      tracegen(event, this.endpoint)
     }
   /*
   TYPE 2
@@ -166,6 +168,10 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.lru.delete("att_" + event.session_id)
       logger.info('type 2 detached sending', event)
       tracegen(attEvent, this.endpoint)
+      event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
+      event.traceId = event.session_id
+      event.duration = 0
+      tracegen(event, this.endpoint)
     }
 
   /*
@@ -221,16 +227,24 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.lru.delete("pub_" + event.id)
       logger.info('type 64 unpublished sending', pubEvent)
       tracegen(pubEvent, this.endpoint)
+      event.duration = 1
+      event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
+      event.traceId = event.session_id
+      tracegen(event, this.endpoint)
     } else if (event.event === "leaving") {
       // correlate: event.data.id --> session_id
       const joinEvent = this.lru.get('join_' + event.id)
       joinEvent.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
-      joinEvent.name = "User " + event.id + ", Room " + event.room
+      joinEvent.name = "User " + event.id + " / " + event.data.display + ", Room " + event.room
       this.lru.delete("join_" + event.id)
       // decrease tag counter
       if (this.metrics) this.counters['e'].add(-1, line.event.data);
       logger.info('type 64 leaving sending', event)
       tracegen(joinEvent, this.endpoint)
+      event.duration = 1
+      event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
+      event.traceId = joinEvent.session_id
+      tracegen(event, this.endpoint)
     }
   }
 };
