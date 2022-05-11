@@ -101,7 +101,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event: line.event.name,
       session_id: line.session_id,
       traceId: line.session_id,
-      id: line.event.transport.id,
+      id: line.session_id,
       spanId: spanid(),
       timestamp: line.timestamp || nano_now(new Date().getTime()),
       duration: 1000
@@ -189,6 +189,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event.session_id = line.session_id
       event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
+      console.log("JOIN ", event)
       // session_id, handle_id, opaque_id, event.data.id
       // correlate: session_id --> event.data.id
       this.lru.set("join_" + event.id, event);
