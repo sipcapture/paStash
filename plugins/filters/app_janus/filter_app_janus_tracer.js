@@ -279,7 +279,6 @@ FilterAppJanusTracer.prototype.process = function (data) {
       if (!pubEvent) return
       pubEvent.duration = just_now(event.timestamp) - just_now(pubEvent.timestamp);
       pubEvent.name = "Published " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
-      this.lru.delete("pub_" + event.id)
       // logger.info('type 64 unpublished sending', pubEvent)
       tracegen(pubEvent, this.endpoint)
       event.name = "Unpublished " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
@@ -298,7 +297,6 @@ FilterAppJanusTracer.prototype.process = function (data) {
         if (!joinEvent) return
         joinEvent.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
         joinEvent.name = "User " + event.id + " / Display Name: " + joinEvent?.display + ", Room " + event.room
-        this.lru.delete("join_" + event.id)
         // logger.info('type 64 leaving sending', event)
         tracegen(joinEvent, this.endpoint)
         event.display = line.event.data?.display || "null"
