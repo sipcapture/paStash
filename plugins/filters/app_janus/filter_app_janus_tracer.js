@@ -45,14 +45,6 @@ function FilterAppJanusTracer () {
 util.inherits(FilterAppJanusTracer, base_filter.BaseFilter);
 
 FilterAppJanusTracer.prototype.start = async function (callback) {
-  // Event cache
-  var cache = recordCache({
-    maxSize: this.cacheSize,
-    maxAge: this.cacheAge,
-    onStale: false
-  });
-  this.cache = cache;
-
   // Session cache
   var sessions = recordCache({
     maxSize: this.cacheSize,
@@ -94,10 +86,10 @@ FilterAppJanusTracer.prototype.process = function (data) {
   if (!data.message) return;
   var event = {};
   var line = JSON.parse(data.message);
-  //logger.info('Incoming line', line.type, line.event)
+  // logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
   if (line.type === 128 || line.type === 8 || line.type === 16 || line.type === 32) return;
-  logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
+  // logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
   /*
   TYPE 1
 
@@ -108,12 +100,12 @@ FilterAppJanusTracer.prototype.process = function (data) {
       name: line.event.name,
       event: line.event.name,
       session_id: line.session_id,
+      traceId: line.session_id,
       id: line.session_id,
       spanId: spanid(),
-      timestamp: line.timestamp || nano_now(new Date().getTime())
+      timestamp: line.timestamp || nano_now(new Date().getTime()),
+      duration: 1000
     }
-    event.traceId = event.session_id
-    event.duration = 1000
     /* CREATE event */
     if (event.name === "created") {
       // create root span
@@ -124,25 +116,27 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.sessions.add('span_' + event.session_id, event.spanId)
       this.sessions.add('parent_' + event.session_id, event.spanId)
       if (this.metrics) this.counters['s'].add(1, line.event);
-      logger.info('type 1 created sending', event)
-      tracegen(event, this.endpoint)
     /* DESTROY event */
     } else if (event.name === "destroyed") {
-      const previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
-      event.duration = just_now(event.timestamp) - parseInt(previous_ts);
+      const createEvent = this.lru.get(event.session_id)
+      createEvent.duration = just_now(event.timestamp) - just_now(createEvent.timestamp);
       /* name the event Session */
-      event.name = "Session " + event.session_id
+      createEvent.name = "Session " + event.session_id
+      if (this.metrics) this.counters['s'].add(-1, line.event);
+      // logger.info('type 1 destroyed sending', createEvent)
+      tracegen(createEvent, this.endpoint)
+      event.duration = 1000
+      event.name = "Destroyed " + event.id
+      event.parentId = createEvent.spanId
+      tracegen(event, this.endpoint)
       // delete root span
       this.lru.delete(event.session_id);
       // end root trace
       this.sessions.remove(event.session_id);
       this.sessions.remove('uuid_' + event.session_id);
-      if (this.metrics) this.counters['s'].add(-1, line.event);
-      logger.info('type 1 destroyed sending', event)
-      tracegen(event, this.endpoint)
+      this.sessions.remove('span_' + event.session_id, event.spanId)
+      this.sessions.remove('parent_' + event.session_id, event.spanId)
     }
-    logger.info('type 1 sending', event)
-    tracegen(event, this.endpoint)
   /*
   TYPE 2
 
@@ -157,28 +151,31 @@ FilterAppJanusTracer.prototype.process = function (data) {
       spanId: spanid(),
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
-    if (!line.event.data) return;
-    // session tracing + reset
-    event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
-    event.spanId = this.sessions.get('span_' + event.session_id, 1)[0] || spanid();
-    var previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
-    event.duration = just_now(line.timestamp) - parseInt(previous_ts);
-
+    /*
+      Attach Event
+    */
     if (event.name === "attached") {
       event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
-      // session_id, handle_id, opaque_id
-      this.sessions.add(event.session_id, just_now(line.timestamp));
-      logger.info('type 2 attached sending', event)
-      tracegen(event, this.endpoint)
+      event.traceId = event.session_id
+      this.lru.set("att_" + event.session_id, event);
+    /*
+      Detach Event
+    */
     } else if (event.name === "detached") {
-      event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
-      // session_id, handle_id, opaque_id
-      this.sessions.remove(event.handle_id);
-      logger.info('type 2 detached sending', event)
+      const attEvent = this.lru.get("att_" + event.session_id)
+      if (!attEvent) return
+      attEvent.duration = just_now(event.timestamp) - just_now(attEvent.timestamp)
+      attEvent.name = "Attached " + event.session_id
+      // logger.info('type 2 detached sending', event)
+      tracegen(attEvent, this.endpoint)
+      event.name = "Detached " + event.session_id
+      event.parentId = attEvent.parentId
+      event.traceId = event.session_id
+      event.duration = 1000
       tracegen(event, this.endpoint)
+      this.lru.delete("att_" + event.session_id)
     }
-    logger.info('type 2 sending', event)
-    tracegen(event, this.endpoint)
+
   /*
   TYPE 64
 
@@ -190,58 +187,133 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event: line.event.data.event,
       id: line.event.data.id,
       spanId: spanid(),
+      room: line.event.data.room,
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
     if (!line.event.data) return;
 
-    logger.info("trace 64: ", line)
+    // logger.info("trace 64: ", line)
+    /*
+      Joined Event
+      */
     if (event.event === "joined") {
+      event.display = line.event.data?.display || "null"
       event.session_id = line.session_id
-      event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
+      event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
+      console.log("JOIN ", event)
       // session_id, handle_id, opaque_id, event.data.id
       // correlate: session_id --> event.data.id
-      this.cache.add(event.session_id, just_now(event.timestamp));
-      this.cache.add("uuid_" + event.id, event.session_id);
-      this.lru.set(event.id, event.session_id);
+      this.lru.set("join_" + event.id, event);
       // increase tag counter
       if (this.metrics) this.counters['e'].add(1, line.event.data);
-      logger.info('type 64 joined sending', event)
-      tracegen(event, this.endpoint)
+    /*
+      Configured Event
+    */
     } else if (event.event === "configured") {
+      /* Set start time of configured as start of join,
+         emit span when published is received */
       event.session_id = line.session_id
-      event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
-      event.spanId = this.sessions.get('span_' + event.session_id, 1)[0] || spanid();
+      event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
-      // session_id, handle_id, opaque_id, event.data.id
+      /* emit configured event */
+      const joinEvent = this.lru.get("join_" + event.id)
+      event.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
+      event.timestamp = joinEvent.timestamp
+      event.name = "Configured " + event.id + ", Room " + event.room
+      // logger.info('type 64 configured sending', event)
+      tracegen(event, this.endpoint)
+    /*
+      Published Event
+    */
     } else if (event.event === "published") {
       event.session_id = line.session_id
-      event.traceId = this.sessions.get('uuid_' + event.session_id, 1)[0] || line.session_id;
-      event.spanId = this.sessions.get('span_' + event.session_id, 1)[0] || spanid();
+      event.display = line.event?.display
+      event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
-      // session_id, handle_id, opaque_id, event.data.id
-      this.cache.add(event.id, event.session_id);
-      this.lru.set(event.id, event.session_id);
+      this.lru.set("pub_" + event.id, event);
+    /*
+      Subscribing Event
+    */
+    } else if (event.event === "subscribing") {
+      event.session_id = line.session_id
+      event.id = event.session_id
+      event.traceId = event.session_id
+      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
+      this.lru.set("sub_" + event.session_id, event);
+    /*
+      Subscribed Event
+    */
+    } else if (event.event === "subscribed") {
+      /* Set start time to be subscribing event,
+          emit when subscription suceeds
+      */
+      event.session_id = line.session_id
+      event.id = event.session_id
+      event.traceId = event.session_id
+      var subEvent = this.lru.get("sub_" + event.session_id);
+      event.parentId = subEvent.parentId
+      event.duration = just_now(event.timestamp) - just_now(subEvent.timestamp)
+      event.timestamp = subEvent.timestamp
+      event.name = "Subscribed " + event.session_id + ", Room " + event.room
+      // logger.info('type 64 subscribed sending', event)
+      tracegen(event, this.endpoint)
+      this.lru.delete("sub_" + event.session_id);
+      // TODO: add streams object to tags
+    /*
+      Update Event
+    */
+    } else if (event.event === "updated") {
+      event.session_id = line.session_id
+      event.id = event.session_id
+      event.traceId = event.session_id
+      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
+      event.duration = 1000
+      event.name = "Updated " + event.session_id + ", Room " + event.room
+    /*
+      Unpublished Event
+    */
     } else if (event.event === "unpublished") {
       // correlate: event.data.id --> session_id
-      event.session_id = line.event.data.id
-      const previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
-      event.duration = just_now(event.timestamp) - parseInt(previous_ts);
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
+      const pubEvent = this.lru.get("pub_" + event.id)
+      if (!pubEvent) return
+      pubEvent.duration = just_now(event.timestamp) - just_now(pubEvent.timestamp);
+      pubEvent.name = "Published " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
+      this.lru.delete("pub_" + event.id)
+      // logger.info('type 64 unpublished sending', pubEvent)
+      tracegen(pubEvent, this.endpoint)
+      event.name = "Unpublished " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
+      event.duration = 1000
+      event.parentId = pubEvent.parentId
+      event.traceId = pubEvent.session_id
+      tracegen(event, this.endpoint)
+      this.lru.delete("pub_" + event.id)
+    /*
+      Leaving Event
+    */
     } else if (event.event === "leaving") {
       // correlate: event.data.id --> session_id
-      event.session_id = this.cache.get("uuid_" + event.id, 1)[0]
-      event.traceId = event.session_id
-      const previous_ts = this.sessions.get(event.session_id, 1)[0] || nano_now(new Date().getTime());
-      event.duration = just_now(event.timestamp) - parseInt(previous_ts);
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
+      try {
+        const joinEvent = this.lru.get('join_' + event.id)
+        if (!joinEvent) return
+        joinEvent.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
+        joinEvent.name = "User " + event.id + " / Display Name: " + joinEvent?.display + ", Room " + event.room
+        this.lru.delete("join_" + event.id)
+        // logger.info('type 64 leaving sending', event)
+        tracegen(joinEvent, this.endpoint)
+        event.display = line.event.data?.display || "null"
+        event.duration = 1000
+        event.parentId = joinEvent.parentId
+        event.traceId = joinEvent.session_id
+        event.name = "User " + event.id + " leaving / Display Name: " + joinEvent?.display + ", Room " + event.room
+        tracegen(event, this.endpoint)
+        this.lru.delete('join_' + event.id)
+      } catch (e) {
+        console.log(e)
+      }
       // decrease tag counter
       if (this.metrics) this.counters['e'].add(-1, line.event.data);
-      logger.info('type 64 leaving sending', event)
-      tracegen(event, this.endpoint)
     }
-    logger.info('type 64 sending', event)
-    tracegen(event, this.endpoint)
   }
 };
 
