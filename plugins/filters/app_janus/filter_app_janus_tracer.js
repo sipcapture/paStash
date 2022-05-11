@@ -45,14 +45,6 @@ function FilterAppJanusTracer () {
 util.inherits(FilterAppJanusTracer, base_filter.BaseFilter);
 
 FilterAppJanusTracer.prototype.start = async function (callback) {
-  // Event cache
-  var cache = recordCache({
-    maxSize: this.cacheSize,
-    maxAge: this.cacheAge,
-    onStale: false
-  });
-  this.cache = cache;
-
   // Session cache
   var sessions = recordCache({
     maxSize: this.cacheSize,
@@ -108,12 +100,12 @@ FilterAppJanusTracer.prototype.process = function (data) {
       name: line.event.name,
       event: line.event.name,
       session_id: line.session_id,
-      id: line.session_id,
+      traceId: line.session_id,
+      id: line.event.transport.id,
       spanId: spanid(),
-      timestamp: line.timestamp || nano_now(new Date().getTime())
+      timestamp: line.timestamp || nano_now(new Date().getTime()),
+      duration: 1000
     }
-    event.traceId = event.session_id
-    event.duration = 1000
     /* CREATE event */
     if (event.name === "created") {
       // create root span
@@ -140,7 +132,8 @@ FilterAppJanusTracer.prototype.process = function (data) {
       if (this.metrics) this.counters['s'].add(-1, line.event);
       logger.info('type 1 destroyed sending', createEvent)
       tracegen(createEvent, this.endpoint)
-      event.duration = 1
+      event.duration = 100
+      event.name = "Destroyed " + event.id
       tracegen(event, this.endpoint)
     }
   /*
