@@ -134,6 +134,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       tracegen(createEvent, this.endpoint)
       event.duration = 100
       event.name = "Destroyed " + event.id
+      event.parentId = createEvent.spanId
       tracegen(event, this.endpoint)
     }
   /*
@@ -150,20 +151,27 @@ FilterAppJanusTracer.prototype.process = function (data) {
       spanId: spanid(),
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
-    if (!line.event.data) return;
+    /*
+      Attach Event
+    */
     if (event.name === "attached") {
       event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
       event.traceId = event.session_id
       this.lru.set("att_" + event.session_id, event);
+    /*
+      Detach Event
+    */
     } else if (event.name === "detached") {
       const attEvent = this.lru.get("att_" + event.session_id)
       attEvent.duration = just_now(event.timestamp) - just_now(attEvent.timestamp)
+      attEvent.name = "Attached" + event.session_id
       this.lru.delete("att_" + event.session_id)
       logger.info('type 2 detached sending', event)
       tracegen(attEvent, this.endpoint)
+      event.name = "Detached" + event.session_id
       event.parentId = attEvent.parentId
       event.traceId = event.session_id
-      event.duration = 0
+      event.duration = 1
       tracegen(event, this.endpoint)
     }
 
@@ -188,7 +196,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       Joined Event
       */
     if (event.event === "joined") {
-      event.display = line.event.data.display
+      event.display = line.event.data?.display || "null"
       event.session_id = line.session_id
       event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
@@ -259,6 +267,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.lru.delete("pub_" + event.id)
       logger.info('type 64 unpublished sending', pubEvent)
       tracegen(pubEvent, this.endpoint)
+      event.name = "Unpublished " + event.id + ", Room " + event.room
       event.duration = 1
       event.parentId = pubEvent.parentId
       event.traceId = pubEvent.session_id
@@ -271,14 +280,15 @@ FilterAppJanusTracer.prototype.process = function (data) {
       try {
         const joinEvent = this.lru.get('join_' + event.id)
         joinEvent.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
-        joinEvent.name = "User " + event.id + " / " + joinEvent.display + ", Room " + event.room
+        joinEvent.name = "User " + event.id + " / Display Name: " + joinEvent?.display + ", Room " + event.room
         this.lru.delete("join_" + event.id)
         logger.info('type 64 leaving sending', event)
         tracegen(joinEvent, this.endpoint)
+        event.display = line.event.data?.display || "null"
         event.duration = 1
         event.parentId = joinEvent.parentId
         event.traceId = joinEvent.session_id
-        event.name = "User " + event.id + " leaving"
+        event.name = "User " + event.id + " leaving / Display Name: " + event?.display + ", Room " + event.room
         tracegen(event, this.endpoint)
       } catch (e) {
         console.log(e)
