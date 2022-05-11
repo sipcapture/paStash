@@ -184,6 +184,9 @@ FilterAppJanusTracer.prototype.process = function (data) {
     if (!line.event.data) return;
 
     logger.info("trace 64: ", line)
+    /*
+      Joined Event
+      */
     if (event.event === "joined") {
       event.display = line.event.data.display
       event.session_id = line.session_id
@@ -195,6 +198,9 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.lru.set("join_" + event.id, event);
       // increase tag counter
       if (this.metrics) this.counters['e'].add(1, line.event.data);
+    /*
+      Configured Event
+    */
     } else if (event.event === "configured") {
       /* Set start time of configured as start of join,
          emit span when published is received */
@@ -208,11 +214,42 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event.name = "Configured " + event.id + ", Room " + event.room
       logger.info('type 64 configured sending', event)
       tracegen(event, this.endpoint)
+    /*
+      Published Event
+    */
     } else if (event.event === "published") {
       event.session_id = line.session_id
       event.traceId = event.session_id
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
       this.lru.set("pub_" + event.id, event);
+    /*
+      Subscribing Event
+    */
+    } else if (event.event === "subscribing") {
+      event.session_id = line.session_id
+      event.traceId = event.session_id
+      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
+      this.lru.set("sub_" + event.session_id, event);
+    /*
+      Subscribed Event
+    */
+    } else if (event.event === "subscribed") {
+      /* Set start time to be subscribing event,
+          emit when subscription suceeds
+      */
+      event.session_id = line.session_id
+      event.traceId = event.session_id
+      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
+      var subEvent = this.lru.get("sub_" + event.session_id);
+      event.duration = just_now(event.timestamp) - just_now(subEvent.timestamp)
+      event.timestamp = subEvent.timestamp
+      event.name = "Subscribed " + event.session_id + ", Room " + event.room
+      logger.info('type 64 subscribed sending', event)
+      tracegen(event, this.endpoint)
+      // TODO: add streams object to tags
+    /*
+      Unpublished Event
+    */
     } else if (event.event === "unpublished") {
       // correlate: event.data.id --> session_id
       const pubEvent = this.lru.get("pub_" + event.id)
@@ -223,9 +260,12 @@ FilterAppJanusTracer.prototype.process = function (data) {
       logger.info('type 64 unpublished sending', pubEvent)
       tracegen(pubEvent, this.endpoint)
       event.duration = 1
-      event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
-      event.traceId = event.session_id
+      event.parentId = pubEvent.parentId
+      event.traceId = pubEvent.session_id
       tracegen(event, this.endpoint)
+    /*
+      Leaving Event
+    */
     } else if (event.event === "leaving") {
       // correlate: event.data.id --> session_id
       try {
