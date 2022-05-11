@@ -161,7 +161,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.lru.delete("att_" + event.session_id)
       logger.info('type 2 detached sending', event)
       tracegen(attEvent, this.endpoint)
-      event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
+      event.parentId = attEvent.parentId
       event.traceId = event.session_id
       event.duration = 0
       tracegen(event, this.endpoint)
@@ -236,8 +236,9 @@ FilterAppJanusTracer.prototype.process = function (data) {
         logger.info('type 64 leaving sending', event)
         tracegen(joinEvent, this.endpoint)
         event.duration = 1
-        event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
+        event.parentId = joinEvent.parentId
         event.traceId = joinEvent.session_id
+        event.name = "User " + event.id + " leaving"
         tracegen(event, this.endpoint)
       } catch (e) {
         console.log(e)
