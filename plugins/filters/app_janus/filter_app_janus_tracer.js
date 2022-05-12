@@ -124,10 +124,12 @@ FilterAppJanusTracer.prototype.process = function (data) {
       createEvent.name = "Session " + event.session_id
       if (this.metrics) this.counters['s'].add(-1, line.event);
       // logger.info('type 1 destroyed sending', createEvent)
+      createEvent.tags = createEvent
       tracegen(createEvent, this.endpoint)
       event.duration = 1000
       event.name = "Destroyed " + event.id
       event.parentId = createEvent.spanId
+      event.tags = event
       tracegen(event, this.endpoint)
       // delete root span
       this.lru.delete(event.session_id);
@@ -167,11 +169,13 @@ FilterAppJanusTracer.prototype.process = function (data) {
       attEvent.duration = just_now(event.timestamp) - just_now(attEvent.timestamp)
       attEvent.name = "Attached " + event.session_id
       // logger.info('type 2 detached sending', event)
+      attEvent.tags = attEvent
       tracegen(attEvent, this.endpoint)
       event.name = "Detached " + event.session_id
       event.parentId = attEvent.parentId
       event.traceId = event.session_id
       event.duration = 1000
+      event.tags = event
       tracegen(event, this.endpoint)
       this.lru.delete("att_" + event.session_id)
     }
@@ -222,6 +226,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event.timestamp = joinEvent.timestamp
       event.name = "Configured " + event.id + ", Room " + event.room
       // logger.info('type 64 configured sending', event)
+      event.tags = event
       tracegen(event, this.endpoint)
     /*
       Published Event
@@ -257,6 +262,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event.timestamp = subEvent.timestamp
       event.name = "Subscribed " + event.session_id + ", Room " + event.room
       // logger.info('type 64 subscribed sending', event)
+      event.tags = event
       tracegen(event, this.endpoint)
       this.lru.delete("sub_" + event.session_id);
       // TODO: add streams object to tags
@@ -270,6 +276,8 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
       event.duration = 1000
       event.name = "Updated " + event.session_id + ", Room " + event.room
+      event.tags = event
+      tracegen(event, this.endpoint)
     /*
       Unpublished Event
     */
@@ -280,11 +288,13 @@ FilterAppJanusTracer.prototype.process = function (data) {
       pubEvent.duration = just_now(event.timestamp) - just_now(pubEvent.timestamp);
       pubEvent.name = "Published " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
       // logger.info('type 64 unpublished sending', pubEvent)
+      pubEvent.tags = pubEvent
       tracegen(pubEvent, this.endpoint)
       event.name = "Unpublished " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
       event.duration = 1000
       event.parentId = pubEvent.parentId
       event.traceId = pubEvent.session_id
+      event.tags = event
       tracegen(event, this.endpoint)
       this.lru.delete("pub_" + event.id)
     /*
@@ -298,12 +308,14 @@ FilterAppJanusTracer.prototype.process = function (data) {
         joinEvent.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
         joinEvent.name = "User " + event.id + " / Display Name: " + joinEvent?.display + ", Room " + event.room
         // logger.info('type 64 leaving sending', event)
+        joinEvent.tags = joinEvent
         tracegen(joinEvent, this.endpoint)
         event.display = line.event.data?.display || "null"
         event.duration = 1000
         event.parentId = joinEvent.parentId
         event.traceId = joinEvent.session_id
         event.name = "User " + event.id + " leaving / Display Name: " + joinEvent?.display + ", Room " + event.room
+        event.tags = event
         tracegen(event, this.endpoint)
         this.lru.delete('join_' + event.id)
       } catch (e) {
