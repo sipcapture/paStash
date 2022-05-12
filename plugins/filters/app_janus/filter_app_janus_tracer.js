@@ -348,7 +348,9 @@ async function tracegen (event, endpoint) {
   }]
   if (event.parentId) { trace[0].parentId = event.parentId }
   if (event.tags) {
-    trace[0].tags = event.tags
+    var tags = event.tags
+    delete event.tags
+    trace[0].tags = tags
   } else {
     trace[0].tags = { event: 'hello' }
   }
