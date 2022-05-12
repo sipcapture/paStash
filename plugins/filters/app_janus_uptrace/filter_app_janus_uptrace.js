@@ -41,7 +41,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   // LRU to track across sessions
   this.lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false })
   this.otel = otel
-  this.uptrace = uptrace
+  uptrace
     .configureOpentelemetry({
       dsn: this.endpoint,
       serviceName: this.service_name,
