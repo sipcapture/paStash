@@ -43,7 +43,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   this.otel = otel
   this.uptrace = uptrace
     .configureOpentelemetry({
-      dsn: 'http://project2_secret_token@us.ch.hepic.tel:14318/2',
+      dsn: this.endpoint,
       serviceName: this.service_name,
       serviceVersion: '0.0.1'
     })
