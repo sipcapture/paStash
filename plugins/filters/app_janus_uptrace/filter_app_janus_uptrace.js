@@ -63,14 +63,14 @@ FilterAppJanusTracer.prototype.process = function (data) {
     this.lru.set('tracer_instance', tracer)
   }
 
-  logger.info('PJU -- Tracer tracking event')
+  logger.info('PJU -- Tracer tracking event', this.lru.has('tracer_instance'))
 
   // bypass
   if (this.bypass) this.emit('output', data)
   if (!data.message) return
   var event = {}
   var line = JSON.parse(data.message)
-  // logger.info('Incoming line', line.type, line.event)
+  logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
   if (line.type === 128 || line.type === 8 || line.type === 16 || line.type === 32) return
   // logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
@@ -91,10 +91,10 @@ FilterAppJanusTracer.prototype.process = function (data) {
     /* CREATE event */
     if (event.name === "created") {
       const sessionSpan = tracer.startSpan(event.session_id + " -- Session", {
-        attributes: event,
-        kind: otel.SpanKind.PRODUCER
+        attributes: event
       })
-
+      sessionSpan.addEvent('Create', event)
+      logger.info('PJU -- Session event Span', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
       // create root span
       // this.lru.set(event.session_id, event)
@@ -109,7 +109,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
-      logger.info('Sending span', sessionSpan)
+      logger.info('PJU -- Sending span', sessionSpan)
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
       /*
@@ -329,5 +329,3 @@ FilterAppJanusTracer.prototype.process = function (data) {
 exports.create = function () {
   return new FilterAppJanusTracer()
 }
-
-function tracegen (event) { console.log('replace: ', event.name) }
