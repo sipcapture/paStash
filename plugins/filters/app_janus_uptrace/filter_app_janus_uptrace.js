@@ -154,7 +154,8 @@ FilterAppJanusTracer.prototype.process = function (data) {
       */
     if (event.name === "attached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
-      sessionSpan.addEvent(event.session_id + '-- Attach Event', event)
+      const attachedSpan = tracer.startActiveSpan(event.session_id + " -- Client attached")
+      attachedSpan.end()
       /*
       event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
       event.traceId = event.session_id
@@ -163,6 +164,9 @@ FilterAppJanusTracer.prototype.process = function (data) {
       Detach Event
       */
     } else if (event.name === "detached") {
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const detachedSpan = tracer.startActiveSpan(event.session_id + " -- Client detached")
+      detachedSpan.end()
       /*
       const attEvent = this.lru.get("att_" + event.session_id)
       if (!attEvent) return
