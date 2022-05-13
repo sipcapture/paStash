@@ -10,21 +10,18 @@ This pass-through plugin produces Uptrace/OTLP spans from Janus events
 ![image](https://user-images.githubusercontent.com/1423657/167948823-a6369a07-2e84-48d0-bd82-4a801ddf0d76.png)
 
 
-Example 1: parse janus logs.
-````
+Example 1: parse janus logs and send them to an uptrace instance
+```
 filter {
   app_janus_uptrace {
-    endpoint => http://localhost:3100/tempo/api/push
+    endpoint => "http://token@uptrace.host.ip:14318/<project_id>"
     bypass => true
   }
 }
-`````
+```
 
 Parameters:
 
-* `endpoint`: Tempo/Zipkin Receiver for events
+* `endpoint`: Uptrace DSN address
 * `bypass`: Pass-Through raw messages post processing
-* `metrics`: Enable Prometheus exporter. Default false.
-* `port`: Port for Prometheus exporter
-* `service_name`: Service name tag for Prometheus exporter
-* `interval`: Prometheus exporter interval in ms. Default 10000.
+* `service_name`: Identifying service name. Default "pastash-janus".

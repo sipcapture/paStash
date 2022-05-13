@@ -22,12 +22,10 @@ function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this)
   this.mergeConfig({
     name: 'AppJanusTracer',
-    optional_params: ['debug', 'endpoint', 'bypass', 'port', 'metrics', 'service_name', 'interval'],
+    optional_params: ['debug', 'endpoint', 'bypass', 'service_name'],
     default_values: {
-      'endpoint': 'http://localhost:3100/tempo/api/push',
+      'endpoint': 'http://token@uptrace.host.ip:14318/<project_id>',
       'service_name': 'pastash-janus',
-      'interval': 10000,
-      'port': 9090,
       'bypass': true,
       'debug': false
     },
