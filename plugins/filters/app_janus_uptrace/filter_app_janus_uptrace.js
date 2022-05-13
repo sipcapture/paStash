@@ -85,12 +85,11 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event: line.event.name,
       session_id: line.session_id,
       traceId: line.session_id,
-      timestamp: line.timestamp || nano_now(new Date().getTime()),
-      duration: 1000
+      timestamp: line.timestamp || nano_now(new Date().getTime())
     }
     /* CREATE event */
     if (event.name === "created") {
-      const sessionSpan = tracer.startSpan(event.session_id + " -- Session")
+      const sessionSpan = tracer.startActiveSpan(event.session_id + " -- Session")
       logger.info('PJU -- Session event Span', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
       // create root span
@@ -107,7 +106,8 @@ FilterAppJanusTracer.prototype.process = function (data) {
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       logger.info('PJU -- Sending span', sessionSpan)
-      sessionSpan.addEvent(event.session_id + "-- Destroyed Event", event)
+      const destroySpan = tracer.startActiveSpan(event.session_id + " -- Session destroyed")
+      destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
       /*
