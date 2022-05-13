@@ -22,11 +22,12 @@ function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this)
   this.mergeConfig({
     name: 'AppJanusTracer',
-    optional_params: ['debug', 'endpoint', 'bypass', 'service_name'],
+    optional_params: ['debug', 'endpoint', 'bypass', 'service_name', 'filter'],
     default_values: {
       'endpoint': 'http://token@uptrace.host.ip:14318/<project_id>',
       'service_name': 'pastash-janus',
       'bypass': true,
+      'filter': [1, 128, 2, 4, 8, 16, 32, 64, 256],
       'debug': false
     },
     start_hook: this.start.bind(this)
@@ -39,6 +40,11 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   // LRU to track across sessions
   this.lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false })
   this.otel = otel
+  var filterArray = []
+  for (var i = 0; i < this.filter.length; i++) {
+    filterArray.push([this.filter[i], "allow"])
+  }
+  this.filterMap = new Map(filterArray)
   uptrace
     .configureOpentelemetry({
       dsn: this.endpoint,
@@ -61,7 +67,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     this.lru.set('tracer_instance', tracer)
   }
 
-  logger.info('PJU -- Tracer tracking event', this.lru.has('tracer_instance'))
+  // logger.info('PJU -- Tracer tracking event', this.lru.has('tracer_instance'))
 
   // bypass
   if (this.bypass) this.emit('output', data)
@@ -70,7 +76,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   var line = JSON.parse(data.message)
   // logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
-  if (line.type === 128 || line.type === 8 || line.type === 16 || line.type === 32) return
+  if (!this.filterMap.has(line.type)) return
   // logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
   /*
   TYPE 1
