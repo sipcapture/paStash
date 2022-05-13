@@ -95,16 +95,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       })
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
-      // create root span
-      // this.lru.set(event.session_id, event)
-      // start root trace, do not update
-      /*
-      this.sessions.add(event.session_id, just_now(event.timestamp))
-      this.sessions.add('uuid_' + event.session_id, event.traceId)
-      this.sessions.add('span_' + event.session_id, event.spanId)
-      this.sessions.add('parent_' + event.session_id, event.spanId)
-      if (this.metrics) this.counters['s'].add(1, line.event)
-      */
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
@@ -117,29 +107,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
-      /*
-      const createEvent = this.lru.get(event.session_id)
-      createEvent.duration = just_now(event.timestamp) - just_now(createEvent.timestamp)
-      */
-      /* name the event Session
-      createEvent.name = "Session " + event.session_id
-      if (this.metrics) this.counters['s'].add(-1, line.event)
-      // logger.info('type 1 destroyed sending', createEvent)
-      createEvent.tags = createEvent
-      tracegen(createEvent, this.endpoint)
-      event.duration = 1000
-      event.name = "Destroyed " + event.id
-      event.parentId = createEvent.spanId
-      event.tags = event
-      tracegen(event, this.endpoint)
-      // delete root span
-      this.lru.delete(event.session_id)
-      // end root trace
-      this.sessions.remove(event.session_id)
-      this.sessions.remove('uuid_' + event.session_id)
-      this.sessions.remove('span_' + event.session_id, event.spanId)
-      this.sessions.remove('parent_' + event.session_id, event.spanId)
-      */
     }
   /*
   TYPE 2
@@ -147,7 +114,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   Client Attachment and Detachment is tracked
   */
   } else if (line.type == 2) {
-
     event = {
       name: line.event.name,
       event: line.event.name,
@@ -171,7 +137,8 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       */
     } else if (event.name === "detached") {
       const attachedSpan = this.lru.get("att_" + event.session_id)
-      const ctx = otel.trace.setSpan(otel.context.active(), attachedSpan)
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const detachedSpan = tracer.startSpan("Session detached", {
         attributes: event,
         kind: otel.SpanKind.SERVER
@@ -217,7 +184,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
-      confSpan.end()
+      this.lru.set("conf_" + event.id, confSpan)
       /*
       Published Event
       */
@@ -229,6 +196,9 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       this.lru.set("pub_" + event.id, pubSpan)
+
+      const confSpan = this.lru.get('conf_' + event.id)
+      confSpan.end()
       /*
       Subscribing Event
       */
