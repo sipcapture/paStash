@@ -137,8 +137,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       */
     } else if (event.name === "detached") {
       const attachedSpan = this.lru.get("att_" + event.session_id)
-      const sessionSpan = this.lru.get("sess_" + event.session_id)
-      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
+      const ctx = otel.trace.setSpan(otel.context.active(), attachedSpan)
       const detachedSpan = tracer.startSpan("Session detached", {
         attributes: event,
         kind: otel.SpanKind.SERVER
