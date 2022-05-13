@@ -161,8 +161,9 @@ FilterAppJanusTracer.prototype.process = function (data) {
       this.lru.set("att_" + event.session_id, event)
 
       Detach Event
-*/
+      */
     } else if (event.name === "detached") {
+      /*
       const attEvent = this.lru.get("att_" + event.session_id)
       if (!attEvent) return
       attEvent.duration = just_now(event.timestamp) - just_now(attEvent.timestamp)
@@ -177,8 +178,8 @@ FilterAppJanusTracer.prototype.process = function (data) {
       event.tags = event
       tracegen(event, this.endpoint)
       this.lru.delete("att_" + event.session_id)
+      */
     }
-    */
   /*
   TYPE 64
 
