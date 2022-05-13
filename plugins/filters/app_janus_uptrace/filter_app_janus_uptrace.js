@@ -90,10 +90,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
     }
     /* CREATE event */
     if (event.name === "created") {
-      const sessionSpan = tracer.startSpan(event.session_id + " -- Session", {
-        attributes: event
-      })
-      sessionSpan.addEvent('Create', event)
+      const sessionSpan = tracer.startSpan(event.session_id + " -- Session")
       logger.info('PJU -- Session event Span', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
       // create root span
@@ -110,6 +107,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       logger.info('PJU -- Sending span', sessionSpan)
+      sessionSpan.addEvent(event.session_id + "-- Destroyed Event", event)
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
       /*
@@ -142,7 +140,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
   Client Attachment and Detachment is tracked
   */
   } else if (line.type == 2) {
-    /*
+
     event = {
       name: line.event.name,
       event: line.event.name,
@@ -151,16 +149,19 @@ FilterAppJanusTracer.prototype.process = function (data) {
       spanId: spanid(),
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
-
+    /*
       Attach Event
-
+      */
     if (event.name === "attached") {
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      sessionSpan.addEvent(event.session_id + '-- Attach Event', event)
+      /*
       event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
       event.traceId = event.session_id
       this.lru.set("att_" + event.session_id, event)
 
       Detach Event
-
+*/
     } else if (event.name === "detached") {
       const attEvent = this.lru.get("att_" + event.session_id)
       if (!attEvent) return
