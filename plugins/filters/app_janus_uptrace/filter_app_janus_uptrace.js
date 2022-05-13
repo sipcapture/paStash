@@ -151,9 +151,8 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     event = {
       name: line.event.name,
       event: line.event.name,
-      session_id: line.session_id,
-      id: line.session_id,
-      spanId: spanid(),
+      session_id: line?.session_id?.toString() || line?.session_id,
+      id: line?.session_id,
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
     /*
@@ -164,20 +163,22 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const attachedSpan = tracer.startSpan("Session attached", {
         attributes: event,
-        kind: otel.SpanKind.SERVER
+        kind: otel.SpanKind.CLIENT
       }, ctx)
-      attachedSpan.end()
+      this.lru.set("att_" + event.session_id, attachedSpan)
       /*
       Detach Event
       */
     } else if (event.name === "detached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const detachedSpan = tracer.startSpan("Sessiond detached", {
+      const detachedSpan = tracer.startSpan("Session detached", {
         attributes: event,
-        kind: otel.SpanKind.SERVER
+        kind: otel.SpanKind.CLIENT
       }, ctx)
       detachedSpan.end()
+      const attachedSpan = this.lru.get("att_" + event.session_id)
+      attachedSpan.end()
     }
   /*
   TYPE 64
@@ -185,18 +186,16 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   Users Joining or Leaving Sessions
   */
   } else if (line.type == 64) {
-
     event = {
       name: line.event.plugin,
       event: line.event.data.event,
-      display: line.event.data?.display || "null",
-      id: line.event.data.id,
-      session_id: line?.session_id,
-      room: line.event.data.room,
+      display: line.event.data?.display || 'null',
+      id: line.event.data.id.toString(),
+      session_id: line?.session_id?.toString() || line.session_id,
+      room: line.event.data.room?.toString() || line.event.data.room,
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
     if (!line.event.data) return
-
     // logger.info("trace 64: ", line)
     /*
       Joined Event
@@ -209,7 +208,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       this.lru.set("join_" + event.id, joinSpan)
-
       /*
       Configured Event
       */
