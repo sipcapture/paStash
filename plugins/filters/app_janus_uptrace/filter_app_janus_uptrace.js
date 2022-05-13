@@ -110,7 +110,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       logger.info('PJU -- Sending span', sessionSpan)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const destroySpan = tracer.startSpan("Session", {
+      const destroySpan = tracer.startSpan("Session destroyed", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
@@ -162,42 +162,22 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     if (event.name === "attached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const attachedSpan = tracer.startSpan("Session", {
+      const attachedSpan = tracer.startSpan("Session attached", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
       attachedSpan.end()
       /*
-      event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
-      event.traceId = event.session_id
-      this.lru.set("att_" + event.session_id, event)
-
       Detach Event
       */
     } else if (event.name === "detached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const detachedSpan = tracer.startSpan("Session", {
+      const detachedSpan = tracer.startSpan("Sessiond detached", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
       detachedSpan.end()
-      /*
-      const attEvent = this.lru.get("att_" + event.session_id)
-      if (!attEvent) return
-      attEvent.duration = just_now(event.timestamp) - just_now(attEvent.timestamp)
-      attEvent.name = "Attached " + event.session_id
-      // logger.info('type 2 detached sending', event)
-      attEvent.tags = attEvent
-      tracegen(attEvent, this.endpoint)
-      event.name = "Detached " + event.session_id
-      event.parentId = attEvent.parentId
-      event.traceId = event.session_id
-      event.duration = 1000
-      event.tags = event
-      tracegen(event, this.endpoint)
-      this.lru.delete("att_" + event.session_id)
-      */
     }
   /*
   TYPE 64
@@ -205,145 +185,112 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   Users Joining or Leaving Sessions
   */
   } else if (line.type == 64) {
-    /*
+
     event = {
       name: line.event.plugin,
       event: line.event.data.event,
+      display: line.event.data?.display || "null",
       id: line.event.data.id,
-      spanId: spanid(),
+      session_id: line?.session_id,
       room: line.event.data.room,
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
     if (!line.event.data) return
 
     // logger.info("trace 64: ", line)
-
+    /*
       Joined Event
-
+      */
     if (event.event === "joined") {
-      event.display = line.event.data?.display || "null"
-      event.session_id = line.session_id
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid()
-      console.log("JOIN ", event)
-      // session_id, handle_id, opaque_id, event.data.id
-      // correlate: session_id --> event.data.id
-      this.lru.set("join_" + event.id, event)
-      // increase tag counter
-      if (this.metrics) this.counters['e'].add(1, line.event.data)
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
+      const joinSpan = tracer.startSpan("User joined", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      this.lru.set("join_" + event.id, joinSpan)
 
+      /*
       Configured Event
-
+      */
     } else if (event.event === "configured") {
-      Set start time of configured as start of join,
-         emit span when published is received
-      event.session_id = line.session_id
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid()
-      emit configured event
-      const joinEvent = this.lru.get("join_" + event.id)
-      event.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
-      event.timestamp = joinEvent.timestamp
-      event.name = "Configured " + event.id + ", Room " + event.room
-      // logger.info('type 64 configured sending', event)
-      event.tags = event
-      tracegen(event, this.endpoint)
-
+      const joinSpan = this.lru.get('join_' + event.id)
+      const ctx = otel.trace.setSpan(otel.context.active(), joinSpan)
+      const confSpan = tracer.startSpan("User configured", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      confSpan.end()
+      /*
       Published Event
-
+      */
     } else if (event.event === "published") {
-      event.session_id = line.session_id
-      event.display = line.event?.display
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid()
-      this.lru.set("pub_" + event.id, event)
-
+      const joinSpan = this.lru.get('join_' + event.id)
+      const ctx = otel.trace.setSpan(otel.context.active(), joinSpan)
+      const pubSpan = tracer.startSpan("User published", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      this.lru.set("pub_" + event.id, pubSpan)
+      /*
       Subscribing Event
-
+      */
     } else if (event.event === "subscribing") {
-      event.session_id = line.session_id
-      event.id = event.session_id
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid()
-      this.lru.set("sub_" + event.session_id, event)
-
+      const joinSpan = this.lru.get('join_' + event.id)
+      const ctx = otel.trace.setSpan(otel.context.active(), joinSpan)
+      const subSpan = tracer.startSpan("User subscribing", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      this.lru.set("sub_" + event.session_id, subSpan)
+      /*
       Subscribed Event
-
+      */
     } else if (event.event === "subscribed") {
-       Set start time to be subscribing event,
-          emit when subscription suceeds
-
-      event.session_id = line.session_id
-      event.id = event.session_id
-      event.traceId = event.session_id
-      var subEvent = this.lru.get("sub_" + event.session_id)
-      event.parentId = subEvent.parentId
-      event.duration = just_now(event.timestamp) - just_now(subEvent.timestamp)
-      event.timestamp = subEvent.timestamp
-      event.name = "Subscribed " + event.session_id + ", Room " + event.room
-      // logger.info('type 64 subscribed sending', event)
-      event.tags = event
-      tracegen(event, this.endpoint)
-      this.lru.delete("sub_" + event.session_id)
-      // TODO: add streams object to tags
-
+      const subSpan = this.lru.get('sub_' + event.session_id)
+      subSpan.end()
+      /*
       Update Event
-
+      */
     } else if (event.event === "updated") {
-      event.session_id = line.session_id
-      event.id = event.session_id
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid()
-      event.duration = 1000
-      event.name = "Updated " + event.session_id + ", Room " + event.room
-      event.tags = event
-      tracegen(event, this.endpoint)
-
+      const joinSpan = this.lru.get('join_' + event.id)
+      const ctx = otel.trace.setSpan(otel.context.active(), joinSpan)
+      const upSpan = tracer.startSpan("User updated", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      upSpan.end()
+      /*
       Unpublished Event
-
+      */
     } else if (event.event === "unpublished") {
-      // correlate: event.data.id --> session_id
-      const pubEvent = this.lru.get("pub_" + event.id)
-      if (!pubEvent) return
-      pubEvent.duration = just_now(event.timestamp) - just_now(pubEvent.timestamp)
-      pubEvent.name = "Published " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
-      // logger.info('type 64 unpublished sending', pubEvent)
-      pubEvent.tags = pubEvent
-      tracegen(pubEvent, this.endpoint)
-      event.name = "Unpublished " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
-      event.duration = 1000
-      event.parentId = pubEvent.parentId
-      event.traceId = pubEvent.session_id
-      event.tags = event
-      tracegen(event, this.endpoint)
-      this.lru.delete("pub_" + event.id)
-
+      const joinSpan = this.lru.get('join_' + event.id)
+      const ctx = otel.trace.setSpan(otel.context.active(), joinSpan)
+      const unpubSpan = tracer.startSpan("User unpublished", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      unpubSpan.end()
+      const pubSpan = this.lru.get('pub_' + event.id)
+      pubSpan.end()
+      /*
       Leaving Event
-
+      */
     } else if (event.event === "leaving") {
       // correlate: event.data.id --> session_id
       try {
-        const joinEvent = this.lru.get('join_' + event.id)
-        if (!joinEvent) return
-        joinEvent.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
-        joinEvent.name = "User " + event.id + " / Display Name: " + joinEvent?.display + ", Room " + event.room
-        // logger.info('type 64 leaving sending', event)
-        joinEvent.tags = joinEvent
-        tracegen(joinEvent, this.endpoint)
-        event.display = line.event.data?.display || "null"
-        event.duration = 1000
-        event.parentId = joinEvent.parentId
-        event.traceId = joinEvent.session_id
-        event.name = "User " + event.id + " leaving / Display Name: " + joinEvent?.display + ", Room " + event.room
-        event.tags = event
-        tracegen(event, this.endpoint)
-        this.lru.delete('join_' + event.id)
+        const joinSpan = this.lru.get('join_' + event.id)
+        const ctx = otel.trace.setSpan(otel.context.active(), joinSpan)
+        const leaveSpan = tracer.startSpan("User leaving", {
+          attributes: event,
+          kind: otel.SpanKind.SERVER
+        }, ctx)
+        leaveSpan.end()
+        joinSpan.end()
       } catch (e) {
         console.log(e)
       }
-      // decrease tag counter
-      if (this.metrics) this.counters['e'].add(-1, line.event.data)
-    } */
+    }
   }
 }
 
