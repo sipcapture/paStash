@@ -83,8 +83,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     event = {
       name: line.event.name,
       event: line.event.name,
-      session_id: line.session_id,
-      traceId: line.session_id,
+      session_id: line?.session_id?.toString() || line?.session_id,
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
     /* CREATE event */
