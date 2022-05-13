@@ -109,10 +109,11 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       logger.info('PJU -- Sending span', sessionSpan)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const destroySpan = tracer.startSpan(event.session_id + " -- Session destroyed", {
         attributes: event,
         kind: otel.SpanKind.SERVER
-      })
+      }, ctx)
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
@@ -160,10 +161,11 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       */
     if (event.name === "attached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const attachedSpan = tracer.startSpan(event.session_id + " -- Client attached", {
         attributes: event,
         kind: otel.SpanKind.SERVER
-      })
+      }, ctx)
       attachedSpan.end()
       /*
       event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
@@ -174,10 +176,11 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       */
     } else if (event.name === "detached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const detachedSpan = tracer.startSpan(event.session_id + " -- Client detached", {
         attributes: event,
         kind: otel.SpanKind.SERVER
-      })
+      }, ctx)
       detachedSpan.end()
       /*
       const attEvent = this.lru.get("att_" + event.session_id)
