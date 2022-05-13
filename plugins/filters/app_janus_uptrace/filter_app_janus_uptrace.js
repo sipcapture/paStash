@@ -89,8 +89,11 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     }
     /* CREATE event */
     if (event.name === "created") {
-      const sessionSpan = await createSpan(tracer,event.session_id + " -- Session")
-      logger.info('PJU -- Session event Span', sessionSpan)
+      const sessionSpan = tracer.startSpan(event.session_id + " -- Session", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      })
+      logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
       // create root span
       // this.lru.set(event.session_id, event)
@@ -106,7 +109,10 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       logger.info('PJU -- Sending span', sessionSpan)
-      const destroySpan = await createSpan(tracer,event.session_id + " -- Session destroyed")
+      const destroySpan = tracer.startSpan(event.session_id + " -- Session destroyed", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      })
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
@@ -154,7 +160,10 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       */
     if (event.name === "attached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
-      const attachedSpan = await createSpan(tracer,event.session_id + " -- Client attached")
+      const attachedSpan = tracer.startSpan(event.session_id + " -- Client attached", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      })
       attachedSpan.end()
       /*
       event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
@@ -165,7 +174,10 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       */
     } else if (event.name === "detached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
-      const detachedSpan = await createSpan(tracer,event.session_id + " -- Client detached")
+      const detachedSpan = tracer.startSpan(event.session_id + " -- Client detached", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      })
       detachedSpan.end()
       /*
       const attEvent = this.lru.get("att_" + event.session_id)
@@ -337,9 +349,3 @@ exports.create = function () {
 }
 
 /* promise wrapper */
-
-function createSpan (tracer, label) {
-  return new Promise((resolve, reject) => {
-    tracer.startActiveSpan(label, resolve)
-  })
-}
