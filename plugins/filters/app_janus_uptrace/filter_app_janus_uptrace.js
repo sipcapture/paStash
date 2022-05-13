@@ -90,6 +90,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       })
+      sessionSpan.setAttribute('service.name', 'Session')
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
     /* DESTROY event */
@@ -101,6 +102,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      destroySpan.setAttribute('service.name', 'Session')
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
@@ -124,10 +126,11 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     if (event.name === "attached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const attachedSpan = tracer.startSpan("Session attached", {
+      const attachedSpan = tracer.startSpan("Handle attached", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      attachedSpan.setAttribute('service.name', 'Handle')
       this.lru.set("att_" + event.session_id, attachedSpan)
       /*
       Detach Event
@@ -135,10 +138,11 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     } else if (event.name === "detached") {
       const attachedSpan = this.lru.get("att_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), attachedSpan)
-      const detachedSpan = tracer.startSpan("Session detached", {
+      const detachedSpan = tracer.startSpan("Handle detached", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      detachedSpan.setAttribute('service.name', 'Handle')
       detachedSpan.end()
       attachedSpan.end()
     }
@@ -169,6 +173,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      joinSpan.setAttribute('service.name', 'Plugin')
       this.lru.set("join_" + event.id, joinSpan)
       /*
       Configured Event
@@ -180,6 +185,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      confSpan.setAttribute('service.name', 'Plugin')
       this.lru.set("conf_" + event.id, confSpan)
       /*
       Published Event
@@ -191,6 +197,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      pubSpan.setAttribute('service.name', 'Plugin')
       this.lru.set("pub_" + event.id, pubSpan)
 
       const confSpan = this.lru.get('conf_' + event.id)
@@ -205,6 +212,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      subSpan.setAttribute('service.name', 'Plugin')
       this.lru.set("sub_" + event.session_id, subSpan)
       /*
       Subscribed Event
@@ -222,6 +230,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      upSpan.setAttribute('service.name', 'Plugin')
       upSpan.end()
       /*
       Unpublished Event
@@ -233,6 +242,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      unpubSpan.setAttribute('service.name', 'Plugin')
       unpubSpan.end()
       const pubSpan = this.lru.get('pub_' + event.id)
       pubSpan.end()
@@ -248,6 +258,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
           attributes: event,
           kind: otel.SpanKind.SERVER
         }, ctx)
+        leaveSpan.setAttribute('service.name', 'Plugin')
         leaveSpan.end()
         joinSpan.end()
       } catch (e) {
