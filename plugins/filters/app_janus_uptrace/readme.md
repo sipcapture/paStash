@@ -25,4 +25,4 @@ Parameters:
 * `endpoint`: Uptrace DSN address
 * `bypass`: Pass-Through raw messages post processing
 * `service_name`: Identifying service name. Default "pastash-janus".
-* `filter`: An array of event types you want traced. Default: [1, 128, 2, 4, 8, 16, 32, 64, 256].
+* `filter`: An array of event types you want traced. Default: ["1", "128", "2", "4", "8", "16", "32", "64", "256"].

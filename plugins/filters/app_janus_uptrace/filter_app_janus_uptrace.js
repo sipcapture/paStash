@@ -15,8 +15,6 @@ const otel = require('@opentelemetry/api')
 const uptrace = require('@uptrace/node')
 
 function nano_now (date) { return parseInt(date.toString().padEnd(16, '0')) }
-function just_now (date) { return nano_now(date || new Date().getTime()) }
-function spanid () { return Math.floor(10000000 + Math.random() * 90000000).toString() }
 
 function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this)
@@ -27,7 +25,7 @@ function FilterAppJanusTracer () {
       'endpoint': 'http://token@uptrace.host.ip:14318/<project_id>',
       'service_name': 'pastash-janus',
       'bypass': true,
-      'filter': [1, 128, 2, 4, 8, 16, 32, 64, 256],
+      'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
       'debug': false
     },
     start_hook: this.start.bind(this)
@@ -40,11 +38,16 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   // LRU to track across sessions
   this.lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false })
   this.otel = otel
+  // logger.info('FILTER incoming', this.filter)
   var filterArray = []
   for (var i = 0; i < this.filter.length; i++) {
-    filterArray.push([this.filter[i], "allow"])
+    // logger.info('FILTER', this.filter[i])
+    filterArray.push([parseInt(this.filter[i]), "allow"])
   }
   this.filterMap = new Map(filterArray)
+  // logger.info('FILTER 1', this.filterMap.has(1))
+  // logger.info('FILTER 2', this.filterMap.has(2))
+  // logger.info('FILTER 64', this.filterMap.has(64))
   uptrace
     .configureOpentelemetry({
       dsn: this.endpoint,
@@ -74,14 +77,13 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   if (!data.message) return
   var event = {}
   var line = JSON.parse(data.message)
-  // logger.info('Incoming line', line.type, line.event)
+  logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
   if (!this.filterMap.has(line.type)) return
-  // logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
+  logger.info('Filtered', line.type, line.session_id, line.handle_id)
   /*
-  TYPE 1
-
-  Create Session and Destroy Session events are tracked
+  TYPE 1 - Session related event
+  Create Session and Destroy Session events are traced
   */
   if (line.type == 1) {
     event = {
@@ -114,9 +116,8 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       this.lru.delete("sess_" + event.session_id)
     }
   /*
-  TYPE 2
-
-  Client Attachment and Detachment is tracked
+  TYPE 2 - Handle related event
+  Handle Attachment and Detachment is traced
   */
   } else if (line.type == 2) {
     event = {
@@ -153,7 +154,25 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       attachedSpan.end()
     }
   /*
-  TYPE 64
+    Type 4 - External event
+    */
+  } else if (line.type == 4) {
+  /*
+    Type 8 - JSEP event
+    */
+  } else if (line.type == 8) {
+
+  } else if (line.type == 16) {
+
+  } else if (line.type == 32) {
+
+  } else if (line.type == 128) {
+
+  } else if (line.type == 256) {
+
+  }
+  /*
+  TYPE 64 - Plugin-originated event
 
   Users Joining or Leaving Sessions
   */
