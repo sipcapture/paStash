@@ -70,7 +70,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   if (!data.message) return
   var event = {}
   var line = JSON.parse(data.message)
-  logger.info('Incoming line', line.type, line.event)
+  // logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
   if (line.type === 128 || line.type === 8 || line.type === 16 || line.type === 32) return
   // logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
@@ -93,7 +93,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       })
-      logger.info('PJU -- Session event:', sessionSpan)
+      // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
       // create root span
       // this.lru.set(event.session_id, event)
@@ -108,7 +108,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
-      logger.info('PJU -- Sending span', sessionSpan)
+      // logger.info('PJU -- Sending span', sessionSpan)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const destroySpan = tracer.startSpan("Session destroyed", {
         attributes: event,
@@ -163,7 +163,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const attachedSpan = tracer.startSpan("Session attached", {
         attributes: event,
-        kind: otel.SpanKind.CLIENT
+        kind: otel.SpanKind.SERVER
       }, ctx)
       this.lru.set("att_" + event.session_id, attachedSpan)
       /*
@@ -174,7 +174,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       const ctx = otel.trace.setSpan(otel.context.active(), attachedSpan)
       const detachedSpan = tracer.startSpan("Session detached", {
         attributes: event,
-        kind: otel.SpanKind.CLIENT
+        kind: otel.SpanKind.SERVER
       }, ctx)
       detachedSpan.end()
       attachedSpan.end()
