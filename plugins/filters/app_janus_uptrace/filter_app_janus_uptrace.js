@@ -12,7 +12,13 @@ var logger = require('@pastash/pastash').logger
 const QuickLRU = require('quick-lru')
 
 const otel = require('@opentelemetry/api')
-const uptrace = require('@uptrace/node')
+const { Resource } = require('@opentelemetry/resources')
+const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions')
+const { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor, BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base')
+const { CollectorTraceExporter } = require('@opentelemetry/exporter-collector')
+const { ZipkinExporter } = require('@opentelemetry/exporter-zipkin')
+const { createClient, createResource, parseDsn, Dsn, Config } = require('@uptrace/core')
+// const uptrace = require('@uptrace/node')
 
 function nano_now (date) { return parseInt(date.toString().padEnd(16, '0')) }
 
@@ -20,9 +26,10 @@ function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this)
   this.mergeConfig({
     name: 'AppJanusTracer',
-    optional_params: ['debug', 'endpoint', 'bypass', 'service_name', 'filter'],
+    optional_params: ['debug', 'uptrace_dsn', 'cloki_dsn', 'bypass', 'service_name', 'filter'],
     default_values: {
-      'endpoint': 'http://token@uptrace.host.ip:14318/<project_id>',
+      'uptrace_dsn': 'http://token@uptrace.host.ip:14318/<project_id>',
+      'cloki_dsn': 'http://127.0.0.1:3100/tempo/api/push',
       'service_name': 'pastash-janus',
       'bypass': true,
       'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
@@ -48,14 +55,49 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   // logger.info('FILTER 1', this.filterMap.has(1))
   // logger.info('FILTER 2', this.filterMap.has(2))
   // logger.info('FILTER 64', this.filterMap.has(64))
-  uptrace
+
+  const provider = new BasicTracerProvider({
+    resource: new Resource({
+      [SemanticResourceAttributes.SERVICE_NAME]: 'pastash-janus'
+    })
+  })
+
+  const exporter_UT = new CollectorTraceExporter({
+    headers: {
+      'uptrace-dsn': this.uptrace_dsn
+    },
+    url: 'http://us.ch.hepic.tel:14318'
+  })
+
+  const exporter_CL = new ZipkinExporter({
+    headers: {
+      'tracer': 'cloki'
+    },
+    url: this.cloki_dsn
+  })
+
+  provider.addSpanProcessor(new BatchSpanProcessor(exporter_UT, {
+    maxExportBatchSize: 1000,
+    maxQueueSize: 1000
+  }))
+  provider.addSpanProcessor(new BatchSpanProcessor(exporter_CL, {
+    maxExportBatchSize: 1000,
+    maxQueueSize: 1000
+  }))
+
+  provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()))
+
+  provider.register()
+
+  callback()
+  /* uptrace
     .configureOpentelemetry({
       dsn: this.endpoint,
       serviceName: this.service_name,
       serviceVersion: '0.0.1'
     })
     .start()
-    .then(callback.bind(this))
+    .then(callback.bind(this)) */
 }
 
 FilterAppJanusTracer.prototype.process = async function (data) {
@@ -66,7 +108,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     tracer = this.lru.get('tracer_instance')
   } else {
     /* if not, create a new tracer */
-    tracer = otel.trace.getTracer('pastash_janus_uptrace', 'v0.0.1')
+    tracer = otel.trace.getTracer('pastash_janus_uptrace', 'v0.1.0')
     this.lru.set('tracer_instance', tracer)
   }
 
@@ -99,6 +141,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       })
       sessionSpan.setAttribute('service.name', 'Session')
+      sessionSpan.resource.attributes['service.name'] = 'Session'
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
     /* DESTROY event */
@@ -111,6 +154,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       destroySpan.setAttribute('service.name', 'Session')
+      destroySpan.resource.attributes['service.name'] = 'Session'
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
@@ -138,6 +182,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       attachedSpan.setAttribute('service.name', 'Handle')
+      attachedSpan.resource.attributes['service.name'] = 'Handle'
       this.lru.set("att_" + event.session_id, attachedSpan)
       /*
       Detach Event
@@ -150,6 +195,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       detachedSpan.setAttribute('service.name', 'Handle')
+      detachedSpan.resource.attributes['service.name'] = 'Handle'
       detachedSpan.end()
       attachedSpan.end()
     }
@@ -213,6 +259,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     Type 16 - WebRTC state event
     */
   } else if (line.type == 16) {
+    logger.info("TYPE 16", line)
     /*
       Subtype 1
       ICE flow
@@ -259,7 +306,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       } else if (event.ice_state == "ready") {
         const iceSpan = this.lru.get("ice_" + event.session_id)
         const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
-        const readySpan = tracer.startSpan("ICE connected", {
+        const readySpan = tracer.startSpan("ICE ready", {
           attributes: event,
           kind: otel.SpanKind.SERVER
         }, ctx)
