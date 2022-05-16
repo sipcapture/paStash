@@ -12,6 +12,7 @@ var logger = require('@pastash/pastash').logger
 const QuickLRU = require('quick-lru')
 
 const otel = require('@opentelemetry/api')
+const { CompositePropagator, W3CBaggagePropagator, W3CTraceContextPropagator } = require('@opentelemetry/core')
 const { Resource } = require('@opentelemetry/resources')
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions')
 const { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor, BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base')
@@ -56,6 +57,9 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   // logger.info('FILTER 2', this.filterMap.has(2))
   // logger.info('FILTER 64', this.filterMap.has(64))
 
+  const dsn = parseDsn(this.uptrace_dsn)
+  const _CLIENT = createClient(dsn)
+
   const provider = new BasicTracerProvider({
     resource: new Resource({
       [SemanticResourceAttributes.SERVICE_NAME]: 'pastash-janus'
@@ -66,7 +70,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     headers: {
       'uptrace-dsn': this.uptrace_dsn
     },
-    url: 'http://us.ch.hepic.tel:14318'
+    url: `${dsn.otlpAddr()}/v1/traces`
   })
 
   const exporter_CL = new ZipkinExporter({
@@ -78,7 +82,8 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
 
   provider.addSpanProcessor(new BatchSpanProcessor(exporter_UT, {
     maxExportBatchSize: 1000,
-    maxQueueSize: 1000
+    maxQueueSize: 1000,
+    scheduledDelayMillis: 5 * 1000
   }))
   provider.addSpanProcessor(new BatchSpanProcessor(exporter_CL, {
     maxExportBatchSize: 1000,
@@ -87,7 +92,12 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
 
   provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()))
 
-  provider.register()
+  provider.register({
+    contextManager: otel.contextManager,
+    propagator: new CompositePropagator({
+      propagators: [new W3CTraceContextPropagator(), new W3CBaggagePropagator()]
+    })
+  })
 
   callback()
   /* uptrace
