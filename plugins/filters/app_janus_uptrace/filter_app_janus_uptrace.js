@@ -157,13 +157,229 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     Type 4 - External event
     */
   } else if (line.type == 4) {
+    event = {
+      name: "External Event",
+      event: "External Event",
+      session_id: line?.session_id?.toString() || line?.session_id,
+      id: line?.session_id,
+      timestamp: line.timestamp || nano_now(new Date().getTime())
+    }
+    const sessionSpan = this.lru.get("sess_" + event.session_id)
+    const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
+    const extSpan = tracer.startSpan("External Event", {
+      attributes: event,
+      kind: otel.SpanKind.SERVER
+    }, ctx)
+    extSpan.setAttribute('service.name', 'External')
+    extSpan.end()
   /*
     Type 8 - JSEP event
     */
   } else if (line.type == 8) {
-
+    event = {
+      name: line?.jsep?.type,
+      event: line?.owner,
+      session_id: line?.session_id?.toString() || line?.session_id,
+      sdp: line?.jsep?.sdp || 'null',
+      id: line?.session_id,
+      timestamp: line.timestamp || nano_now(new Date().getTime())
+    }
+    /*
+      Remote SDP
+    */
+    if (event.owner == "remote") {
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
+      const sdpSpan = tracer.startSpan("JSEP Event - " + event.owner, {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      sdpSpan.setAttribute('service.name', 'JSEP')
+      sdpSpan.end()
+    /*
+      Local SDP
+    */
+    } else if (event.owner == "owner") {
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
+      const sdpSpan = tracer.startSpan("JSEP Event - " + event.owner, {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      sdpSpan.setAttribute('service.name', 'JSEP')
+      sdpSpan.end()
+    }
+  /*
+    Type 16 - WebRTC state event
+    */
   } else if (line.type == 16) {
+    /*
+      Subtype 1
+      ICE flow
+    */
+    if (line.subtype == 1) {
+      event = {
+        name: "Ice Flow",
+        event: line?.event?.ice,
+        session_id: line?.session_id?.toString() || line?.session_id,
+        ice_state: line?.event?.ice || 'null',
+        id: line?.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      if (event.ice_state == "gathering") {
+        const sessionSpan = this.lru.get("sess_" + event.session_id)
+        const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
+        const iceSpan = tracer.startSpan("ICE gathering", {
+          attributes: event,
+          kind: otel.SpanKind.SERVER
+        }, ctx)
+        this.lru.set("ice_" + event.session_id, iceSpan)
 
+      } else if (event.ice_state == "connecting") {
+        const iceSpan = this.lru.get("ice_" + event.session_id)
+        const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
+        const conIceSpan = tracer.startSpan("ICE connecting", {
+          attributes: event,
+          kind: otel.SpanKind.SERVER
+        }, ctx)
+        conIceSpan.end()
+
+      } else if (event.ice_state == "connected") {
+        const iceSpan = this.lru.get("ice_" + event.session_id)
+        const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
+        const conIceSpan = tracer.startSpan("ICE connected", {
+          attributes: event,
+          kind: otel.SpanKind.SERVER
+        }, ctx)
+        conIceSpan.end()
+
+      } else if (event.ice_state == "ready") {
+        const iceSpan = this.lru.get("ice_" + event.session_id)
+        const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
+        const readySpan = tracer.startSpan("ICE connected", {
+          attributes: event,
+          kind: otel.SpanKind.SERVER
+        }, ctx)
+        readySpan.end()
+        iceSpan.end()
+      }
+    /*
+      Subtype 2
+      Local Candidates
+    */
+    } else if (line.subtype == 2) {
+      event = {
+        name: "Local Candidates",
+        session_id: line?.session_id?.toString() || line?.session_id,
+        candidate: line?.event["local-candidate"],
+        id: line?.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      const iceSpan = this.lru.get("ice_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
+      const candidateSpan = tracer.startSpan("Local Candidate", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      candidateSpan.end()
+
+    /*
+      Subtype 3
+      Remote Candidates
+    */
+    } else if (line.subtype == 3) {
+      event = {
+        name: "Remote Candidates",
+        session_id: line?.session_id?.toString() || line?.session_id,
+        candidate: line?.event["remote-candidate"],
+        id: line?.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      const iceSpan = this.lru.get("ice_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
+      const candidateSpan = tracer.startSpan("Remote Candidate", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      candidateSpan.end()
+    /*
+      Subtype 4
+      Connection Selected
+    */
+    } else if (line.subtype == 4) {
+      event = {
+        name: "Candidates selected",
+        event: JSON.stringify(line?.event),
+        session_id: line?.session_id?.toString() || line?.session_id,
+        id: line?.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      const iceSpan = this.lru.get("ice_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
+      const candidateSpan = tracer.startSpan("Selected Candidates", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      candidateSpan.end()
+
+    /*
+      Subtype 5
+      DTLS flow
+    */
+    } else if (line.subtype == 5) {
+      event = {
+        name: "DTLS flow",
+        event: line?.event?.dtls,
+        session_id: line?.session_id?.toString() || line?.session_id,
+        id: line?.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      /*
+        trying
+      */
+      if (event.event == "trying") {
+        const iceSpan = this.lru.get("ice_" + event.session_id)
+        const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
+        const trySpan = tracer.startSpan("DTLS trying", {
+          attributes: event,
+          kind: otel.SpanKind.SERVER
+        }, ctx)
+        trySpan.end()
+      /*
+        connected
+      */
+      } else if (event.event == "connected") {
+        const iceSpan = this.lru.get("ice_" + event.session_id)
+        const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
+        const conSpan = tracer.startSpan("DTLS connected", {
+          attributes: event,
+          kind: otel.SpanKind.SERVER
+        }, ctx)
+        conSpan.end()
+      }
+    /*
+      Subtype 6
+      Connection Up
+    */
+    } else if (line.subtype == 6) {
+      event = {
+        name: "Connection Up",
+        event: line?.event,
+        session_id: line?.session_id?.toString() || line?.session_id,
+        id: line?.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      const iceSpan = this.lru.get("ice_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
+      const conSpan = tracer.startSpan("WebRTC Connection UP", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      conSpan.end()
+    }
+  /*
+    Type 32 - Media Report
+  */
   } else if (line.type == 32) {
 
   } else if (line.type == 128) {
