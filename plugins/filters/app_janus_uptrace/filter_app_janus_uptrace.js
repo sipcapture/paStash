@@ -233,6 +233,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
           attributes: event,
           kind: otel.SpanKind.SERVER
         }, ctx)
+        iceSpan.setAttribute('service.name', 'ICE')
         this.lru.set("ice_" + event.session_id, iceSpan)
 
       } else if (event.ice_state == "connecting") {
@@ -242,6 +243,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
           attributes: event,
           kind: otel.SpanKind.SERVER
         }, ctx)
+        conIceSpan.setAttribute('service.name', 'ICE')
         conIceSpan.end()
 
       } else if (event.ice_state == "connected") {
@@ -251,6 +253,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
           attributes: event,
           kind: otel.SpanKind.SERVER
         }, ctx)
+        conIceSpan.setAttribute('service.name', 'ICE')
         conIceSpan.end()
 
       } else if (event.ice_state == "ready") {
@@ -260,6 +263,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
           attributes: event,
           kind: otel.SpanKind.SERVER
         }, ctx)
+        readySpan.setAttribute('service.name', 'ICE')
         readySpan.end()
         iceSpan.end()
       }
@@ -281,6 +285,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      candidateSpan.setAttribute('service.name', 'ICE')
       candidateSpan.end()
 
     /*
@@ -301,6 +306,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      candidateSpan.setAttribute('service.name', 'ICE')
       candidateSpan.end()
     /*
       Subtype 4
@@ -320,6 +326,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      candidateSpan.setAttribute('service.name', 'ICE')
       candidateSpan.end()
 
     /*
@@ -344,6 +351,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
           attributes: event,
           kind: otel.SpanKind.SERVER
         }, ctx)
+        trySpan.setAttribute('service.name', 'ICE')
         trySpan.end()
       /*
         connected
@@ -355,6 +363,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
           attributes: event,
           kind: otel.SpanKind.SERVER
         }, ctx)
+        conSpan.setAttribute('service.name', 'ICE')
         conSpan.end()
       }
     /*
@@ -375,6 +384,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
+      conSpan.setAttribute('service.name', 'ICE')
       conSpan.end()
     }
   /*
@@ -386,7 +396,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
 
   } else if (line.type == 256) {
 
-  }
   /*
   TYPE 64 - Plugin-originated event
 
