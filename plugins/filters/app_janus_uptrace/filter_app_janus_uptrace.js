@@ -18,9 +18,9 @@ const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventi
 const { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor, BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base')
 const { CollectorTraceExporter } = require('@opentelemetry/exporter-collector')
 const { ZipkinExporter } = require('@opentelemetry/exporter-zipkin')
-const { PrometheusExporter } = require('@opentelemetry/exporter-prometheus');
-const { MeterProvider } = require('@opentelemetry/sdk-metrics-base');
-const { createClient, createResource, parseDsn, Dsn, Config } = require('@uptrace/core')
+const { PrometheusExporter } = require('@opentelemetry/exporter-prometheus')
+const { MeterProvider } = require('@opentelemetry/sdk-metrics-base')
+const { createClient, parseDsn } = require('@uptrace/core')
 // const uptrace = require('@uptrace/node')
 
 function nano_now (date) { return parseInt(date.toString().padEnd(16, '0')) }
@@ -116,10 +116,17 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     const exporter = new PrometheusExporter(options)
 
     // Register the exporter
+    /*
     this.meter = new MeterProvider({
-      exporter,
-      interval: this.interval
-    }).getMeter(this.service_name)
+      exporter: exporter,
+      interval: this.interval,
+      resource: new Resource({
+        [SemanticResourceAttributes.SERVICE_NAME]: 'janus-metrics'
+      })
+    }).getMeter('janus-metrics') */
+    this.metricsProvider = new MeterProvider({ interval: this.interval })
+    this.metricsProvider.addMetricReader(exporter)
+    this.meter = this.metricsProvider.getMeter('janus-metrics')
     this.counters = {}
 
     // Register counters
@@ -180,7 +187,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       sessionSpan.resource.attributes['service.name'] = 'Session'
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
-      if (this.metrics) this.counters['s'].add(1, line.event.data)
+      if (this.metrics) this.counters['s'].add(1, event.session_id)
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
@@ -195,7 +202,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
-      if (this.metrics) this.counters['s'].add(-1, line.event.data)
+      if (this.metrics) this.counters['s'].add(-1, event.session_id)
     }
   /*
   TYPE 2 - Handle related event
@@ -476,10 +483,66 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     Type 32 - Media Report
   */
   } else if (line.type == 32) {
+    event = {
+      name: "Media Reporting",
+      subtype: line.subtype,
+      media: line.event.media,
+      event: line.event,
+      session_id: line?.session_id?.toString() || line.session_id,
+      timestamp: line.timestamp || nano_now(new Date().getTime())
+    }
 
+    if (event.media === "audio" && event.subtype == 3) {
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
+      const mediaSpan = tracer.startSpan("Audio Media Report", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      mediaSpan.setAttribute('service.name', 'Plugin')
+      mediaSpan.end()
+      /* TODO split out data and send to metrics counter */
+    } else if (event.media === "video" && event.subtype == 3) {
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
+      const mediaSpan = tracer.startSpan("Audio Media Report", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      }, ctx)
+      mediaSpan.setAttribute('service.name', 'Plugin')
+      mediaSpan.end()
+      /* TODO split out data and send to metrics counter */
+    }
+  /*
+    Type 128 - Transport-originated
+    */
   } else if (line.type == 128) {
-
+    /* Todo linked to session creation event via transport.id */
+  /*
+    Type 256 - Core event
+    */
   } else if (line.type == 256) {
+    event = {
+      name: "Status Event",
+      server: line.emitter,
+      subtype: line.subtype,
+      timestamp: line.timestamp || nano_now(new Date().getTime())
+    }
+    if (event.subtype == 1) {
+      const serverSpan = tracer.startSpan("Startup", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      })
+      serverSpan.setAttribute('service.name', 'Core')
+      serverSpan.end()
+    } else if (event.subtype == 2) {
+      const serverSpan = tracer.startSpan("Shutdown", {
+        attributes: event,
+        kind: otel.SpanKind.SERVER
+      })
+      serverSpan.setAttribute('service.name', 'Core')
+      serverSpan.end()
+    }
 
   /*
   TYPE 64 - Plugin-originated event
@@ -491,7 +554,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       name: line.event.plugin,
       event: line.event.data.event,
       display: line.event.data?.display || 'null',
-      id: line.event.data.id.toString(),
+      id: line.event.data.id?.toString() || line.event.data.id,
       session_id: line?.session_id?.toString() || line.session_id,
       room: line.event.data.room?.toString() || line.event.data.room,
       timestamp: line.timestamp || nano_now(new Date().getTime())
@@ -510,7 +573,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       }, ctx)
       joinSpan.setAttribute('service.name', 'Plugin')
       this.lru.set("join_" + event.id, joinSpan)
-      if (this.metrics) this.counters['u'].add(1, line.event.data)
+      if (this.metrics) this.counters['u'].add(1, event)
       /*
       Configured Event
       */
@@ -600,7 +663,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       } catch (e) {
         console.log(e)
       }
-      if (this.metrics) this.counters['s'].add(-1, line.event.data)
+      if (this.metrics) this.counters['u'].add(-1, event)
     }
   }
 }
