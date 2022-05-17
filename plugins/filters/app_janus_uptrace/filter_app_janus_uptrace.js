@@ -183,14 +183,14 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       })
-      sessionSpan.setAttribute('service.name', 'Session ')
+      sessionSpan.setAttribute('service.name', 'Session')
       sessionSpan.resource.attributes['service.name'] = 'Session'
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
       if (this.metrics) this.counters['s'].add(1, event)
     /* DESTROY event */
     } else if (event.name === "destroyed") {
-      const sessionSpan = this.lru.get("sess_" + event)
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
       // logger.info('PJU -- Sending span', sessionSpan)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const destroySpan = tracer.startSpan("Session destroyed", {
@@ -265,20 +265,21 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     */
   } else if (line.type == 8) {
     event = {
-      name: line?.jsep?.type,
-      event: line?.owner,
+      name: line?.event?.jsep?.type,
+      event: line?.event?.owner,
       session_id: line?.session_id?.toString() || line?.session_id,
-      sdp: line?.jsep?.sdp || 'null',
+      sdp: line?.event?.jsep?.sdp || 'null',
       id: line?.session_id,
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
+    logger.info("TYPE 8 EVENT", event.event)
     /*
       Remote SDP
     */
-    if (event.owner == "remote") {
+    if (event.event == "remote") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const sdpSpan = tracer.startSpan("JSEP Event - " + event.owner, {
+      const sdpSpan = tracer.startSpan("JSEP Event - Remote", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
@@ -287,10 +288,10 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     /*
       Local SDP
     */
-    } else if (event.owner == "owner") {
+    } else if (event.event == "local") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const sdpSpan = tracer.startSpan("JSEP Event - " + event.owner, {
+      const sdpSpan = tracer.startSpan("JSEP Event - Owner", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
@@ -309,6 +310,8 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     if (line.subtype == 1) {
       event = {
         name: "Ice Flow",
+        type: line.type,
+        subtype: line.subtype,
         event: line?.event?.ice,
         session_id: line?.session_id?.toString() || line?.session_id,
         ice_state: line?.event?.ice || 'null',
@@ -363,6 +366,8 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     } else if (line.subtype == 2) {
       event = {
         name: "Local Candidates",
+        type: line.type,
+        subtype: line.subtype,
         session_id: line?.session_id?.toString() || line?.session_id,
         candidate: line?.event["local-candidate"],
         id: line?.session_id,
@@ -482,6 +487,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   } else if (line.type == 32) {
     event = {
       name: "Media Reporting",
+      type: line.type,
       subtype: line.subtype,
       media: line.event.media,
       event: line.event,
@@ -490,23 +496,28 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     }
 
     if (event.media === "audio" && event.subtype == 3) {
+      event = Object.assign(event, line?.event)
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const mediaSpan = tracer.startSpan("Audio Media Report", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
-      mediaSpan.setAttribute('service.name', 'Plugin')
+      mediaSpan.setAttribute('service.name', 'Media')
       mediaSpan.end()
-      /* TODO split out data and send to metrics counter */
+      /* Split out data and send to metrics counter */
+      if (this.metrics) {
+
+      }
     } else if (event.media === "video" && event.subtype == 3) {
+      event = Object.assign(event, line?.event)
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const mediaSpan = tracer.startSpan("Audio Media Report", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
-      mediaSpan.setAttribute('service.name', 'Plugin')
+      mediaSpan.setAttribute('service.name', 'Media')
       mediaSpan.end()
       /* TODO split out data and send to metrics counter */
     }
