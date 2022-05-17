@@ -183,7 +183,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         attributes: event,
         kind: otel.SpanKind.SERVER
       })
-      sessionSpan.setAttribute('service.name', 'Session')
+      sessionSpan.setAttribute('service.name', 'Session ')
       sessionSpan.resource.attributes['service.name'] = 'Session'
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
@@ -198,11 +198,10 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       destroySpan.setAttribute('service.name', 'Session')
-      destroySpan.resource.attributes['service.name'] = 'Session'
+      if (this.metrics) this.counters['s'].add(-1, event)
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
-      if (this.metrics) this.counters['s'].add(-1, event.session_id)
     }
   /*
   TYPE 2 - Handle related event
@@ -227,7 +226,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       attachedSpan.setAttribute('service.name', 'Handle')
-      attachedSpan.resource.attributes['service.name'] = 'Handle'
       this.lru.set("att_" + event.session_id, attachedSpan)
       /*
       Detach Event
@@ -240,7 +238,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       detachedSpan.setAttribute('service.name', 'Handle')
-      detachedSpan.resource.attributes['service.name'] = 'Handle'
       detachedSpan.end()
       attachedSpan.end()
     }
