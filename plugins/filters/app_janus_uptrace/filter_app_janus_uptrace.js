@@ -187,10 +187,10 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       sessionSpan.resource.attributes['service.name'] = 'Session'
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
-      if (this.metrics) this.counters['s'].add(1, event.session_id)
+      if (this.metrics) this.counters['s'].add(1, event)
     /* DESTROY event */
     } else if (event.name === "destroyed") {
-      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const sessionSpan = this.lru.get("sess_" + event)
       // logger.info('PJU -- Sending span', sessionSpan)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const destroySpan = tracer.startSpan("Session destroyed", {
