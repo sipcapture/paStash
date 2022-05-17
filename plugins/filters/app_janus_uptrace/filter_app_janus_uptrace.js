@@ -276,27 +276,28 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     /*
       Remote SDP
     */
-    if (event.event == "remote") {
+    if (event.name == "offer") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const sdpSpan = tracer.startSpan("JSEP Event - Remote", {
+      const sdpSpan = tracer.startSpan("JSEP Event - Offer", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
       sdpSpan.setAttribute('service.name', 'JSEP')
-      sdpSpan.end()
+      this.lru.set("sdp_" + event.session_id, sdpSpan)
     /*
       Local SDP
     */
     } else if (event.event == "local") {
-      const sessionSpan = this.lru.get("sess_" + event.session_id)
-      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const sdpSpan = tracer.startSpan("JSEP Event - Owner", {
+      const offerSpan = this.lru.get("sdp_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), offerSpan)
+      const sdpSpan = tracer.startSpan("JSEP Event - Answer", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
       sdpSpan.setAttribute('service.name', 'JSEP')
       sdpSpan.end()
+      offerSpan.end()
     }
   /*
     Type 16 - WebRTC state event
