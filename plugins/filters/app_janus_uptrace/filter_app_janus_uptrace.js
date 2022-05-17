@@ -18,6 +18,8 @@ const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventi
 const { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor, BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base')
 const { CollectorTraceExporter } = require('@opentelemetry/exporter-collector')
 const { ZipkinExporter } = require('@opentelemetry/exporter-zipkin')
+const { PrometheusExporter } = require('@opentelemetry/exporter-prometheus');
+const { MeterProvider } = require('@opentelemetry/sdk-metrics-base');
 const { createClient, createResource, parseDsn, Dsn, Config } = require('@uptrace/core')
 // const uptrace = require('@uptrace/node')
 
@@ -27,13 +29,26 @@ function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this)
   this.mergeConfig({
     name: 'AppJanusTracer',
-    optional_params: ['debug', 'uptrace_dsn', 'cloki_dsn', 'bypass', 'service_name', 'filter'],
+    optional_params: [
+      'debug',
+      'uptrace_dsn',
+      'cloki_dsn',
+      'bypass',
+      'service_name',
+      'filter',
+      'metrics',
+      'port',
+      'interval'
+    ],
     default_values: {
       'uptrace_dsn': 'http://token@uptrace.host.ip:14318/<project_id>',
       'cloki_dsn': 'http://127.0.0.1:3100/tempo/api/push',
       'service_name': 'pastash-janus',
       'bypass': true,
       'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
+      'metrics': false,
+      'port': 9090,
+      'interval': 10000,
       'debug': false
     },
     start_hook: this.start.bind(this)
@@ -46,16 +61,12 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   // LRU to track across sessions
   this.lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false })
   this.otel = otel
-  // logger.info('FILTER incoming', this.filter)
+
   var filterArray = []
   for (var i = 0; i < this.filter.length; i++) {
-    // logger.info('FILTER', this.filter[i])
     filterArray.push([parseInt(this.filter[i]), "allow"])
   }
   this.filterMap = new Map(filterArray)
-  // logger.info('FILTER 1', this.filterMap.has(1))
-  // logger.info('FILTER 2', this.filterMap.has(2))
-  // logger.info('FILTER 64', this.filterMap.has(64))
 
   const dsn = parseDsn(this.uptrace_dsn)
   const _CLIENT = createClient(dsn)
@@ -99,15 +110,30 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     })
   })
 
-  callback()
-  /* uptrace
-    .configureOpentelemetry({
-      dsn: this.endpoint,
-      serviceName: this.service_name,
-      serviceVersion: '0.0.1'
+  if (this.metrics) {
+    // Initialize Service
+    const options = { port: this.port, startServer: true }
+    const exporter = new PrometheusExporter(options)
+
+    // Register the exporter
+    this.meter = new MeterProvider({
+      exporter,
+      interval: this.interval
+    }).getMeter(this.service_name)
+    this.counters = {}
+
+    // Register counters
+    this.counters['s'] = this.meter.createUpDownCounter('sessions', {
+      description: 'Session Counters'
     })
-    .start()
-    .then(callback.bind(this)) */
+    this.counters['u'] = this.meter.createUpDownCounter('events', {
+      description: 'User Counters'
+    })
+
+    logger.info('Initialized Janus Prometheus Exporter :' + this.port + '/metrics')
+  }
+
+  callback()
 }
 
 FilterAppJanusTracer.prototype.process = async function (data) {
@@ -154,6 +180,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       sessionSpan.resource.attributes['service.name'] = 'Session'
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
+      if (this.metrics) this.counters['s'].add(1, line.event.data)
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
@@ -168,6 +195,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
+      if (this.metrics) this.counters['s'].add(-1, line.event.data)
     }
   /*
   TYPE 2 - Handle related event
@@ -482,6 +510,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       }, ctx)
       joinSpan.setAttribute('service.name', 'Plugin')
       this.lru.set("join_" + event.id, joinSpan)
+      if (this.metrics) this.counters['u'].add(1, line.event.data)
       /*
       Configured Event
       */
@@ -571,6 +600,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       } catch (e) {
         console.log(e)
       }
+      if (this.metrics) this.counters['s'].add(-1, line.event.data)
     }
   }
 }
