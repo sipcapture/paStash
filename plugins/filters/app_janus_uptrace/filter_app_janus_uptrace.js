@@ -136,6 +136,30 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     this.counters['u'] = this.meter.createUpDownCounter('events', {
       description: 'User Counters'
     })
+    this.counters['ml'] = this.meter.createUpDownCounter('lost_packets', {
+      description: 'Lost Packets Local'
+    })
+    this.counters['mlr'] = this.meter.createUpDownCounter('lost_packets_remote', {
+      description: 'Lost Packets Remote'
+    })
+    this.counters['jl'] = this.meter.createUpDownCounter('jitter_local', {
+      description: 'Jitter Local'
+    })
+    this.counters['jlr'] = this.meter.createUpDownCounter('jitter_remote', {
+      description: 'Jitter Remote'
+    })
+    this.counters['ilq'] = this.meter.createUpDownCounter('in_link_quality', {
+      description: 'In Link Quality'
+    })
+    this.counters['imlq'] = this.meter.createUpDownCounter('in_media_link_quality', {
+      description: 'In Media Link Quality'
+    })
+    this.counters['olq'] = this.meter.createUpDownCounter('out_link_quality', {
+      description: 'Out Link Quality'
+    })
+    this.counters['omlq'] = this.meter.createUpDownCounter('out_media_link_quality', {
+      description: 'Out Media Link Quality'
+    })
 
     logger.info('Initialized Janus Prometheus Exporter :' + this.port + '/metrics')
   }
@@ -508,19 +532,48 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       mediaSpan.end()
       /* Split out data and send to metrics counter */
       if (this.metrics) {
-
+        /*
+        Missing metrics:
+        "packets-received":4735,
+        "packets-sent":0,
+        "bytes-received":720937,
+        "bytes-sent":0,
+        "bytes-received-lastsec":9727,
+        "bytes-sent-lastsec":0,
+        "nacks-received":0,
+        "nacks-sent":0,
+        "retransmissions-received":0
+        */
+        this.counters['ml'].add(event.event["lost"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['mlr'].add(event.event["lost-by-remote"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['jl'].add(event.event["jitter-local"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['jlr'].add(event.event["jitter-remote"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['ilq'].add(event.event["in-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['imlq'].add(event.event["in-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['olq'].add(event.event["out-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['omlq'].add(event.event["out-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
       }
     } else if (event.media === "video" && event.subtype == 3) {
       event = Object.assign(event, line?.event)
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const mediaSpan = tracer.startSpan("Audio Media Report", {
+      const mediaSpan = tracer.startSpan("Video Media Report", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
       mediaSpan.setAttribute('service.name', 'Media')
       mediaSpan.end()
-      /* TODO split out data and send to metrics counter */
+      /* Split out data and send to metrics counter */
+      if (this.metrics) {
+        this.counters['ml'].add(event.event["lost"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['mlr'].add(event.event["lost-by-remote"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['jl'].add(event.event["jitter-local"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['jlr'].add(event.event["jitter-remote"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['ilq'].add(event.event["in-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['imlq'].add(event.event["in-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['olq'].add(event.event["out-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['omlq'].add(event.event["out-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+      }
     }
   /*
     Type 128 - Transport-originated
