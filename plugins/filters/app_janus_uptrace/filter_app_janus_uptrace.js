@@ -590,21 +590,21 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       /* Split out data and send to metrics counter */
       if (this.metrics) {
         /* main metrics */
-        this.counters['ml'].add(event.event["lost"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['mlr'].add(event.event["lost-by-remote"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['jl'].add(event.event["jitter-local"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['jlr'].add(event.event["jitter-remote"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['ilq'].add(event.event["in-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['imlq'].add(event.event["in-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['olq'].add(event.event["out-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['omlq'].add(event.event["out-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['ml'].add(event.event["lost"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['mlr'].add(event.event["lost-by-remote"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['jl'].add(event.event["jitter-local"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['jlr'].add(event.event["jitter-remote"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['ilq'].add(event.event["in-link-quality"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['imlq'].add(event.event["in-media-link-quality"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['olq'].add(event.event["out-link-quality"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['omlq'].add(event.event["out-media-link-quality"], { mediatype: event.media, session_id: event.session_id })
         /* Secondary Metrics */
-        this.counters['pr'].add(event.event["packets-received"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['ps'].add(event.event["packets-sent"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['br'].add(event.event["bytes-received"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['bs'].add(event.event["bytes-sent"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['brl'].add(event.event["bytes-received-lastsec"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
-        this.counters['bsl'].add(event.event["bytes-sent-lastsec"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['pr'].add(event.event["packets-received"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['ps'].add(event.event["packets-sent"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['br'].add(event.event["bytes-received"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['bs'].add(event.event["bytes-sent"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['brl'].add(event.event["bytes-received-lastsec"], { mediatype: event.media, session_id: event.session_id })
+        this.counters['bsl'].add(event.event["bytes-sent-lastsec"], { mediatype: event.media, session_id: event.session_id })
       }
     }
   /*
