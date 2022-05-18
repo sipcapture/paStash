@@ -160,6 +160,24 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     this.counters['omlq'] = this.meter.createUpDownCounter('out_media_link_quality', {
       description: 'Out Media Link Quality'
     })
+    this.counters['pr'] = this.meter.createUpDownCounter('packets_received', {
+      description: 'Packets Received'
+    })
+    this.counters['ps'] = this.meter.createUpDownCounter('packets_sent', {
+      description: 'Packets Sent'
+    })
+    this.counters['br'] = this.meter.createUpDownCounter('bytes_received', {
+      description: 'Bytes Received'
+    })
+    this.counters['bs'] = this.meter.createUpDownCounter('bytes_sent', {
+      description: 'Bytes Sent'
+    })
+    this.counters['brl'] = this.meter.createHistogram('bytes_received_lastsec', {
+      description: 'Bytes Received in the last Second'
+    })
+    this.counters['bsl'] = this.meter.createHistogram('bytes_sent_lastsec', {
+      description: 'Bytes Sent in the last Second'
+    })
 
     logger.info('Initialized Janus Prometheus Exporter :' + this.port + '/metrics')
   }
@@ -534,8 +552,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       if (this.metrics) {
         /*
         Missing metrics:
-        "packets-received":4735,
-        "packets-sent":0,
         "bytes-received":720937,
         "bytes-sent":0,
         "bytes-received-lastsec":9727,
@@ -544,6 +560,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         "nacks-sent":0,
         "retransmissions-received":0
         */
+        /* Main Metrics */
         this.counters['ml'].add(event.event["lost"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
         this.counters['mlr'].add(event.event["lost-by-remote"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
         this.counters['jl'].add(event.event["jitter-local"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
@@ -552,6 +569,13 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         this.counters['imlq'].add(event.event["in-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
         this.counters['olq'].add(event.event["out-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
         this.counters['omlq'].add(event.event["out-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        /* Secondary Metrics */
+        this.counters['pr'].add(event.event["packets-received"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['ps'].add(event.event["packets-sent"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['br'].add(event.event["bytes-received"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['bs'].add(event.event["bytes-sent"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['brl'].add(event.event["bytes-received-lastsec"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['bsl'].add(event.event["bytes-sent-lastsec"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
       }
     } else if (event.media === "video" && event.subtype == 3) {
       event = Object.assign(event, line?.event)
@@ -565,6 +589,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       mediaSpan.end()
       /* Split out data and send to metrics counter */
       if (this.metrics) {
+        /* main metrics */
         this.counters['ml'].add(event.event["lost"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
         this.counters['mlr'].add(event.event["lost-by-remote"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
         this.counters['jl'].add(event.event["jitter-local"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
@@ -573,6 +598,13 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         this.counters['imlq'].add(event.event["in-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
         this.counters['olq'].add(event.event["out-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
         this.counters['omlq'].add(event.event["out-media-link-quality"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        /* Secondary Metrics */
+        this.counters['pr'].add(event.event["packets-received"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['ps'].add(event.event["packets-sent"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['br'].add(event.event["bytes-received"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['bs'].add(event.event["bytes-sent"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['brl'].add(event.event["bytes-received-lastsec"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
+        this.counters['bsl'].add(event.event["bytes-sent-lastsec"], { type: event.media, session_id: event.session_id, timestamp: event.timestamp })
       }
     }
   /*
