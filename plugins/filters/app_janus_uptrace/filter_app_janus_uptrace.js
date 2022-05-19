@@ -221,7 +221,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       sessionSpan.resource.attributes['service.name'] = 'Session'
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
-      if (this.metrics) this.counters['s'].add(1, event)
+      if (this.metrics) this.counters['s'].add(1, { type: 'Session' })
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
@@ -232,7 +232,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       destroySpan.setAttribute('service.name', 'Session')
-      if (this.metrics) this.counters['s'].add(-1, event)
+      if (this.metrics) this.counters['s'].add(-1, { type: 'Session' })
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
@@ -544,10 +544,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       if (this.metrics) {
         /*
         Missing metrics:
-        "bytes-received":720937,
-        "bytes-sent":0,
-        "bytes-received-lastsec":9727,
-        "bytes-sent-lastsec":0,
         "nacks-received":0,
         "nacks-sent":0,
         "retransmissions-received":0
@@ -659,7 +655,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       }, ctx)
       joinSpan.setAttribute('service.name', 'Plugin')
       this.lru.set("join_" + event.id, joinSpan)
-      if (this.metrics) this.counters['u'].add(1, event)
+      if (this.metrics) this.counters['u'].add(1, { type: 'User' })
       /*
       Configured Event
       */
@@ -749,7 +745,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       } catch (e) {
         console.log(e)
       }
-      if (this.metrics) this.counters['u'].add(-1, event)
+      if (this.metrics) this.counters['u'].add(-1, { type: 'User' })
     }
   }
 }
