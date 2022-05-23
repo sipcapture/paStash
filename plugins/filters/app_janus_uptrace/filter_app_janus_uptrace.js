@@ -39,7 +39,7 @@ function FilterAppJanusTracer () {
     ],
     default_values: {
       'uptrace_dsn': 'http://token@uptrace.host.ip:14318/<project_id>',
-      'cloki_dsn': 'http://127.0.0.1:3100/tempo/api/push',
+      'cloki_dsn': 'http://127.0.0.1:3100',
       'service_name': 'pastash-janus',
       'bypass': true,
       'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
@@ -85,7 +85,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     headers: {
       'tracer': 'cloki'
     },
-    url: this.cloki_dsn
+    url: this.cloki_dsn + '/tempo/api/push'
   })
 
   provider.addSpanProcessor(new BatchSpanProcessor(exporter_UT, {
@@ -158,9 +158,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       sessionSpan.resource.attributes['service.name'] = 'Session'
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
-      if (this.metrics) {
-
-      }
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
@@ -171,9 +168,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       destroySpan.setAttribute('service.name', 'Session')
-      if (this.metrics) {
-
-      }
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
@@ -481,7 +475,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       mediaSpan.end()
       /* Split out data and send to metrics counter */
       if (this.metrics) {
-        sendMetrics(event)
+        sendMetrics(event, this)
       }
     } else if (event.media === "video" && event.subtype == 3) {
       event = Object.assign(event, line?.event)
@@ -495,7 +489,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       mediaSpan.end()
       /* Split out data and send to metrics counter */
       if (this.metrics) {
-        sendMetrics(event)
+        sendMetrics(event, this)
       }
     }
   /*
@@ -558,7 +552,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       }, ctx)
       joinSpan.setAttribute('service.name', 'Plugin')
       this.lru.set("join_" + event.id, joinSpan)
-      if (this.metrics) this.counters['u'].add(1, { type: 'User' })
       /*
       Configured Event
       */
@@ -648,7 +641,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       } catch (e) {
         console.log(e)
       }
-      if (this.metrics) this.counters['u'].add(-1, { type: 'User' })
     }
   }
 }
@@ -657,106 +649,254 @@ exports.create = function () {
   return new FilterAppJanusTracer()
 }
 
-function sendMetrics (event) {
+/* Metrics Sender to cloki */
+
+function sendMetrics (event, self) {
   logger.info('Event Metrics', event)
 
   const mediaMetrics = {
-    streams: [
-      {
-        stream: {
-          emitter: event.emitter,
-          mediatype: event.media
-        },
-        values: []
-      }
-    ]
+    streams: []
   }
 
   const timestamp = (Date.now() * 1000000).toString()
 
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "local_lost_packets" }),
-    event.event["lost"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "remote_lost_packets" }),
-    event.event["lost-by-remote"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "local_jitter" }),
-    event.event["jitter-local"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "remote_jitter" }),
-    event.event["jitter-remote"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "in_link_quality" }),
-    event.event["in-link-quality"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "in_media_link_quality" }),
-    event.event["in-media-link-quality"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "out_link_quality" }),
-    event.event["out-link-quality"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "out_media_link_quality" }),
-    event.event["out-media-link-quality"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "packets_received" }),
-    event.event["packets-received"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "packets_sent" }),
-    event.event["packets-sent"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "bytes_received" }),
-    event.event["bytes-received"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "bytes_sent" }),
-    event.event["bytes-sent"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "bytes_received_lastsec" }),
-    event.event["bytes-received-lastsec"]
-  ])
-  mediaMetrics.streams.values.push([
-    timestamp,
-    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "bytes_sent_lastsec" }),
-    event.event["bytes-sent-lastsec"]
-  ])
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "local_lost_packets"
+    },
+    values: [
+      [
+        timestamp,
+        "local_lost_packets",
+        event.event["lost"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "remote_lost_packets"
+    },
+    values: [
+      [
+        timestamp,
+        "remote_lost_packets",
+        event.event["lost-by-remote"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "local_jitter"
+    },
+    values: [
+      [
+        timestamp,
+        "local_jitter",
+        event.event["jitter-local"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "remote_jitter"
+    },
+    values: [
+      [
+        timestamp,
+        "remote_jitter",
+        event.event["jitter-remote"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "in_link_quality"
+    },
+    values: [
+      [
+        timestamp,
+        "in_link_quality",
+        event.event["in-link-quality"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "in_media_link_quality"
+    },
+    values: [
+      [
+        timestamp,
+        "in_media_link_quality",
+        event.event["in-media-link-quality"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "out_link_quality"
+    },
+    values: [
+      [
+        timestamp,
+        "out_link_quality",
+        event.event["out-link-quality"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "out_media_link_quality"
+    },
+    values: [
+      [
+        timestamp,
+        "out_media_link_quality",
+        event.event["out-media-link-quality"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "packets_received"
+    },
+    values: [
+      [
+        timestamp,
+        "packets_received",
+        event.event["packets-received"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "packets_sent"
+    },
+    values: [
+      [
+        timestamp,
+        "packets_sent",
+        event.event["packets-sent"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "bytes_received"
+    },
+    values: [
+      [
+        timestamp,
+        "bytes_received",
+        event.event["bytes-received"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "bytes_sent"
+    },
+    values: [
+      [
+        timestamp,
+        "bytes_sent",
+        event.event["bytes-sent"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "bytes_received_lastsec"
+    },
+    values: [
+      [
+        timestamp,
+        "bytes_received_lastsec",
+        event.event["bytes-received-lastsec"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "bytes_sent_lastsec"
+    },
+    values: [
+      [
+        timestamp,
+        "bytes_sent_lastsec",
+        event.event["bytes-sent-lastsec"]
+      ]
+    ]
+  })
 
-  postData(JSON.stringify(mediaMetrics))
+  postData(JSON.stringify(mediaMetrics), self)
 }
 
-async function postData (data) {
+async function postData (data, self) {
   try {
-    var response = await axios.post(this.cloki_dsn, data, {
+    var response = await axios.post(self.cloki_dsn + '/loki/api/v1/push', data, {
       headers: {
         'Content-Type': 'application/json'
       }
     })
-    if (this.debug) logger.info('AXIOS Metrics send', response.status, response.statusText)
+    logger.info('AXIOS Metrics send', response.status, response.statusText)
   } catch (err) {
-    if (this.debug) logger.info('ERROR AXIOS Metrics send', err)
+    logger.info('ERROR AXIOS Metrics send', err)
   }
 }
