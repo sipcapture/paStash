@@ -4,7 +4,6 @@
 /* eslint quotes: 0 */
 /* eslint-disable quote-props */
 /* eslint-disable dot-notation */
-
 var base_filter = require('@pastash/pastash').base_filter
 var util = require('util')
 var logger = require('@pastash/pastash').logger
@@ -18,10 +17,8 @@ const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventi
 const { BasicTracerProvider, ConsoleSpanExporter, SimpleSpanProcessor, BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base')
 const { CollectorTraceExporter } = require('@opentelemetry/exporter-collector')
 const { ZipkinExporter } = require('@opentelemetry/exporter-zipkin')
-const { PrometheusExporter } = require('@opentelemetry/exporter-prometheus')
-const { MeterProvider } = require('@opentelemetry/sdk-metrics-base')
 const { createClient, parseDsn } = require('@uptrace/core')
-// const uptrace = require('@uptrace/node')
+const axios = require('axios')
 
 function nano_now (date) { return parseInt(date.toString().padEnd(16, '0')) }
 
@@ -111,67 +108,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   })
 
   if (this.metrics) {
-    // Initialize Service
-    const options = { port: this.port, startServer: true }
-    const exporter = new PrometheusExporter(options)
-
-    // Register the exporter
-    this.metricsProvider = new MeterProvider({ interval: this.interval })
-    this.metricsProvider.addMetricReader(exporter)
-    this.meter = this.metricsProvider.getMeter('janus-metrics')
-    this.counters = {}
-
-    // Register counters
-    this.counters['s'] = this.meter.createUpDownCounter('sessions', {
-      description: 'Session Counters'
-    })
-    this.counters['u'] = this.meter.createUpDownCounter('events', {
-      description: 'User Counters'
-    })
-    this.counters['ml'] = this.meter.createUpDownCounter('lost_packets', {
-      description: 'Lost Packets Local'
-    })
-    this.counters['mlr'] = this.meter.createUpDownCounter('lost_packets_remote', {
-      description: 'Lost Packets Remote'
-    })
-    this.counters['jl'] = this.meter.createUpDownCounter('jitter_local', {
-      description: 'Jitter Local'
-    })
-    this.counters['jlr'] = this.meter.createUpDownCounter('jitter_remote', {
-      description: 'Jitter Remote'
-    })
-    this.counters['ilq'] = this.meter.createUpDownCounter('in_link_quality', {
-      description: 'In Link Quality'
-    })
-    this.counters['imlq'] = this.meter.createUpDownCounter('in_media_link_quality', {
-      description: 'In Media Link Quality'
-    })
-    this.counters['olq'] = this.meter.createUpDownCounter('out_link_quality', {
-      description: 'Out Link Quality'
-    })
-    this.counters['omlq'] = this.meter.createUpDownCounter('out_media_link_quality', {
-      description: 'Out Media Link Quality'
-    })
-    this.counters['pr'] = this.meter.createUpDownCounter('packets_received', {
-      description: 'Packets Received'
-    })
-    this.counters['ps'] = this.meter.createUpDownCounter('packets_sent', {
-      description: 'Packets Sent'
-    })
-    this.counters['br'] = this.meter.createUpDownCounter('bytes_received', {
-      description: 'Bytes Received'
-    })
-    this.counters['bs'] = this.meter.createUpDownCounter('bytes_sent', {
-      description: 'Bytes Sent'
-    })
-    this.counters['brl'] = this.meter.createHistogram('bytes_received_lastsec', {
-      description: 'Bytes Received in the last Second'
-    })
-    this.counters['bsl'] = this.meter.createHistogram('bytes_sent_lastsec', {
-      description: 'Bytes Sent in the last Second'
-    })
-
-    logger.info('Initialized Janus Prometheus Exporter :' + this.port + '/metrics')
+    logger.info('Metrics enabled for Media Reports')
   }
 
   callback()
@@ -221,7 +158,9 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       sessionSpan.resource.attributes['service.name'] = 'Session'
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
-      if (this.metrics) this.counters['s'].add(1, { type: 'Session' })
+      if (this.metrics) {
+
+      }
     /* DESTROY event */
     } else if (event.name === "destroyed") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
@@ -232,7 +171,9 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       destroySpan.setAttribute('service.name', 'Session')
-      if (this.metrics) this.counters['s'].add(-1, { type: 'Session' })
+      if (this.metrics) {
+
+      }
       destroySpan.end()
       sessionSpan.end()
       this.lru.delete("sess_" + event.session_id)
@@ -362,7 +303,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         }, ctx)
         iceSpan.setAttribute('service.name', 'ICE')
         this.lru.set("ice_" + event.session_id, iceSpan)
-
       } else if (event.ice_state == "connecting") {
         const iceSpan = this.lru.get("ice_" + event.session_id)
         const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
@@ -372,7 +312,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         }, ctx)
         conIceSpan.setAttribute('service.name', 'ICE')
         conIceSpan.end()
-
       } else if (event.ice_state == "connected") {
         const iceSpan = this.lru.get("ice_" + event.session_id)
         const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
@@ -382,7 +321,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         }, ctx)
         conIceSpan.setAttribute('service.name', 'ICE')
         conIceSpan.end()
-
       } else if (event.ice_state == "ready") {
         const iceSpan = this.lru.get("ice_" + event.session_id)
         const ctx = otel.trace.setSpan(otel.context.active(), iceSpan)
@@ -521,10 +459,11 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   */
   } else if (line.type == 32) {
     event = {
-      name: "Media Reporting",
+      name: "Media Report",
       type: line.type,
       subtype: line.subtype,
       media: line.event.media,
+      emitter: line?.emitter,
       event: line.event,
       session_id: line?.session_id?.toString() || line.session_id,
       timestamp: line.timestamp || nano_now(new Date().getTime())
@@ -542,28 +481,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       mediaSpan.end()
       /* Split out data and send to metrics counter */
       if (this.metrics) {
-        /*
-        Missing metrics:
-        "nacks-received":0,
-        "nacks-sent":0,
-        "retransmissions-received":0
-        */
-        /* Main Metrics */
-        this.counters['ml'].add(event.event["lost"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['mlr'].add(event.event["lost-by-remote"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['jl'].add(event.event["jitter-local"], { mediatype: event.media, session_id: event.session_id})
-        this.counters['jlr'].add(event.event["jitter-remote"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['ilq'].add(event.event["in-link-quality"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['imlq'].add(event.event["in-media-link-quality"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['olq'].add(event.event["out-link-quality"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['omlq'].add(event.event["out-media-link-quality"], { mediatype: event.media, session_id: event.session_id })
-        /* Secondary Metrics */
-        this.counters['pr'].add(event.event["packets-received"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['ps'].add(event.event["packets-sent"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['br'].add(event.event["bytes-received"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['bs'].add(event.event["bytes-sent"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['brl'].record(event.event["bytes-received-lastsec"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['bsl'].record(event.event["bytes-sent-lastsec"], { mediatype: event.media, session_id: event.session_id })
+        sendMetrics(event)
       }
     } else if (event.media === "video" && event.subtype == 3) {
       event = Object.assign(event, line?.event)
@@ -577,22 +495,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       mediaSpan.end()
       /* Split out data and send to metrics counter */
       if (this.metrics) {
-        /* main metrics */
-        this.counters['ml'].add(event.event["lost"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['mlr'].add(event.event["lost-by-remote"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['jl'].add(event.event["jitter-local"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['jlr'].add(event.event["jitter-remote"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['ilq'].add(event.event["in-link-quality"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['imlq'].add(event.event["in-media-link-quality"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['olq'].add(event.event["out-link-quality"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['omlq'].add(event.event["out-media-link-quality"], { mediatype: event.media, session_id: event.session_id })
-        /* Secondary Metrics */
-        this.counters['pr'].add(event.event["packets-received"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['ps'].add(event.event["packets-sent"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['br'].add(event.event["bytes-received"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['bs'].add(event.event["bytes-sent"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['brl'].add(event.event["bytes-received-lastsec"], { mediatype: event.media, session_id: event.session_id })
-        this.counters['bsl'].add(event.event["bytes-sent-lastsec"], { mediatype: event.media, session_id: event.session_id })
+        sendMetrics(event)
       }
     }
   /*
@@ -754,4 +657,106 @@ exports.create = function () {
   return new FilterAppJanusTracer()
 }
 
-/* promise wrapper */
+function sendMetrics (event) {
+  logger.info('Event Metrics', event)
+
+  const mediaMetrics = {
+    streams: [
+      {
+        stream: {
+          emitter: event.emitter,
+          mediatype: event.media
+        },
+        values: []
+      }
+    ]
+  }
+
+  const timestamp = (Date.now() * 1000000).toString()
+
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "local_lost_packets" }),
+    event.event["lost"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "remote_lost_packets" }),
+    event.event["lost-by-remote"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "local_jitter" }),
+    event.event["jitter-local"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "remote_jitter" }),
+    event.event["jitter-remote"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "in_link_quality" }),
+    event.event["in-link-quality"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "in_media_link_quality" }),
+    event.event["in-media-link-quality"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "out_link_quality" }),
+    event.event["out-link-quality"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "out_media_link_quality" }),
+    event.event["out-media-link-quality"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "packets_received" }),
+    event.event["packets-received"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "packets_sent" }),
+    event.event["packets-sent"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "bytes_received" }),
+    event.event["bytes-received"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "bytes_sent" }),
+    event.event["bytes-sent"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "bytes_received_lastsec" }),
+    event.event["bytes-received-lastsec"]
+  ])
+  mediaMetrics.streams.values.push([
+    timestamp,
+    JSON.stringify({ mediatype: event.media, session_id: event.session_id, metric: "bytes_sent_lastsec" }),
+    event.event["bytes-sent-lastsec"]
+  ])
+
+  postData(JSON.stringify(mediaMetrics))
+}
+
+async function postData (data) {
+  try {
+    var response = await axios.post(this.cloki_dsn, data, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    if (this.debug) logger.info('AXIOS Metrics send', response.status, response.statusText)
+  } catch (err) {
+    if (this.debug) logger.info('ERROR AXIOS Metrics send', err)
+  }
+}
