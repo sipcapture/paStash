@@ -884,6 +884,54 @@ function sendMetrics (event, self) {
       ]
     ]
   })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "nacks_received"
+    },
+    values: [
+      [
+        timestamp,
+        "nacks_received",
+        event.event["nacks-received"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "nacks_sent"
+    },
+    values: [
+      [
+        timestamp,
+        "nacks_sent",
+        event.event["nacks-sent"]
+      ]
+    ]
+  })
+  mediaMetrics.streams.push({
+    stream: {
+      emitter: event.emitter,
+      mediatype: event.media,
+      type: 32,
+      session_id: event.session_id,
+      metric: "retransmission_received"
+    },
+    values: [
+      [
+        timestamp,
+        "retransmission_received",
+        event.event["retransmission-received"]
+      ]
+    ]
+  })
 
   postData(JSON.stringify(mediaMetrics), self)
 }
