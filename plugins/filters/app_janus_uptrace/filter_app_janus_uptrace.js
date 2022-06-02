@@ -271,20 +271,19 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       sdpSpan.setAttribute('service.name', 'JSEP')
-      this.lru.set("sdp_" + event.session_id, sdpSpan)
+      sdpSpan.end()
     /*
       Local SDP
     */
     } else if (event.event == "local") {
-      const offerSpan = this.lru.get("sdp_" + event.session_id)
-      const ctx = otel.trace.setSpan(otel.context.active(), offerSpan)
+      const sessionSpan = this.lru.get("sess_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
       const sdpSpan = tracer.startSpan("JSEP Event - Answer", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
       sdpSpan.setAttribute('service.name', 'JSEP')
       sdpSpan.end()
-      offerSpan.end()
     }
   /*
     Type 16 - WebRTC state event
