@@ -133,7 +133,23 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   if (this.bypass) {
     this.emit('output', data)
   } else {
-
+    // TODO emit logs directly into uptrace logging
+    var log = JSON.parse(data.message)
+    var msg = {
+      streams: [
+        {
+          stream: {
+            type: log.type,
+            subtype: log?.subtype,
+            emitter: log.emitter
+          },
+          values: [
+            [(Date.now() * 1000000).toString(), JSON.stringify(log)]
+          ]
+        }
+      ]
+    }
+    postData(JSON.stringify(msg), this)
   }
   if (!data.message) return
   var event = {}
