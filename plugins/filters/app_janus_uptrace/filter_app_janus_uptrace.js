@@ -34,17 +34,17 @@ function FilterAppJanusTracer () {
       'service_name',
       'filter',
       'metrics',
-      'port',
+      'project_id',
       'interval'
     ],
     default_values: {
-      'uptrace_host': 'http://platform.uptrace.dev/<project_id>',
+      'uptrace_host': 'http://platform.uptrace.dev',
       'uptrace_dsn': 'http://token@uptrace.dev',
       'service_name': 'pastash-janus',
       'bypass': true,
       'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
       'metrics': false,
-      'port': 9090,
+      'project_id': '/1',
       'interval': 10000,
       'debug': false
     },
@@ -957,7 +957,7 @@ function sendMetrics (event, self) {
 
 async function postData (data, self) {
   try {
-    var response = await axios.post(self.uptrace_host + '/loki/api/v1/push', data, {
+    var response = await axios.post(self.uptrace_host + self.project_id + '/loki/api/v1/push', data, {
       headers: {
         'Content-Type': 'application/json',
         'uptrace-dsn': self.uptrace_dsn
