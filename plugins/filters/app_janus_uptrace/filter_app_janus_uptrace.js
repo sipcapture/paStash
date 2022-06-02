@@ -706,7 +706,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `local_lost_packets session_id=${event.session_id} traceid=${event.traceId}`,
+        `local_lost_packets session_id=${event.session_id} traceid=${event.traceId} value=${event.event["lost"]}`,
         event.event["lost"]
       ]
     ]
@@ -721,7 +721,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `remote_lost_packets session_id=${event.session_id} traceid=${event.traceId}`,
+        `remote_lost_packets session_id=${event.session_id} traceid=${event.traceId} value=${event.event["lost-by-remote"]}`,
         event.event["lost-by-remote"]
       ]
     ]
@@ -736,7 +736,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `local_jitter session_id=${event.session_id} traceid=${event.traceId}`,
+        `local_jitter session_id=${event.session_id} traceid=${event.traceId} value=${event.event["jitter-local"]}`,
         event.event["jitter-local"]
       ]
     ]
@@ -751,7 +751,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `remote_jitter session_id=${event.session_id} traceid=${event.traceId}`,
+        `remote_jitter session_id=${event.session_id} traceid=${event.traceId} value=${event.event["jitter-remote"]}`,
         event.event["jitter-remote"]
       ]
     ]
@@ -766,7 +766,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `in_link_quality session_id=${event.session_id} traceid=${event.traceId}`,
+        `in_link_quality session_id=${event.session_id} traceid=${event.traceId} value=${event.event["in-link-quality"]}`,
         event.event["in-link-quality"]
       ]
     ]
@@ -781,7 +781,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `in_media_link_quality session_id=${event.session_id} traceid=${event.traceId}`,
+        `in_media_link_quality session_id=${event.session_id} traceid=${event.traceId} value=${event.event["in-media-link-quality"]}`,
         event.event["in-media-link-quality"]
       ]
     ]
@@ -796,7 +796,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `out_link_quality session_id=${event.session_id} traceid=${event.traceId}`,
+        `out_link_quality session_id=${event.session_id} traceid=${event.traceId} value=${event.event["out-link-quality"]}`,
         event.event["out-link-quality"]
       ]
     ]
@@ -811,7 +811,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `out_media_link_quality session_id=${event.session_id} traceid=${event.traceId}`,
+        `out_media_link_quality session_id=${event.session_id} traceid=${event.traceId} value=${event.event["out-media-link-quality"]}`,
         event.event["out-media-link-quality"]
       ]
     ]
@@ -826,7 +826,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `packets_received session_id=${event.session_id} traceid=${event.traceId}`,
+        `packets_received session_id=${event.session_id} traceid=${event.traceId} value=${event.event["packets-received"]}`,
         event.event["packets-received"]
       ]
     ]
@@ -841,7 +841,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `packets_sent session_id=${event.session_id} traceid=${event.traceId}`,
+        `packets_sent session_id=${event.session_id} traceid=${event.traceId} value=${event.event["packets-sent"]}`,
         event.event["packets-sent"]
       ]
     ]
@@ -856,7 +856,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `bytes_received session_id=${event.session_id} traceid=${event.traceId}`,
+        `bytes_received session_id=${event.session_id} traceid=${event.traceId} value=${event.event["bytes-received"]}`,
         event.event["bytes-received"]
       ]
     ]
@@ -871,7 +871,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `bytes_sent session_id=${event.session_id} traceid=${event.traceId}`,
+        `bytes_sent session_id=${event.session_id} traceid=${event.traceId} value=${event.event["bytes-sent"]}`,
         event.event["bytes-sent"]
       ]
     ]
@@ -886,7 +886,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `bytes_received_lastsec session_id=${event.session_id} traceid=${event.traceId}`,
+        `bytes_received_lastsec session_id=${event.session_id} traceid=${event.traceId} value=${event.event["bytes-received-lastsec"]}`,
         event.event["bytes-received-lastsec"]
       ]
     ]
@@ -901,7 +901,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `bytes_sent_lastsec session_id=${event.session_id} traceid=${event.traceId}`,
+        `bytes_sent_lastsec session_id=${event.session_id} traceid=${event.traceId} value=${event.event["bytes-sent-lastsec"]}`,
         event.event["bytes-sent-lastsec"]
       ]
     ]
@@ -916,7 +916,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `nacks_received session_id=${event.session_id} traceid=${event.traceId}`,
+        `nacks_received session_id=${event.session_id} traceid=${event.traceId} value=${event.event["nacks-received"]}`,
         event.event["nacks-received"]
       ]
     ]
@@ -931,7 +931,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `nacks_sent session_id=${event.session_id} traceid=${event.traceId}`,
+        `nacks_sent session_id=${event.session_id} traceid=${event.traceId} value=${event.event["nacks-sent"]}`,
         event.event["nacks-sent"]
       ]
     ]
@@ -946,7 +946,7 @@ function sendMetrics (event, self) {
     values: [
       [
         timestamp,
-        `retransmission_received session_id=${event.session_id} traceid=${event.traceId}`,
+        `retransmission_received session_id=${event.session_id} traceid=${event.traceId} value=${event.event["retransmission-received"]}`,
         event.event["retransmission-received"]
       ]
     ]
