@@ -11,11 +11,12 @@ function LokiPost() {
   this.mergeConfig(this.serializer_config('raw'));
   this.mergeConfig({
     name: 'Loki',
-    optional_params: ['path', 'maxSize', 'maxAge'],
+    optional_params: ['path', 'maxSize', 'maxAge', 'partition_id'],
     default_values: {
       'path': '/',
       'maxSize': 5000,
       'maxAge': 1000,
+      'partition_id': false
     },
     start_hook: this.start,
   });
@@ -47,6 +48,7 @@ LokiPost.prototype.start = function(callback) {
                       'Content-Type': 'application/json'
                     }
                   };
+                  if (this.partition_id) http_options.headers['X-Scope-OrgID'] = this.partition_id;
                   if (line) {
                     http_options.headers['Content-Length'] = Buffer.byteLength(line, 'utf-8');
                     if ( typeof this.host !== 'string' ) {
