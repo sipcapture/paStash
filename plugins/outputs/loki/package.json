@@ -1,6 +1,6 @@
 {
   "name": "@pastash/output_loki",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Loki Output Plugin for @pastash/pastash",
   "main": "output_loki.js",
   "scripts": {
