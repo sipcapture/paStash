@@ -154,10 +154,10 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   if (!data.message) return
   var event = {}
   var line = JSON.parse(data.message)
-  logger.info('Incoming line', line.type, line.event)
+  // logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
   if (!this.filterMap.has(line.type)) return
-  logger.info('Filtered', line.type, line.session_id, line.handle_id)
+  // logger.info('Filtered', line.type, line.session_id, line.handle_id)
   /*
   TYPE 1 - Session related event
   Create Session and Destroy Session events are traced
@@ -275,7 +275,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       id: line?.session_id,
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
-    logger.info("TYPE 8 EVENT", event.event)
+    // logger.info("TYPE 8 EVENT", event.event)
     /*
       Remote SDP
     */
@@ -305,7 +305,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     Type 16 - WebRTC state event
     */
   } else if (line.type == 16) {
-    logger.info("TYPE 16", line)
+    // logger.info("TYPE 16", line)
     /*
       Subtype 1
       ICE flow
@@ -704,7 +704,7 @@ exports.create = function () {
 /* Metrics Sender to cloki */
 
 function sendMetrics (event, self) {
-  logger.info('Event Metrics', event)
+  // logger.info('Event Metrics', event)
 
   const mediaMetrics = {
     streams: []
@@ -979,8 +979,8 @@ async function postData (data, self) {
         'uptrace-dsn': self.uptrace_dsn
       }
     })
-    logger.info('AXIOS Metrics send', response.status, response.statusText)
+    // logger.info('AXIOS Metrics send', response.status, response.statusText)
   } catch (err) {
-    logger.info('ERROR AXIOS Metrics send', err)
+    // logger.info('ERROR AXIOS Metrics send', err)
   }
 }
