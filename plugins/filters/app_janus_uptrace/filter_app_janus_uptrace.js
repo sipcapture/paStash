@@ -981,6 +981,6 @@ async function postData (data, self) {
     })
     // logger.info('AXIOS Metrics send', response.status, response.statusText)
   } catch (err) {
-    // logger.info('ERROR AXIOS Metrics send', err)
+    logger.info('ERROR AXIOS Metrics send', err)
   }
 }
