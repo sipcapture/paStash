@@ -1,0 +1,17 @@
+{
+  "name": "@pastash/filter_app_janus_uptrace",
+  "version": "0.3.0",
+  "description": "Janus Tracing Plugin for @pastash/pastash",
+  "main": "filter_app_janus_uptrace.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@opentelemetry/exporter-zipkin": "^1.2.0",
+    "@uptrace/node": "^1.0.3",
+    "axios": "^0.27.2",
+    "quick-lru": "^5.1.0"
+  }
+}
