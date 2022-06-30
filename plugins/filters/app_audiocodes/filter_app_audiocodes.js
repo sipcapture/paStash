@@ -107,18 +107,25 @@ var aliases = {};
 var hold;
 var cache;
 var seq;
+var date;
 
 FilterAppAudiocodes.prototype.process = function(data) {
 
    var line = data.message.toString();
    var ipcache = {};
    if (this.debug) console.info('DEBUG', line);
-   var message = /^.*?\[S=([0-9]+)\].*?\[SID=.*?\]\s?(.*)\[Time:.*\]$/
+   var message = /^.*?\[S=([0-9]+)\].*?\[SID=.*?\]\s?(.*)\[Time:(.*)\]$/
    var test = message.exec(line.replace(/\r\n/g, '#012'));
    if(hold && line && test) {
         if (this.debug) logger.error('Next packet number', test[1]);
         if (parseInt(test[1]) == seq + 1) {
 	  line = cache + ( test ? test[2] : '');
+	  date= (test ? test[3] :'');
+          if (date) {
+          	ipcache.xdate = moment(date, 'DD-MM@HH:mm:ss.SSS');
+                ipcache.ts = ipcache.xdate.unix();
+                ipcache.usec = ipcache.xdate.millisecond() * 1000;
+          }
 	  hold = false;
 	  cache = '';
 	  if (this.debug) console.info('reassembled line', line);
