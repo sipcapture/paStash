@@ -59,3 +59,4 @@ Parameters:
 * ``maxSize``: maximum bulk entries before flush. Default 5000.
 * ``basic_auth_user``: HTTP Basic Auth Username
 * ``basic_auth_password``: HTTP Basic Auth Password
+* ``partition_id``: Optional value for X-Scope-OrgID header
