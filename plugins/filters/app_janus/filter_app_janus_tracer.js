@@ -9,34 +9,31 @@
 var base_filter = require('@pastash/pastash').base_filter
 var util = require('util')
 var logger = require('@pastash/pastash').logger
+var crypto = require('crypto')
 
 const QuickLRU = require("quick-lru");
 
-const recordCache = require("record-cache");
-const fetch = require('cross-fetch');
-
-const { PrometheusExporter } = require('@opentelemetry/exporter-prometheus');
-const { MeterProvider } = require('@opentelemetry/sdk-metrics-base');
-
 function nano_now (date) { return parseInt(date.toString().padEnd(16, '0')) }
-function just_now (date) { return nano_now(date || new Date().getTime()) }
-function spanid () { return Math.floor(10000000 + Math.random() * 90000000).toString() }
 
 function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppJanusTracer',
-    optional_params: ['debug', 'cacheSize', 'cacheAge', 'endpoint', 'bypass', 'port', 'metrics', 'service_name', 'interval'],
+    optional_params: [
+      'debug',
+      'bypass',
+      'port',
+      'metrics',
+      'filter',
+      'tracerName'
+    ],
     default_values: {
-      'cacheSize': 50000,
-      'cacheAge': 60000,
-      'endpoint': 'http://localhost:3100/tempo/api/push',
       'metrics': false,
-      'service_name': 'pastash-janus',
-      'interval': 10000,
       'port': 9090,
-      'bypass': true,
-      'debug': false
+      'bypass': false,
+      'debug': false,
+      'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
+      'tracerName': 'pastash_janus_trace'
     },
     start_hook: this.start.bind(this)
   });
@@ -45,38 +42,16 @@ function FilterAppJanusTracer () {
 util.inherits(FilterAppJanusTracer, base_filter.BaseFilter);
 
 FilterAppJanusTracer.prototype.start = async function (callback) {
-  // Session cache
-  var sessions = recordCache({
-    maxSize: this.cacheSize,
-    maxAge: this.cacheAge,
-    onStale: false
-  });
-  this.sessions = sessions;
+  // LRU
   this.lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false });
-
-  if (this.metrics) {
-    // Initialize Service
-    const options = { port: this.port, startServer: true };
-    const exporter = new PrometheusExporter(options);
-
-    // Register the exporter
-    this.meter = new MeterProvider({
-      exporter,
-      interval: this.interval
-    }).getMeter(this.service_name)
-    this.counters = {};
-
-    // Register counters
-    this.counters['s'] = this.meter.createUpDownCounter('sessions', {
-      description: 'Session Counters'
-    });
-    this.counters['e'] = this.meter.createUpDownCounter('events', {
-      description: 'Event Counters'
-    });
-
-    logger.info('Initialized Janus Prometheus Exporter :' + this.port + '/metrics');
+  var filterArray = []
+  for (var i = 0; i < this.filter.length; i++) {
+    filterArray.push([parseInt(this.filter[i]), "allow"])
   }
-  logger.info('Initialized App Janus Span Tracer with: ' + this.endpoint);
+  this.filterMap = new Map(filterArray)
+  this.ctx = new ContextManager(this, this.tracerName)
+  this.ctx.init()
+  logger.info('Initialized App Janus Span Tracer');
   callback();
 };
 
@@ -84,291 +59,899 @@ FilterAppJanusTracer.prototype.process = function (data) {
   // bypass
   if (this.bypass) this.emit('output', data)
   if (!data.message) return;
-  var event = {};
+
   var line = JSON.parse(data.message);
-  // logger.info('Incoming line', line.type, line.event)
-  /* Ignore all other events */
-  if (line.type === 128 || line.type === 8 || line.type === 16 || line.type === 32) return;
-  // logger.info('Filtered to 1, 2, 64', line.type, line.session_id, line.handle_id)
-  /*
-  TYPE 1
-
-  Create Session and Destroy Session events are tracked
-  */
-  if (line.type == 1) {
-    event = {
-      name: line.event.name,
-      event: line.event.name,
-      session_id: line.session_id,
-      traceId: line.session_id,
-      id: line.session_id,
-      spanId: spanid(),
-      timestamp: line.timestamp || nano_now(new Date().getTime()),
-      duration: 1000
-    }
-    /* CREATE event */
-    if (event.name === "created") {
-      // create root span
-      this.lru.set(event.session_id, event);
-      // start root trace, do not update
-      this.sessions.add(event.session_id, just_now(event.timestamp));
-      this.sessions.add('uuid_' + event.session_id, event.traceId)
-      this.sessions.add('span_' + event.session_id, event.spanId)
-      this.sessions.add('parent_' + event.session_id, event.spanId)
-      if (this.metrics) this.counters['s'].add(1, line.event);
-    /* DESTROY event */
-    } else if (event.name === "destroyed") {
-      const createEvent = this.lru.get(event.session_id)
-      createEvent.duration = just_now(event.timestamp) - just_now(createEvent.timestamp);
-      /* name the event Session */
-      createEvent.name = "Session " + event.session_id
-      if (this.metrics) this.counters['s'].add(-1, line.event);
-      // logger.info('type 1 destroyed sending', createEvent)
-      createEvent.tags = createEvent
-      tracegen(createEvent, this.endpoint)
-      event.duration = 1000
-      event.name = "Destroyed " + event.id
-      event.parentId = createEvent.spanId
-      event.tags = event
-      tracegen(event, this.endpoint)
-      // delete root span
-      this.lru.delete(event.session_id);
-      // end root trace
-      this.sessions.remove(event.session_id);
-      this.sessions.remove('uuid_' + event.session_id);
-      this.sessions.remove('span_' + event.session_id, event.spanId)
-      this.sessions.remove('parent_' + event.session_id, event.spanId)
-    }
-  /*
-  TYPE 2
-
-  Client Attachment and Detachment is tracked
-  */
-  } else if (line.type == 2) {
-    event = {
-      name: line.event.name,
-      event: line.event.name,
-      session_id: line.session_id,
-      id: line.session_id,
-      spanId: spanid(),
-      timestamp: line.timestamp || nano_now(new Date().getTime())
-    }
-    /*
-      Attach Event
-    */
-    if (event.name === "attached") {
-      event.parentId = this.sessions.get("parent_" + event.session_id, 1)[0]
-      event.traceId = event.session_id
-      this.lru.set("att_" + event.session_id, event);
-    /*
-      Detach Event
-    */
-    } else if (event.name === "detached") {
-      const attEvent = this.lru.get("att_" + event.session_id)
-      if (!attEvent) return
-      attEvent.duration = just_now(event.timestamp) - just_now(attEvent.timestamp)
-      attEvent.name = "Attached " + event.session_id
-      // logger.info('type 2 detached sending', event)
-      attEvent.tags = attEvent
-      tracegen(attEvent, this.endpoint)
-      event.name = "Detached " + event.session_id
-      event.parentId = attEvent.parentId
-      event.traceId = event.session_id
-      event.duration = 1000
-      event.tags = event
-      tracegen(event, this.endpoint)
-      this.lru.delete("att_" + event.session_id)
-    }
-
-  /*
-  TYPE 64
-
-  Users Joining or Leaving Sessions
-  */
-  } else if (line.type == 64) {
-    event = {
-      name: line.event.plugin,
-      event: line.event.data.event,
-      id: line.event.data.id,
-      spanId: spanid(),
-      room: line.event.data.room,
-      timestamp: line.timestamp || nano_now(new Date().getTime())
-    }
-    if (!line.event.data) return;
-
-    // logger.info("trace 64: ", line)
-    /*
-      Joined Event
-      */
-    if (event.event === "joined") {
-      event.display = line.event.data?.display || "null"
-      event.session_id = line.session_id
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
-      console.log("JOIN ", event)
-      // session_id, handle_id, opaque_id, event.data.id
-      // correlate: session_id --> event.data.id
-      this.lru.set("join_" + event.id, event);
-      // increase tag counter
-      if (this.metrics) this.counters['e'].add(1, line.event.data);
-    /*
-      Configured Event
-    */
-    } else if (event.event === "configured") {
-      /* Set start time of configured as start of join,
-         emit span when published is received */
-      event.session_id = line.session_id
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
-      /* emit configured event */
-      const joinEvent = this.lru.get("join_" + event.id)
-      event.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
-      event.timestamp = joinEvent.timestamp
-      event.name = "Configured " + event.id + ", Room " + event.room
-      // logger.info('type 64 configured sending', event)
-      event.tags = event
-      tracegen(event, this.endpoint)
-    /*
-      Published Event
-    */
-    } else if (event.event === "published") {
-      event.session_id = line.session_id
-      event.display = line.event?.display
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
-      this.lru.set("pub_" + event.id, event);
-    /*
-      Subscribing Event
-    */
-    } else if (event.event === "subscribing") {
-      event.session_id = line.session_id
-      event.id = event.session_id
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
-      this.lru.set("sub_" + event.session_id, event);
-    /*
-      Subscribed Event
-    */
-    } else if (event.event === "subscribed") {
-      /* Set start time to be subscribing event,
-          emit when subscription suceeds
-      */
-      event.session_id = line.session_id
-      event.id = event.session_id
-      event.traceId = event.session_id
-      var subEvent = this.lru.get("sub_" + event.session_id);
-      event.parentId = subEvent.parentId
-      event.duration = just_now(event.timestamp) - just_now(subEvent.timestamp)
-      event.timestamp = subEvent.timestamp
-      event.name = "Subscribed " + event.session_id + ", Room " + event.room
-      // logger.info('type 64 subscribed sending', event)
-      event.tags = event
-      tracegen(event, this.endpoint)
-      this.lru.delete("sub_" + event.session_id);
-      // TODO: add streams object to tags
-    /*
-      Update Event
-    */
-    } else if (event.event === "updated") {
-      event.session_id = line.session_id
-      event.id = event.session_id
-      event.traceId = event.session_id
-      event.parentId = this.sessions.get('parent_' + event.session_id, 1)[0] || spanid();
-      event.duration = 1000
-      event.name = "Updated " + event.session_id + ", Room " + event.room
-      event.tags = event
-      tracegen(event, this.endpoint)
-    /*
-      Unpublished Event
-    */
-    } else if (event.event === "unpublished") {
-      // correlate: event.data.id --> session_id
-      const pubEvent = this.lru.get("pub_" + event.id)
-      if (!pubEvent) return
-      pubEvent.duration = just_now(event.timestamp) - just_now(pubEvent.timestamp);
-      pubEvent.name = "Published " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
-      // logger.info('type 64 unpublished sending', pubEvent)
-      pubEvent.tags = pubEvent
-      tracegen(pubEvent, this.endpoint)
-      event.name = "Unpublished " + event.id + " / Display Name: " + pubEvent?.display + ", Room " + event.room
-      event.duration = 1000
-      event.parentId = pubEvent.parentId
-      event.traceId = pubEvent.session_id
-      event.tags = event
-      tracegen(event, this.endpoint)
-      this.lru.delete("pub_" + event.id)
-    /*
-      Leaving Event
-    */
-    } else if (event.event === "leaving") {
-      // correlate: event.data.id --> session_id
-      try {
-        const joinEvent = this.lru.get('join_' + event.id)
-        if (!joinEvent) return
-        joinEvent.duration = just_now(event.timestamp) - just_now(joinEvent.timestamp)
-        joinEvent.name = "User " + event.id + " / Display Name: " + joinEvent?.display + ", Room " + event.room
-        // logger.info('type 64 leaving sending', event)
-        joinEvent.tags = joinEvent
-        tracegen(joinEvent, this.endpoint)
-        event.display = line.event.data?.display || "null"
-        event.duration = 1000
-        event.parentId = joinEvent.parentId
-        event.traceId = joinEvent.session_id
-        event.name = "User " + event.id + " leaving / Display Name: " + joinEvent?.display + ", Room " + event.room
-        event.tags = event
-        tracegen(event, this.endpoint)
-        this.lru.delete('join_' + event.id)
-      } catch (e) {
-        console.log(e)
-      }
-      // decrease tag counter
-      if (this.metrics) this.counters['e'].add(-1, line.event.data);
-    }
+  if (Array.isArray(line)) {
+    line.forEach((item, i) => {
+      this.ctx.process(item, this)
+    })
+  } else {
+    this.ctx.process(line, this)
   }
-};
+}
 
 exports.create = function () {
   return new FilterAppJanusTracer();
 };
 
-// TODO: replace trace mocker with opentelemetry-js
-// Link: https://github.com/open-telemetry/opentelemetry-js/blob/main/packages/opentelemetry-exporter-zipkin/README.md
+/*
+  Context Manager
+    Manage Parent, Child relations, tracks Sessions
 
-async function tracegen (event, endpoint) {
-  // mock a zipkin span
-  var trace = [{
-    "id": event.spanId || spanid(),
-    "traceId": event.traceId.toString(),
-    "timestamp": nano_now(event.timestamp),
-    "duration": event.duration,
-    "name": event.event,
-    "localEndpoint": {
-      "serviceName": event.name
-    }
-  }]
-  if (event.parentId) { trace[0].parentId = event.parentId }
-  if (event.tags) {
-    var tags = event.tags
-    delete event.tags
-    trace[0].tags = tags
-  } else {
-    trace[0].tags = { event: 'hello' }
+    - Session_id is index
+    - Event_id is secondary index
+    - Uses Interval to flush spans and end sessions
+    - Uses batching to send messages via array (size limit)
+    - Session Parent sticks around to capture multi leave events
+    - Manage Duration through start and end
+    */
+
+function ContextManager (self, tracerName, sessionObject) {
+  /*
+  Context Globals
+  */
+  this.filter = self
+  this.name = tracerName
+  this.lastflush = Date.now()
+
+  /*
+  Context Storage
+  */
+  this.sessionMap = new Map()
+  this.buffer = []
+
+  /*
+  Initiator Function
+  */
+  this.init = function () {
+    setInterval(this.check.bind(this), 500)
   }
 
-  logger.info("trace: ", trace);
-  // send event to endpoint
-  if (endpoint) {
-    const response = fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(trace),
-      headers: { 'Content-Type': 'application/json' }
-    })
-      .then(res => {
-        return res
+  /*
+    Processor Function
+    */
+
+  this.process = function (line) {
+    // if (this.filter.debug) logger.info('Incoming line', line.type, line.event)
+    /* Ignore all events not in filter */
+    if (!self.filterMap.has(line.type)) return
+    if (this.filter.debug) logger.info('Allowed through Filter', line.type, line.session_id, line.event)
+    var event = {}
+
+    if (line.type === 1) {
+      console.log('EVENT -----------', line)
+      /* Template
+      line.emitter
+      line.type
+      line.timestamp
+      line.session_id
+      line.event
+      line.event.name -> created
+      line.event.transport
+      line.event.transport.id
+      */
+      event = {
+        name: line.event.name,
+        event: line.event.name,
+        emitter: line.emitter,
+        session_id: line?.session_id?.toString() || line?.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      /* CREATE event */
+      if (line.event.name === 'created') {
+        const sessionSpan = this.startSpan('Session', line, event, 'Session')
+        const sessionCreateSpan = this.startSpan(
+          'Session Created',
+          line,
+          event,
+          'Session',
+          sessionSpan.traceId,
+          sessionSpan.id
+        )
+        sessionCreateSpan.end()
+        const session = {
+          session_id: line.session_id,
+          lastEvent: Date.now(),
+          traceId: sessionSpan.traceId,
+          sessionSpanId: sessionSpan.id,
+          sessionSpan: sessionSpan,
+          sessionStatus: 'Open',
+          transportId: line.event.transport.id
+        }
+        this.sessionMap.set(session.transportId, session)
+        this.sessionMap.set(session.session_id, session)
+        // logger.info('PJU -- Session event:', sessionSpan, session)
+      /* DESTROY event */
+      } else if (line.event.name === 'destroyed') {
+        const session = this.sessionMap.get(line.session_id)
+        const destroySpan = this.startSpan(
+          'Session destroyed',
+          line,
+          event,
+          'Session',
+          session.traceId,
+          session.sessionSpanId
+        )
+        destroySpan.end()
+        session.sessionSpan.end()
+        session.status = 'Closed'
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+      }
+    /*
+    TYPE 2 - Handle related event
+    Handle Attachment and Detachment is traced
+    */
+    } else if (line.type === 2) {
+      // console.log('EVENT -----------', line)
+      /* Template
+      line.emitter
+      line.type
+      line.timestamp
+      line.session_id
+      line.opaque_id
+      line.event
+      line.event.name
+      line.event.plugin
+      line.event.opaque_id
+      */
+      event = {
+        name: line.event.name,
+        event: line.event.name,
+        emitter: line.emitter,
+        opaque_id: line?.opaque_id?.toString() || line?.opaque_id,
+        session_id: line?.session_id?.toString() || line?.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      /*
+        Attach Event
+        */
+      if (line.event.name === 'attached') {
+        const session = this.sessionMap.get(line.session_id)
+        const handleSpan = this.startSpan(
+          "Handle",
+          line,
+          event,
+          'Handle',
+          session.traceId,
+          session.sessionSpanId
+        )
+        const attachedSpan = this.startSpan(
+          "Handle attached",
+          line,
+          event,
+          'Handle',
+          session.traceId,
+          handleSpan.id
+        )
+        attachedSpan.end()
+        session.handleSpanId = handleSpan.id
+        session.handleSpan = handleSpan
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+        /*
+        Detach Event
+        */
+      } else if (line.event.name === 'detached') {
+        const session = this.sessionMap.get(line.session_id)
+        const detachedSpan = this.startSpan(
+          "Handle detached",
+          line,
+          event,
+          'Handle',
+          session.traceId,
+          session.handleSpanId
+        )
+        detachedSpan.end()
+        session.handleSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+      }
+    /*
+      Type 4 - External event
+      */
+    } else if (line.type === 4) {
+      // console.log('EVENT -----------', line)
+      /* Template
+      line.emitter
+      line.type
+      line.timestamp
+      line.session_id
+      line.event
+      line.event.name
+      */
+      event = {
+        name: "External Event",
+        event: "External Event",
+        session_id: line?.session_id?.toString() || line?.session_id,
+        id: line?.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      const session = this.sessionMap.get(line.session_id)
+      const extSpan = this.startSpan(
+        "External Event",
+        line,
+        event,
+        "External",
+        session.traceId,
+        session.sessionSpanId
+      )
+      extSpan.end()
+      session.lastEvent = Date.now()
+      this.sessionMap.set(line.session_id, session)
+    /*
+      Type 8 - JSEP event
+      */
+    } else if (line.type === 8) {
+      // console.log('EVENT -----------', line)
+      /* Template
+      line.emitter
+      line.type
+      line.timestamp
+      line.session_id
+      line.opaque_id
+      line.event
+      line.event.owner
+      line.event.jsep
+      line.event.jsep.type
+      line.event.jsep.sdp
+      */
+      event = {
+        name: line?.event?.jsep?.type,
+        event: line?.event?.owner,
+        session_id: line?.session_id?.toString() || line?.session_id,
+        sdp_type: line?.event?.jsep?.type || 'null',
+        sdp: line?.event?.jsep?.sdp || 'null',
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      /*
+        Remote SDP
+      */
+      if (line.event.owner === "offer") {
+        const session = this.sessionMap.get(line.session_id)
+        const sdpSpan = this.startSpan(
+          "JSEP Event - Offer",
+          line,
+          event,
+          "JSEP",
+          session.traceId,
+          session.sessionSpanId
+        )
+        sdpSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+      /*
+        Local SDP
+      */
+      } else if (line.event.owner === "local") {
+        const session = this.sessionMap.get(line.session_id)
+        const sdpSpan = this.startSpan(
+          "JSEP Event - Answer",
+          line,
+          event,
+          "JSEP",
+          session.traceId,
+          session.sessionSpanId
+        )
+        sdpSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+      }
+    /*
+      Type 16 - WebRTC state event
+      */
+    } else if (line.type === 16) {
+      // console.log('EVENT -----------', line)
+      /* Template
+      line.emitter
+      line.type
+      line.subtype
+      line.timestamp
+      line.session_id
+      line.opaque_id
+      line.event
+      line.event.ice
+      */
+
+      /*
+        Subtype 1
+        ICE flow
+      */
+      if (line.subtype === 1) {
+        event = {
+          name: "Ice Flow",
+          type: line.type,
+          subtype: line.subtype,
+          event: line?.event?.ice,
+          session_id: line?.session_id?.toString() || line?.session_id,
+          ice_state: line?.event?.ice || 'null',
+          timestamp: line.timestamp || nano_now(new Date().getTime())
+        }
+        if (line.event.ice === 'gathering') {
+          const session = this.sessionMap.get(line.session_id)
+          const iceSpan = this.startSpan(
+            "ICE gathering",
+            line,
+            event,
+            "ICE",
+            session.traceId,
+            session.sessionSpanId
+          )
+          session.iceSpanId = iceSpan.id
+          session.iceSpan = iceSpan
+          session.lastEvent = Date.now()
+          this.sessionMap.set(line.session_id, session)
+        } else if (event.ice_state === 'connecting') {
+          const session = this.sessionMap.get(line.session_id)
+          const conIceSpan = this.startSpan(
+            "ICE connecting",
+            line,
+            event,
+            "ICE",
+            session.traceId,
+            session.iceSpanId
+          )
+          conIceSpan.end()
+          session.lastEvent = Date.now()
+          this.sessionMap.set(line.session_id, session)
+        } else if (line.event.ice === "connected") {
+          const session = this.sessionMap.get(line.session_id)
+          const conIceSpan = this.startSpan(
+            "ICE connected",
+            line,
+            event,
+            'ICE',
+            session.traceId,
+            session.iceSpanId
+          )
+          conIceSpan.end()
+          session.lastEvent = Date.now()
+          this.sessionMap.set(line.session_id, session)
+        } else if (line.event.ice === "ready") {
+          const session = this.sessionMap.get(line.session_id)
+          const readySpan = this.startSpan(
+            "ICE ready",
+            line,
+            event,
+            'ICE',
+            session.traceId,
+            session.iceSpanId
+          )
+          readySpan.end()
+          session.iceSpan.end()
+          session.lastEvent = Date.now()
+          this.sessionMap.set(line.session_id, session)
+        }
+      /*
+        Subtype 2
+        Local Candidates
+      */
+      } else if (line.subtype === 2) {
+        event = {
+          name: "Local Candidates",
+          type: line.type,
+          subtype: line.subtype,
+          session_id: line?.session_id?.toString() || line?.session_id,
+          candidate: line?.event["local-candidate"],
+          timestamp: line.timestamp || nano_now(new Date().getTime())
+        }
+        const session = this.sessionMap.get(line.session_id)
+        const candidateSpan = this.startSpan(
+          "Local Candidate",
+          line,
+          event,
+          'ICE',
+          session.traceId,
+          session.iceSpanId
+        )
+        candidateSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+      /*
+        Subtype 3
+        Remote Candidates
+      */
+      } else if (line.subtype === 3) {
+        event = {
+          name: "Remote Candidates",
+          session_id: line?.session_id?.toString() || line?.session_id,
+          candidate: line?.event["remote-candidate"],
+          timestamp: line.timestamp || nano_now(new Date().getTime())
+        }
+        const session = this.sessionMap.get(line.session_id)
+        const candidateSpan = this.startSpan(
+          "Remote Candidate",
+          line,
+          event,
+          'ICE',
+          session.traceId,
+          session.iceSpanId
+        )
+        candidateSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+      /*
+        Subtype 4
+        Connection Selected
+      */
+      } else if (line.subtype === 4) {
+        event = {
+          name: "Candidates selected",
+          event: JSON.stringify(line?.event),
+          session_id: line?.session_id?.toString() || line?.session_id,
+          timestamp: line.timestamp || nano_now(new Date().getTime())
+        }
+        const session = this.sessionMap.get(line.session_id)
+        const candidateSpan = this.startSpan(
+          "Selected Candidates",
+          line,
+          event,
+          'ICE',
+          session.traceId,
+          session.iceSpanId
+        )
+        candidateSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+      /*
+        Subtype 5
+        DTLS flow
+      */
+      } else if (line.subtype === 5) {
+        event = {
+          name: "DTLS flow",
+          event: line?.event?.dtls,
+          session_id: line?.session_id?.toString() || line?.session_id,
+          timestamp: line.timestamp || nano_now(new Date().getTime())
+        }
+        /*
+          trying
+        */
+        if (event.event === 'trying') {
+          const session = this.sessionMap.get(line.session_id)
+          const trySpan = this.startSpan(
+            "DTLS trying",
+            line,
+            event,
+            'ICE',
+            session.traceId,
+            session.iceSpanId
+          )
+          trySpan.end()
+          session.lastEvent = Date.now()
+          this.sessionMap.set(line.session_id, session)
+        /*
+          connected
+        */
+        } else if (event.event === 'connected') {
+          const session = this.sessionMap.get(line.session_id)
+          const conSpan = this.startSpan(
+            "DTLS connected",
+            line,
+            event,
+            'ICE',
+            session.traceId,
+            session.iceSpanId
+          )
+          conSpan.end()
+          session.lastEvent = Date.now()
+          this.sessionMap.set(line.session_id, session)
+        }
+      /*
+        Subtype 6
+        Connection Up
+      */
+      } else if (line.subtype === 6) {
+        event = {
+          name: "Connection Up",
+          event: line?.event,
+          session_id: line?.session_id?.toString() || line?.session_id,
+          timestamp: line.timestamp || nano_now(new Date().getTime())
+        }
+        const session = this.sessionMap.get(line.session_id)
+        const conSpan = this.startSpan(
+          "WebRTC Connection UP",
+          line,
+          event,
+          'ICE',
+          session.traceId,
+          session.iceSpanId
+        )
+        conSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+      }
+    /*
+      Type 32 - Media Report
+    */
+    } else if (line.type === 32) {
+      // console.log('EVENT -----------', line)
+      /* Template
+      line.emitter
+      line.type
+      line.subtype
+      line.timestamp
+      line.session_id
+      line.opaque_id
+      line.event
+      line.event.media
+      */
+      event = {
+        name: "Media Report",
+        type: line.type,
+        subtype: line.subtype,
+        media: line.event.media,
+        emitter: line?.emitter,
+        event: line.event,
+        session_id: line?.session_id?.toString() || line.session_id,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+
+      if (event.media === "audio" && event.subtype === 3) {
+        event = Object.assign(event, line?.event)
+        const session = this.sessionMap.get(line.session_id)
+        const mediaSpan = this.startSpan(
+          "Audio Media Report",
+          line,
+          event,
+          'Media',
+          session.traceId,
+          session.sessionSpanId
+        )
+        mediaSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+        /* Split out data and send to metrics counter */
+        if (this.filter.metrics) {
+          this.sendMetrics(event, this)
+        }
+      } else if (event.media === "video" && event.subtype === 3) {
+        event = Object.assign(event, line?.event)
+        const session = this.sessionMap.get(line.session_id)
+        const mediaSpan = this.startSpan(
+          "Video Media Report",
+          line,
+          event,
+          'Media',
+          session.traceId,
+          session.sessionSpanId
+        )
+        mediaSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+        /* Split out data and send to metrics counter */
+        if (this.filter.metrics) {
+          this.sendMetrics(event, this)
+        }
+      }
+    /*
+      Type 128 - Transport-originated
+      */
+    } else if (line.type === 128) {
+      console.log('Event ----', line)
+      /*
+      line.emitter
+      line.type
+      line.event
+      line.event.transport
+      line.event.id
+      line.event.data
+      line.event.data.event
+      line.event.data.admin_api
+      line.event.data.ip
+      */
+      // TODO: 128 comes first, needs to move up
+      /*
+      event = {
+        name: line.event.data.event,
+        adminApi: line.event.data.admin_api,
+        ip: line.event.data.ip,
+        transportId: line.event.id,
+        emitter: line.emitter,
+        transport: line.event.transport,
+        type: line.type,
+        timestamp: line.timestamp
+      }
+      const session = this.sessionMap.get(line.event.id)
+      const transportSpan = this.startSpan(
+        "Transport connected",
+        line,
+        event,
+        "Transport Originated",
+        session.traceId,
+        session.sessionSpanId
+      )
+      transportSpan.end()
+      session.lastEvent = Date.now()
+      this.sessionMap.set(session.session_id, session)
+      this.sessionMap.set(line.event.id, session) */
+    /*
+      Type 256 - Core event
+      */
+    } else if (line.type === 256) {
+      event = {
+        name: "Status Event",
+        server: line.emitter,
+        subtype: line.subtype,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      if (event.subtype === 1) {
+        const serverSpan = this.startSpan(
+          "Startup",
+          line,
+          event,
+          'Core'
+        )
+        serverSpan.end()
+      } else if (event.subtype === 2) {
+        const serverSpan = this.startSpan(
+          "Shutdown",
+          line,
+          event,
+          'Core'
+        )
+        serverSpan.end()
+      }
+
+    /*
+    TYPE 64 - Plugin-originated event
+
+    Users Joining or Leaving Sessions
+    */
+    } else if (line.type === 64) {
+      // console.log('EVENT ----', line)
+      /* Template
+      line.emitter
+      line.type
+      line.subtype
+      line.timestamp
+      line.session_id
+      line.opaque_id
+      line.event
+      line.event.media
+      */
+      event = {
+        name: line.event.plugin,
+        event: line.event.data.event,
+        display: line.event.data?.display || 'null',
+        id: line.event.data.id?.toString() || line.event.data.id,
+        session_id: line?.session_id?.toString() || line.session_id,
+        room: line.event.data.room?.toString() || line.event.data.room,
+        timestamp: line.timestamp || nano_now(new Date().getTime())
+      }
+      if (!line.event.data) return
+      /*
+        Joined Event
+        */
+      if (line.event.data.event === 'joined') {
+        const session = this.sessionMap.get(line.session_id)
+        const joinSpan = this.startSpan(
+          "User joined",
+          line,
+          event,
+          'Plugin',
+          session.traceId,
+          session.sessionSpanId
+        )
+        session.joinSpanId = joinSpan.id
+        session.joinSpan = joinSpan
+        session.eventId = line.event.data.id
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.event.data.id, session)
+        /*
+        Configured Event
+        */
+      } else if (line.event.data.event === 'configured') {
+        const session = this.sessionMap.get(line.event.data.id)
+        const confSpan = this.startSpan(
+          "User configured",
+          line,
+          event,
+          'Plugin',
+          session.traceId,
+          session.joinSpanId
+        )
+        session.confSpan = confSpan
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.event.data.id, session)
+        /*
+        Published Event
+        */
+      } else if (line.event.data.event === 'published') {
+        const session = this.sessionMap.get(line.event.data.id)
+        const pubSpan = this.startSpan(
+          "User published",
+          line,
+          event,
+          'Plugin',
+          session.traceId,
+          session.joinSpanId
+        )
+        session.pubSpan = pubSpan
+        session.confSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.event.data.id, session)
+        /*
+        Subscribing Event
+        */
+      } else if (line.event.data.event === 'subscribing') {
+        const session = this.sessionMap.get(line.event.data.id)
+        const subSpan = this.startSpan(
+          "User subscribing",
+          line,
+          event,
+          'Plugin',
+          session.traceid,
+          session.joinSpanId
+        )
+        session.subSpan = subSpan
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.event.data.id, session)
+        /*
+        Subscribed Event
+        */
+      } else if (line.event.data.event === 'subscribed') {
+        const session = this.sessionMap.get(line.event.data.id)
+        session.subSpan.end()
+        /*
+        Update Event
+        */
+      } else if (line.event.data.event === 'updated') {
+        const session = this.sessionMap.get(line.event.data.id)
+        const upSpan = this.startSpan(
+          "User updated",
+          line,
+          event,
+          'Plugin',
+          session.traceId,
+          session.joinSpanId
+        )
+        upSpan.end()
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.event.data.id, session)
+        this.sessionMap.set(session.session_id, session)
+        /*
+        Unpublished Event
+        */
+      } else if (line.event.data.event === 'unpublished') {
+        const session = this.sessionMap.get(line.event.data.id)
+        const unpubSpan = this.startSpan(
+          "User unpublished",
+          line,
+          event,
+          'Plugin',
+          session.traceId,
+          session.joinSpanId
+        )
+        unpubSpan.end()
+        try {
+          session.pubSpan.end()
+          session.pubSpan.end = () => {}
+        } catch (e) {
+          // swallow error
+        }
+        session.lastEvent = Date.now()
+        this.sessionMap.set(line.event.data.id, session)
+        /*
+        Leaving Event
+        */
+      } else if (line.event.data.event === 'leaving') {
+        const session = this.sessionMap.get(line.event.data.id)
+        const leaveSpan = this.startSpan(
+          "User leaving",
+          line,
+          event,
+          'Plugin',
+          session.traceId,
+          session.joinSpanId
+        )
+        leaveSpan.end()
+        session.joinSpan.end()
+        session.joinSpan.end = () => {}
+        session.lastEvent = Date.now()
+        session.status = 'Closed'
+        this.sessionMap.set(line.event.data.id, session)
+        this.sessionMap.set(session.session_id, session)
+      }
+    }
+  }
+
+  this.startSpan = function (name, line, event, service, traceId, parentId) {
+    const span = {}
+    const context = this
+    span.id = this.generateSpanId()
+    span.name = name
+    span.attributes = event
+    span.localEndpoint = {
+      serviceName: service
+    }
+    span.kind = 1
+    span.status = {
+      code: 0
+    }
+    span.start = nano_now(Date.now())
+    span.duration = 0
+    span.end = function () {
+      console.log('SPAN ----', span)
+      span.duration = nano_now(Date.now()) - span.start
+      context.buffer.push(span)
+    }
+    if (traceId) {
+      span.traceId = traceId
+    } else {
+      span.traceId = this.generateTraceId()
+    }
+    if (parentId) {
+      span.parentId = parentId
+    }
+    return span
+  }
+
+  this.check = function () {
+    // console.log('this', this)
+    const sinceLast = Date.now() - this.lastflush
+    if (this.buffer.length > 15 || (this.buffer.length > 0 && sinceLast > 10000)) {
+      this.lastflush = Date.now()
+      this.flush()
+      this.sessionMap.forEach((session, key) => {
+        // Check timeout of session
+        // console.log(session)
+        try {
+          if (Date.now() - session.lastEvent > (1000 * 10) && session.status === 'Closed') {
+            console.log('Deleting session from sessionMap, 10 sec timeout and closed')
+            this.sessionMap.delete(key)
+            this.sessionMap.delete(session?.pluginId)
+            this.sessionMap.delete(session?.transportId)
+          } else if (Date.now() - session.lastEvent > (1000 * 24 * 60 * 60)) {
+            console.log('Deleting session from sessionMap, older than 24 hours')
+            this.sessionMap.delete(key)
+            this.sessionMap.delete(session?.pluginId)
+            this.sessionMap.delete(session?.transportId)
+          }
+        } catch (e) {
+          // swallow e
+          console.log('sessionMap', e)
+        }
       })
-      .catch(err => {
-        logger.error(err)
-      });
-    if (this.debug) logger.info(response);
+    }
+  }
+
+  this.flush = function () {
+    console.log('flushing', this.buffer)
+    const swap = [...this.buffer]
+    if (this.filter.debug) console.log('SWAP', swap)
+    this.buffer = []
+    const string = JSON.stringify(swap)
+    // if (this.filter.debug) console.log(string)
+    this.filter.emit('output', string)
+  }
+
+  /*
+    Helper Functions
+  */
+
+  this.generateTraceId = function () {
+    const buffer = new ArrayBuffer(16)
+    const view = new Int8Array(buffer)
+    const random = crypto.randomFillSync(view)
+    return this.bufferToHex(random)
+  }
+
+  this.generateSpanId = function () {
+    const buffer = new ArrayBuffer(8)
+    const view = new Int8Array(buffer)
+    const random = crypto.randomFillSync(view)
+    return this.bufferToHex(random)
+  }
+
+  this.bufferToHex = function (buffer) {
+    return [...new Uint8Array(buffer)]
+      .map(x => x.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  this.nano_now = function (date) {
+    return parseInt(date.toString().padEnd(16, '0'))
   }
 }
