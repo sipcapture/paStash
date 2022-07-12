@@ -590,7 +590,18 @@ function ContextManager (self, tracerName, sessionObject) {
       if (event.media === "audio" && event.subtype === 3) {
         // TODO populate deeply into event to make tags
         event = Object.assign(event, line?.event)
-        event.metrics = line.event
+        event.metrics = {
+          mid: line.event.mid,
+          mindex: line.event.mindex,
+          media: line.event.media,
+          base: line.event.base,
+          rtt: line.event.rtt,
+          lost: line.event.lost,
+          'lost-by-remote': line.event['lost-by-remote'],
+          'jitter-local': line.event['jitter-local'],
+          'jitter-remote': line.event['jitter-remote'],
+          'in-link-quality': line.event['in-link-quality']
+        }
         const session = this.sessionMap.get(line.session_id)
         const mediaSpan = this.startSpan(
           "Audio Media Report",
@@ -745,7 +756,7 @@ function ContextManager (self, tracerName, sessionObject) {
           event,
           'Plugin',
           session.traceId,
-          session.sessionSpanId
+          session.joinSpanId
         )
         joinedSpan.end(session.lastEvent)
         session.eventId = line.event.data.id
