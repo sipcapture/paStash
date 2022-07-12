@@ -590,6 +590,7 @@ function ContextManager (self, tracerName, sessionObject) {
       if (event.media === "audio" && event.subtype === 3) {
         // TODO populate deeply into event to make tags
         event = Object.assign(event, line?.event)
+        event.metrics = line.event
         const session = this.sessionMap.get(line.session_id)
         const mediaSpan = this.startSpan(
           "Audio Media Report",
@@ -609,6 +610,7 @@ function ContextManager (self, tracerName, sessionObject) {
       } else if (event.media === "video" && event.subtype === 3) {
         // TODO populate deeply into event to make tags
         event = Object.assign(event, line?.event)
+        event.metrics = line.event
         const session = this.sessionMap.get(line.session_id)
         const mediaSpan = this.startSpan(
           "Video Media Report",
@@ -728,7 +730,7 @@ function ContextManager (self, tracerName, sessionObject) {
       if (line.event.data.event === 'joined') {
         const session = this.sessionMap.get(line.session_id)
         const joinSpan = this.startSpan(
-          "User joined",
+          "User",
           line,
           event,
           'Plugin',
@@ -737,6 +739,15 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         session.joinSpanId = joinSpan.id
         session.joinSpan = joinSpan
+        const joinedSpan = this.startSpan(
+          "User joined",
+          line,
+          event,
+          'Plugin',
+          session.traceId,
+          session.sessionSpanId
+        )
+        joinedSpan.end(session.lastEvent)
         session.eventId = line.event.data.id
         session.lastEvent = Date.now()
         this.sessionMap.set(line.session_id, session)
