@@ -418,7 +418,6 @@ function ContextManager (self, tracerName, sessionObject) {
             session.iceSpanId
           )
           readySpan.end(session.lastEvent)
-          session.iceSpan.end(session.lastEvent)
           session.lastEvent = Date.now()
           this.sessionMap.set(line.session_id, session)
         }
@@ -558,6 +557,7 @@ function ContextManager (self, tracerName, sessionObject) {
           session.iceSpanId
         )
         conSpan.end(session.lastEvent)
+        session.iceSpan.end(session.lastEvent)
         session.lastEvent = Date.now()
         this.sessionMap.set(line.session_id, session)
       }
