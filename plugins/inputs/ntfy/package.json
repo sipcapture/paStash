@@ -1,0 +1,14 @@
+{
+  "name": "@pastash/input_ntfy",
+  "version": "1.0.1",
+  "description": "ntfy.sh Input Plugin for @pastash/pastash",
+  "main": "input_ntfy.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "eventsource": "^2.0.2"
+  }
+}
