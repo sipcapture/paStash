@@ -73,7 +73,7 @@
     "lumberjack-protocol": "git://github.com/bpaquet/node-lumberjack-protocol.git",
     "maxmind": "0.6.x",
     "maxmind-geolite-mirror": "1.0.x",
-    "moment": "2.29.2",
+    "moment": "2.29.4",
     "msgpack": "1.0.x",
     "mustache": "2.3.0",
     "object.omit": "3.0.0",
