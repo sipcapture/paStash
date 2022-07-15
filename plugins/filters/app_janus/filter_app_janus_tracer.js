@@ -131,7 +131,7 @@ function ContextManager (self, tracerName, sessionObject) {
       line.event.transport.id
       */
       event = {
-        name: line.event.name,
+        eventName: line.event.name,
         event: line.event.name,
         emitter: line.emitter,
         session_id: line?.session_id?.toString() || line?.session_id,
@@ -175,7 +175,7 @@ function ContextManager (self, tracerName, sessionObject) {
         destroySpan.end(session.lastEvent)
         session.sessionSpan.end(session.lastEvent)
         session.status = 'Closed'
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       }
     /*
@@ -196,7 +196,7 @@ function ContextManager (self, tracerName, sessionObject) {
       line.event.opaque_id
       */
       event = {
-        name: line.event.name,
+        eventName: line.event.name,
         event: line.event.name,
         emitter: line.emitter,
         opaque_id: line?.opaque_id?.toString() || line?.opaque_id,
@@ -227,7 +227,7 @@ function ContextManager (self, tracerName, sessionObject) {
         attachedSpan.end(session.lastEvent)
         session.handleSpanId = handleSpan.id
         session.handleSpan = handleSpan
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
         /*
         Detach Event
@@ -244,7 +244,7 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         detachedSpan.end(session.lastEvent)
         session.handleSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       }
     /*
@@ -261,7 +261,7 @@ function ContextManager (self, tracerName, sessionObject) {
       line.event.name
       */
       event = {
-        name: "External Event",
+        eventName: "External Event",
         event: "External Event",
         session_id: line?.session_id?.toString() || line?.session_id,
         id: line?.session_id,
@@ -277,7 +277,7 @@ function ContextManager (self, tracerName, sessionObject) {
         session.sessionSpanId
       )
       extSpan.end(session.lastEvent)
-      session.lastEvent = Date.now()
+      session.lastEvent = Date.now().toString()
       this.sessionMap.set(line.session_id, session)
     /*
       Type 8 - JSEP event
@@ -297,7 +297,7 @@ function ContextManager (self, tracerName, sessionObject) {
       line.event.jsep.sdp
       */
       event = {
-        name: line?.event?.jsep?.type,
+        eventName: line?.event?.jsep?.type,
         event: line?.event?.owner,
         session_id: line?.session_id?.toString() || line?.session_id,
         sdp_type: line?.event?.jsep?.type || 'null',
@@ -318,7 +318,7 @@ function ContextManager (self, tracerName, sessionObject) {
           session.sessionSpanId
         )
         sdpSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       /*
         Local SDP
@@ -334,7 +334,7 @@ function ContextManager (self, tracerName, sessionObject) {
           session.sessionSpanId
         )
         sdpSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       }
     /*
@@ -359,7 +359,7 @@ function ContextManager (self, tracerName, sessionObject) {
       */
       if (line.subtype === 1) {
         event = {
-          name: "Ice Flow",
+          eventName: "Ice Flow",
           type: line.type,
           subtype: line.subtype,
           event: line?.event?.ice,
@@ -379,7 +379,7 @@ function ContextManager (self, tracerName, sessionObject) {
           )
           session.iceSpanId = iceSpan.id
           session.iceSpan = iceSpan
-          session.lastEvent = Date.now()
+          session.lastEvent = Date.now().toString()
           this.sessionMap.set(line.session_id, session)
         } else if (event.ice_state === 'connecting') {
           const session = this.sessionMap.get(line.session_id)
@@ -392,7 +392,7 @@ function ContextManager (self, tracerName, sessionObject) {
             session.iceSpanId
           )
           conIceSpan.end(session.lastEvent)
-          session.lastEvent = Date.now()
+          session.lastEvent = Date.now().toString()
           this.sessionMap.set(line.session_id, session)
         } else if (line.event.ice === "connected") {
           const session = this.sessionMap.get(line.session_id)
@@ -405,7 +405,7 @@ function ContextManager (self, tracerName, sessionObject) {
             session.iceSpanId
           )
           conIceSpan.end(session.lastEvent)
-          session.lastEvent = Date.now()
+          session.lastEvent = Date.now().toString()
           this.sessionMap.set(line.session_id, session)
         } else if (line.event.ice === "ready") {
           const session = this.sessionMap.get(line.session_id)
@@ -418,7 +418,7 @@ function ContextManager (self, tracerName, sessionObject) {
             session.iceSpanId
           )
           readySpan.end(session.lastEvent)
-          session.lastEvent = Date.now()
+          session.lastEvent = Date.now().toString()
           this.sessionMap.set(line.session_id, session)
         }
       /*
@@ -427,7 +427,7 @@ function ContextManager (self, tracerName, sessionObject) {
       */
       } else if (line.subtype === 2) {
         event = {
-          name: "Local Candidates",
+          eventName: "Local Candidates",
           type: line.type,
           subtype: line.subtype,
           session_id: line?.session_id?.toString() || line?.session_id,
@@ -444,7 +444,7 @@ function ContextManager (self, tracerName, sessionObject) {
           session.iceSpanId
         )
         candidateSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       /*
         Subtype 3
@@ -452,7 +452,7 @@ function ContextManager (self, tracerName, sessionObject) {
       */
       } else if (line.subtype === 3) {
         event = {
-          name: "Remote Candidates",
+          eventName: "Remote Candidates",
           session_id: line?.session_id?.toString() || line?.session_id,
           candidate: line?.event["remote-candidate"],
           timestamp: line.timestamp || nano_now(new Date().getTime())
@@ -467,7 +467,7 @@ function ContextManager (self, tracerName, sessionObject) {
           session.iceSpanId
         )
         candidateSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       /*
         Subtype 4
@@ -490,7 +490,7 @@ function ContextManager (self, tracerName, sessionObject) {
           session.iceSpanId
         )
         candidateSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       /*
         Subtype 5
@@ -498,7 +498,7 @@ function ContextManager (self, tracerName, sessionObject) {
       */
       } else if (line.subtype === 5) {
         event = {
-          name: "DTLS flow",
+          eventName: "DTLS flow",
           event: line?.event?.dtls,
           session_id: line?.session_id?.toString() || line?.session_id,
           timestamp: line.timestamp || nano_now(new Date().getTime())
@@ -517,7 +517,7 @@ function ContextManager (self, tracerName, sessionObject) {
             session.iceSpanId
           )
           trySpan.end(session.lastEvent)
-          session.lastEvent = Date.now()
+          session.lastEvent = Date.now().toString()
           this.sessionMap.set(line.session_id, session)
         /*
           connected
@@ -533,7 +533,7 @@ function ContextManager (self, tracerName, sessionObject) {
             session.iceSpanId
           )
           conSpan.end(session.lastEvent)
-          session.lastEvent = Date.now()
+          session.lastEvent = Date.now().toString()
           this.sessionMap.set(line.session_id, session)
         }
       /*
@@ -542,7 +542,7 @@ function ContextManager (self, tracerName, sessionObject) {
       */
       } else if (line.subtype === 6) {
         event = {
-          name: "Connection Up",
+          eventName: "Connection Up",
           event: line?.event,
           session_id: line?.session_id?.toString() || line?.session_id,
           timestamp: line.timestamp || nano_now(new Date().getTime())
@@ -558,14 +558,39 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         conSpan.end(session.lastEvent)
         session.iceSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        if (this.metrics) {
+          const mediaMetrics = {
+            streams: []
+          }
+
+          const timestamp = this.nano_now(Date.now())
+
+          mediaMetrics.streams.push({
+            stream: {
+              emitter: line.emitter,
+              type: 16,
+              session_id: event.session_id,
+              metric: "ice_duration"
+            },
+            values: [
+              [
+                timestamp,
+                "ice_duration",
+                session.iceSpan.duration
+              ]
+            ]
+          })
+
+          this.emit('output', mediaMetrics)
+        }
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       }
     /*
       Type 32 - Media Report
     */
     } else if (line.type === 32) {
-      // console.log('EVENT -----------', line)
+      if (this.filter.debug) console.log('EVENT 32 -----------', line)
       /* Template
       line.emitter
       line.type
@@ -575,33 +600,21 @@ function ContextManager (self, tracerName, sessionObject) {
       line.opaque_id
       line.event
       line.event.media
+      line.event.rtt
+      ...
       */
       event = {
-        name: "Media Report",
+        eventName: "Media Report",
         type: line.type,
         subtype: line.subtype,
         media: line.event.media,
         emitter: line?.emitter,
-        event: line.event,
         session_id: line?.session_id?.toString() || line.session_id,
         timestamp: line.timestamp || nano_now(new Date().getTime())
       }
 
-      if (event.media === "audio" && event.subtype === 3) {
-        // TODO populate deeply into event to make tags
-        event = Object.assign(event, line?.event)
-        event.metrics = {
-          mid: line.event.mid,
-          mindex: line.event.mindex,
-          media: line.event.media,
-          base: line.event.base,
-          rtt: line.event.rtt,
-          lost: line.event.lost,
-          'lost-by-remote': line.event['lost-by-remote'],
-          'jitter-local': line.event['jitter-local'],
-          'jitter-remote': line.event['jitter-remote'],
-          'in-link-quality': line.event['in-link-quality']
-        }
+      if (line.event.media === "audio" && line.subtype === 3) {
+        // console.log('event ----', event)
         const session = this.sessionMap.get(line.session_id)
         const mediaSpan = this.startSpan(
           "Audio Media Report",
@@ -611,17 +624,23 @@ function ContextManager (self, tracerName, sessionObject) {
           session.traceId,
           session.sessionSpanId
         )
+        mediaSpan.annotations = [
+          {
+            timestamp: nano_now(Date.now()),
+            value: JSON.stringify(line.event)
+          }
+        ]
+        // console.log('mediaSpan -----------', mediaSpan)
         mediaSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
         /* Split out data and send to metrics counter */
         if (this.filter.metrics) {
-          this.sendMetrics(event, this)
+          this.sendMetrics({
+            metrics: JSON.stringify(line.event)
+          }, this)
         }
-      } else if (event.media === "video" && event.subtype === 3) {
-        // TODO populate deeply into event to make tags
-        event = Object.assign(event, line?.event)
-        event.metrics = line.event
+      } else if (line.event.media === "video" && line.subtype === 3) {
         const session = this.sessionMap.get(line.session_id)
         const mediaSpan = this.startSpan(
           "Video Media Report",
@@ -631,12 +650,20 @@ function ContextManager (self, tracerName, sessionObject) {
           session.traceId,
           session.sessionSpanId
         )
+        mediaSpan.annotations = [
+          {
+            timestamp: nano_now(Date.now()),
+            value: JSON.stringify(line.event)
+          }
+        ]
         mediaSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
         /* Split out data and send to metrics counter */
         if (this.filter.metrics) {
-          this.sendMetrics(event, this)
+          this.sendMetrics({
+            metrics: JSON.stringify(line.event)
+          }, this)
         }
       }
     /*
@@ -677,7 +704,7 @@ function ContextManager (self, tracerName, sessionObject) {
         session.sessionSpanId
       )
       transportSpan.end()
-      session.lastEvent = Date.now()
+      session.lastEvent = Date.now().toString()
       this.sessionMap.set(session.session_id, session)
       this.sessionMap.set(line.event.id, session) */
     /*
@@ -685,7 +712,7 @@ function ContextManager (self, tracerName, sessionObject) {
       */
     } else if (line.type === 256) {
       event = {
-        name: "Status Event",
+        eventName: "Status Event",
         server: line.emitter,
         subtype: line.subtype,
         timestamp: line.timestamp || nano_now(new Date().getTime())
@@ -726,7 +753,7 @@ function ContextManager (self, tracerName, sessionObject) {
       line.event.media
       */
       event = {
-        name: line.event.plugin,
+        eventName: line.event.plugin,
         event: line.event.data.event,
         display: line.event.data?.display || 'null',
         id: line.event.data.id?.toString() || line.event.data.id,
@@ -760,7 +787,7 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         joinedSpan.end(session.lastEvent)
         session.eventId = line.event.data.id
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
         this.sessionMap.set(line.event.data.id, session)
         /*
@@ -778,7 +805,7 @@ function ContextManager (self, tracerName, sessionObject) {
           session.joinSpanId
         )
         session.confSpan = confSpan
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
         /*
         Published Event
@@ -795,7 +822,7 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         session.pubSpan = pubSpan
         session.confSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
         /*
         Subscribing Event
@@ -811,7 +838,7 @@ function ContextManager (self, tracerName, sessionObject) {
           session.joinSpanId
         )
         session.subSpan = subSpan
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
         /*
         Subscribed Event
@@ -833,7 +860,7 @@ function ContextManager (self, tracerName, sessionObject) {
           session.joinSpanId
         )
         upSpan.end(session.lastEvent)
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
         this.sessionMap.set(session.session_id, session)
         /*
@@ -856,7 +883,7 @@ function ContextManager (self, tracerName, sessionObject) {
         } catch (e) {
           // swallow error
         }
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
         /*
         Leaving Event
@@ -874,7 +901,7 @@ function ContextManager (self, tracerName, sessionObject) {
         leaveSpan.end(session.lastEvent)
         session.joinSpan.end(session.lastEvent)
         session.joinSpan.end = () => {}
-        session.lastEvent = Date.now()
+        session.lastEvent = Date.now().toString()
         session.status = 'Closed'
         this.sessionMap.set(line.event.data.id, session)
         this.sessionMap.set(session.session_id, session)
@@ -911,6 +938,7 @@ function ContextManager (self, tracerName, sessionObject) {
     if (parentId) {
       span.parentId = parentId
     }
+    if (this.filter.debug) { console.log('span ---', span) }
     return span
   }
 
@@ -977,6 +1005,291 @@ function ContextManager (self, tracerName, sessionObject) {
   }
 
   this.nano_now = function (date) {
-    return parseInt(date.toString().padEnd(16, '0'))
+    return date.toString().padEnd(16, '0')
+  }
+
+  this.sendMetrics = function (event) {
+    if (this.filter.debug) logger.info('Event Metrics', event)
+
+    const mediaMetrics = {
+      streams: []
+    }
+
+    const timestamp = this.nano_now(Date.now())
+
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "local_lost_packets"
+      },
+      values: [
+        [
+          timestamp,
+          "local_lost_packets",
+          event.metrics["lost"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "remote_lost_packets"
+      },
+      values: [
+        [
+          timestamp,
+          "remote_lost_packets",
+          event.metrics["lost-by-remote"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "local_jitter"
+      },
+      values: [
+        [
+          timestamp,
+          "local_jitter",
+          event.metrics["jitter-local"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "remote_jitter"
+      },
+      values: [
+        [
+          timestamp,
+          "remote_jitter",
+          event.metrics["jitter-remote"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "in_link_quality"
+      },
+      values: [
+        [
+          timestamp,
+          "in_link_quality",
+          event.metrics["in-link-quality"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "in_media_link_quality"
+      },
+      values: [
+        [
+          timestamp,
+          "in_media_link_quality",
+          event.metrics["in-media-link-quality"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "out_link_quality"
+      },
+      values: [
+        [
+          timestamp,
+          "out_link_quality",
+          event.metrics["out-link-quality"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "out_media_link_quality"
+      },
+      values: [
+        [
+          timestamp,
+          "out_media_link_quality",
+          event.metrics["out-media-link-quality"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "packets_received"
+      },
+      values: [
+        [
+          timestamp,
+          "packets_received",
+          event.metrics["packets-received"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "packets_sent"
+      },
+      values: [
+        [
+          timestamp,
+          "packets_sent",
+          event.metrics["packets-sent"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "bytes_received"
+      },
+      values: [
+        [
+          timestamp,
+          "bytes_received",
+          event.metrics["bytes-received"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "bytes_sent"
+      },
+      values: [
+        [
+          timestamp,
+          "bytes_sent",
+          event.metrics["bytes-sent"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "bytes_received_lastsec"
+      },
+      values: [
+        [
+          timestamp,
+          "bytes_received_lastsec",
+          event.metrics["bytes-received-lastsec"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "bytes_sent_lastsec"
+      },
+      values: [
+        [
+          timestamp,
+          "bytes_sent_lastsec",
+          event.metrics["bytes-sent-lastsec"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "nacks_received"
+      },
+      values: [
+        [
+          timestamp,
+          "nacks_received",
+          event.metrics["nacks-received"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "nacks_sent"
+      },
+      values: [
+        [
+          timestamp,
+          "nacks_sent",
+          event.metrics["nacks-sent"]
+        ]
+      ]
+    })
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: 32,
+        session_id: event.session_id,
+        metric: "retransmission_received"
+      },
+      values: [
+        [
+          timestamp,
+          "retransmission_received",
+          event.metrics["retransmission-received"]
+        ]
+      ]
+    })
+
+    this.filter.emit('output', mediaMetrics)
   }
 }
