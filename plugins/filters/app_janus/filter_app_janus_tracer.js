@@ -10,8 +10,7 @@ var base_filter = require('@pastash/pastash').base_filter
 var util = require('util')
 var logger = require('@pastash/pastash').logger
 var crypto = require('crypto')
-
-const QuickLRU = require("quick-lru");
+const { Kafka } = require('kafkajs')
 
 function nano_now (date) { return parseInt(date.toString().padEnd(16, '0')) }
 
@@ -21,19 +20,19 @@ function FilterAppJanusTracer () {
     name: 'AppJanusTracer',
     optional_params: [
       'debug',
-      'bypass',
       'port',
       'metrics',
       'filter',
-      'tracerName'
+      'tracerName',
+      'kafkaHost'
     ],
     default_values: {
       'metrics': false,
       'port': 9090,
-      'bypass': false,
       'debug': false,
       'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
-      'tracerName': 'pastash_janus_trace'
+      'tracerName': 'pastash_janus_trace',
+      'kafkaHost': '127.0.0.1:9092'
     },
     start_hook: this.start.bind(this)
   });
@@ -42,8 +41,13 @@ function FilterAppJanusTracer () {
 util.inherits(FilterAppJanusTracer, base_filter.BaseFilter);
 
 FilterAppJanusTracer.prototype.start = async function (callback) {
-  // LRU
-  this.lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false });
+  this.kafka = new Kafka({
+    clientId: 'my-app',
+    brokers: [this.kafkaHost]
+  })
+  this.producer = this.kafka.producer()
+  await this.producer.connect()
+  console.log('Kafka Client connected to ', this.kafkaHost)
   var filterArray = []
   for (var i = 0; i < this.filter.length; i++) {
     filterArray.push([parseInt(this.filter[i]), "allow"])
@@ -56,8 +60,6 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
 };
 
 FilterAppJanusTracer.prototype.process = function (data) {
-  // bypass
-  if (this.bypass) this.emit('output', data)
   if (!data.message) return;
 
   var line = JSON.parse(data.message);
@@ -580,8 +582,12 @@ function ContextManager (self, tracerName, sessionObject) {
               ]
             ]
           })
-
-          this.emit('output', mediaMetrics)
+          const data = []
+          data.push(mediaMetrics)
+          this.producer.send({
+            topic: 'metrics',
+            messages: [{ value: data }]
+          })
         }
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
@@ -977,7 +983,10 @@ function ContextManager (self, tracerName, sessionObject) {
     if (this.filter.debug) console.log('SWAP', swap)
     this.buffer = []
     // if (this.filter.debug) console.log(string)
-    this.filter.emit('output', swap)
+    this.filter.producer.send({
+      topic: 'tempo',
+      messages: [{ value: JSON.stringify(swap) }]
+    })
   }
 
   /*
@@ -1008,8 +1017,8 @@ function ContextManager (self, tracerName, sessionObject) {
     return date.toString().padEnd(16, '0')
   }
 
-  this.sendMetrics = function (event) {
-    if (this.filter.debug) logger.info('Event Metrics', event)
+  this.sendMetrics = async function (event, self) {
+    if (self.debug) logger.info('Event Metrics', event)
 
     const mediaMetrics = {
       streams: []
@@ -1290,6 +1299,11 @@ function ContextManager (self, tracerName, sessionObject) {
       ]
     })
 
-    this.filter.emit('output', mediaMetrics)
+    const data = []
+    data.push(mediaMetrics)
+    self.producer.send({
+      topic: 'metrics',
+      messages: [{ value: JSON.stringify(data) }]
+    })
   }
 }
