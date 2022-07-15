@@ -45,7 +45,9 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     clientId: 'my-app',
     brokers: [this.kafkaHost]
   })
-  this.producer = this.kafka.producer()
+  this.producer = this.kafka.producer({
+    metadataMaxAge: 30000
+  })
   await this.producer.connect()
   console.log('Kafka Client connected to ', this.kafkaHost)
   var filterArray = []
@@ -585,7 +587,10 @@ function ContextManager (self, tracerName, sessionObject) {
           console.log('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
           await this.filter.producer.send({
             topic: 'metrics',
-            messages: [{ value: JSON.stringify(mediaMetrics) }]
+            messages: [{
+              value: JSON.stringify(mediaMetrics),
+              ack: 0
+            }]
           })
         }
         session.lastEvent = Date.now().toString()
@@ -646,7 +651,7 @@ function ContextManager (self, tracerName, sessionObject) {
           }, this.filter)
         }
         // console.log('mediaSpan -----------', mediaSpan)
-        mediaSpan.end(session.lastEvent)
+        mediaSpan.end(session.lastEvent, line.event['rtt'])
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       } else if (line.event.media === "video" && line.subtype === 3) {
@@ -675,7 +680,7 @@ function ContextManager (self, tracerName, sessionObject) {
             metrics: line.event
           }, this.filter)
         }
-        mediaSpan.end(session.lastEvent)
+        mediaSpan.end(session.lastEvent, line.event['rtt'])
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       }
@@ -937,10 +942,11 @@ function ContextManager (self, tracerName, sessionObject) {
     span.kind = "SERVER"
     span.start = nano_now(Date.now())
     span.duration = 0
-    span.end = function (lastEvent) {
+    span.end = function (lastEvent, duration) {
       // console.log('SPAN ----', span)
       span.duration = nano_now(Date.now()) - span.start
       if (lastEvent) { span.tags.lastEvent = lastEvent }
+      if (duration) { span.duration = duration * 1000 } // assuming rtt is in ms
       context.buffer.push(span)
     }
     if (traceId) {
@@ -1033,6 +1039,23 @@ function ContextManager (self, tracerName, sessionObject) {
     }
 
     const timestamp = this.nano_now(Date.now()).padEnd(19, '0')
+
+    mediaMetrics.streams.push({
+      stream: {
+        emitter: event.emitter,
+        mediatype: event.media,
+        type: '32',
+        session_id: event.session_id,
+        metric: "rtt"
+      },
+      values: [
+        [
+          timestamp,
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + event.metrics["rtt"],
+          event.metrics["rtt"]
+        ]
+      ]
+    })
 
     mediaMetrics.streams.push({
       stream: {
@@ -1309,7 +1332,10 @@ function ContextManager (self, tracerName, sessionObject) {
 
     await self.producer.send({
       topic: 'metrics',
-      messages: [{ value: JSON.stringify(mediaMetrics) }]
+      messages: [{
+        value: JSON.stringify(mediaMetrics),
+        ack: 0
+      }]
     })
   }
 }
