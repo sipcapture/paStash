@@ -113,7 +113,7 @@ function ContextManager (self, tracerName, sessionObject) {
     Processor Function
     */
 
-  this.process = function (line) {
+  this.process = async function (line) {
     // if (this.filter.debug) logger.info('Incoming line', line.type, line.event)
     /* Ignore all events not in filter */
     if (!self.filterMap.has(line.type)) return
@@ -583,7 +583,7 @@ function ContextManager (self, tracerName, sessionObject) {
             ]
           })
           console.log('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
-          this.filter.producer.send({
+          await this.filter.producer.send({
             topic: 'metrics',
             messages: [{ value: JSON.stringify(mediaMetrics) }]
           })
@@ -671,7 +671,7 @@ function ContextManager (self, tracerName, sessionObject) {
             session_id: line.session_id.toString(),
             emitter: line.emitter,
             media: line.event.media,
-            traceid: session.traceId,
+            traceId: session.traceId,
             metrics: line.event
           }, this.filter)
         }
@@ -1307,7 +1307,7 @@ function ContextManager (self, tracerName, sessionObject) {
       ]
     })
 
-    self.producer.send({
+    await self.producer.send({
       topic: 'metrics',
       messages: [{ value: JSON.stringify(mediaMetrics) }]
     })
