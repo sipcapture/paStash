@@ -560,33 +560,32 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         conSpan.end(session.lastEvent)
         session.iceSpan.end(session.lastEvent)
-        if (this.metrics) {
+        if (this.filter.metrics) {
           const mediaMetrics = {
             streams: []
           }
 
-          const timestamp = this.nano_now(Date.now())
+          const timestamp = this.nano_now(Date.now()).padEnd(19, '0')
 
           mediaMetrics.streams.push({
             stream: {
               emitter: line.emitter,
-              type: 16,
-              session_id: event.session_id,
+              type: '16',
+              session_id: line.session_id.toString(),
               metric: "ice_duration"
             },
             values: [
               [
                 timestamp,
-                "ice_duration",
+                "session_id=" + line.session_id.toString() + " name=" + "ice_duration" + "traceId=" + session.traceId + " value=" + session.iceSpan.duration,
                 session.iceSpan.duration
               ]
             ]
           })
-          const data = []
-          data.push(mediaMetrics)
-          this.producer.send({
+          console.log('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
+          this.filter.producer.send({
             topic: 'metrics',
-            messages: [{ value: data }]
+            messages: [{ value: JSON.stringify(mediaMetrics) }]
           })
         }
         session.lastEvent = Date.now().toString()
@@ -636,16 +635,20 @@ function ContextManager (self, tracerName, sessionObject) {
             value: JSON.stringify(line.event)
           }
         ]
+        /* Split out data and send to metrics counter */
+        if (this.filter.metrics) {
+          this.sendMetrics({
+            session_id: line.session_id.toString(),
+            emitter: line.emitter,
+            media: line.event.media,
+            traceId: session.traceId,
+            metrics: line.event
+          }, this.filter)
+        }
         // console.log('mediaSpan -----------', mediaSpan)
         mediaSpan.end(session.lastEvent)
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
-        /* Split out data and send to metrics counter */
-        if (this.filter.metrics) {
-          this.sendMetrics({
-            metrics: JSON.stringify(line.event)
-          }, this)
-        }
       } else if (line.event.media === "video" && line.subtype === 3) {
         const session = this.sessionMap.get(line.session_id)
         const mediaSpan = this.startSpan(
@@ -662,15 +665,19 @@ function ContextManager (self, tracerName, sessionObject) {
             value: JSON.stringify(line.event)
           }
         ]
-        mediaSpan.end(session.lastEvent)
-        session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
         /* Split out data and send to metrics counter */
         if (this.filter.metrics) {
           this.sendMetrics({
-            metrics: JSON.stringify(line.event)
-          }, this)
+            session_id: line.session_id.toString(),
+            emitter: line.emitter,
+            media: line.event.media,
+            traceid: session.traceId,
+            metrics: line.event
+          }, this.filter)
         }
+        mediaSpan.end(session.lastEvent)
+        session.lastEvent = Date.now().toString()
+        this.sessionMap.set(line.session_id, session)
       }
     /*
       Type 128 - Transport-originated
@@ -800,7 +807,7 @@ function ContextManager (self, tracerName, sessionObject) {
         Configured Event
         */
       } else if (line.event.data.event === 'configured') {
-        console.log('CONF', line, line.event.data.id, line?.session_id)
+        // console.log('CONF', line, line.event.data.id, line?.session_id)
         const session = this.sessionMap.get(line.event.data.id)
         const confSpan = this.startSpan(
           "User configured",
@@ -982,10 +989,11 @@ function ContextManager (self, tracerName, sessionObject) {
     const swap = [...this.buffer]
     if (this.filter.debug) console.log('SWAP', swap)
     this.buffer = []
-    // if (this.filter.debug) console.log(string)
+    const string = JSON.stringify(swap)
+    if (this.filter.debug) console.log(string)
     this.filter.producer.send({
       topic: 'tempo',
-      messages: [{ value: JSON.stringify(swap) }]
+      messages: [{ value: string }]
     })
   }
 
@@ -1024,20 +1032,20 @@ function ContextManager (self, tracerName, sessionObject) {
       streams: []
     }
 
-    const timestamp = this.nano_now(Date.now())
+    const timestamp = this.nano_now(Date.now()).padEnd(19, '0')
 
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "local_lost_packets"
       },
       values: [
         [
           timestamp,
-          "local_lost_packets",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_lost_packets" + " traceId=" + event.traceId + " value=" + event.metrics["lost"],
           event.metrics["lost"]
         ]
       ]
@@ -1046,14 +1054,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "remote_lost_packets"
       },
       values: [
         [
           timestamp,
-          "remote_lost_packets",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_lost_packets" + " traceId=" + event.traceId + " value=" + event.metrics["lost-by-remote"],
           event.metrics["lost-by-remote"]
         ]
       ]
@@ -1062,14 +1070,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "local_jitter"
       },
       values: [
         [
           timestamp,
-          "local_jitter",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_jitter" + " traceId=" + event.traceId + " value=" + event.metrics["jitter-local"],
           event.metrics["jitter-local"]
         ]
       ]
@@ -1078,14 +1086,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "remote_jitter"
       },
       values: [
         [
           timestamp,
-          "remote_jitter",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_jitter" + " traceId=" + event.traceId + " value=" + event.metrics["jitter-remote"],
           event.metrics["jitter-remote"]
         ]
       ]
@@ -1094,14 +1102,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "in_link_quality"
       },
       values: [
         [
           timestamp,
-          "in_link_quality",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["in-link-quality"],
           event.metrics["in-link-quality"]
         ]
       ]
@@ -1110,14 +1118,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "in_media_link_quality"
       },
       values: [
         [
           timestamp,
-          "in_media_link_quality",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_media_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["in-media-link-quality"],
           event.metrics["in-media-link-quality"]
         ]
       ]
@@ -1126,14 +1134,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "out_link_quality"
       },
       values: [
         [
           timestamp,
-          "out_link_quality",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_link_quality " + " traceId=" + event.traceId + " value=" + event.metrics["out-link-quality"],
           event.metrics["out-link-quality"]
         ]
       ]
@@ -1142,14 +1150,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "out_media_link_quality"
       },
       values: [
         [
           timestamp,
-          "out_media_link_quality",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_media_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["out-media-link-quality"],
           event.metrics["out-media-link-quality"]
         ]
       ]
@@ -1158,14 +1166,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "packets_received"
       },
       values: [
         [
           timestamp,
-          "packets_received",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_received" + " traceId=" + event.traceId + " value=" + event.metrics["packets-received"],
           event.metrics["packets-received"]
         ]
       ]
@@ -1174,14 +1182,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "packets_sent"
       },
       values: [
         [
           timestamp,
-          "packets_sent",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_sent" + " traceId=" + event.traceId + " value=" + event.metrics["packets-sent"],
           event.metrics["packets-sent"]
         ]
       ]
@@ -1190,14 +1198,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "bytes_received"
       },
       values: [
         [
           timestamp,
-          "bytes_received",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-received"],
           event.metrics["bytes-received"]
         ]
       ]
@@ -1206,14 +1214,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "bytes_sent"
       },
       values: [
         [
           timestamp,
-          "bytes_sent",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-sent"],
           event.metrics["bytes-sent"]
         ]
       ]
@@ -1222,14 +1230,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "bytes_received_lastsec"
       },
       values: [
         [
           timestamp,
-          "bytes_received_lastsec",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received_lastsec" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-received-lastsec"],
           event.metrics["bytes-received-lastsec"]
         ]
       ]
@@ -1238,14 +1246,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "bytes_sent_lastsec"
       },
       values: [
         [
           timestamp,
-          "bytes_sent_lastsec",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent_lastsec" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-sent-lastsec"],
           event.metrics["bytes-sent-lastsec"]
         ]
       ]
@@ -1254,14 +1262,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "nacks_received"
       },
       values: [
         [
           timestamp,
-          "nacks_received",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_received" + " traceId=" + event.traceId + " value=" + event.metrics["nacks-received"],
           event.metrics["nacks-received"]
         ]
       ]
@@ -1270,14 +1278,14 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "nacks_sent"
       },
       values: [
         [
           timestamp,
-          "nacks_sent",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_sent" + " traceId=" + event.traceId + " value=" + event.metrics["nacks-sent"],
           event.metrics["nacks-sent"]
         ]
       ]
@@ -1286,24 +1294,22 @@ function ContextManager (self, tracerName, sessionObject) {
       stream: {
         emitter: event.emitter,
         mediatype: event.media,
-        type: 32,
+        type: '32',
         session_id: event.session_id,
         metric: "retransmission_received"
       },
       values: [
         [
           timestamp,
-          "retransmission_received",
+          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "retransmission_received" + " traceId=" + event.traceId + " value=" + event.metrics["retransmission-received"],
           event.metrics["retransmission-received"]
         ]
       ]
     })
 
-    const data = []
-    data.push(mediaMetrics)
     self.producer.send({
       topic: 'metrics',
-      messages: [{ value: JSON.stringify(data) }]
+      messages: [{ value: JSON.stringify(mediaMetrics) }]
     })
   }
 }
