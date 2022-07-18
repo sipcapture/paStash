@@ -45,9 +45,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     clientId: 'my-app',
     brokers: [this.kafkaHost]
   })
-  this.producer = this.kafka.producer({
-    metadataMaxAge: 30000
-  })
+  this.producer = this.kafka.producer()
   await this.producer.connect()
   console.log('Kafka Client connected to ', this.kafkaHost)
   var filterArray = []
@@ -573,19 +571,18 @@ function ContextManager (self, tracerName, sessionObject) {
             stream: {
               emitter: line.emitter,
               type: '16',
-              session_id: line.session_id.toString(),
               metric: "ice_duration"
             },
             values: [
               [
                 timestamp,
-                "session_id=" + line.session_id.toString() + " name=" + "ice_duration" + "traceId=" + session.traceId + " value=" + session.iceSpan.duration,
+                "emitter=" + line.emitter + " session_id=" + line.session_id.toString() + " name=" + "ice_duration" + "traceId=" + session.traceId + " value=" + session.iceSpan.duration,
                 session.iceSpan.duration
               ]
             ]
           })
           console.log('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
-          await this.filter.producer.send({
+          this.filter.producer.send({
             topic: 'metrics',
             messages: [{
               value: JSON.stringify(mediaMetrics),
@@ -1045,13 +1042,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "rtt"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + event.metrics["rtt"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + event.metrics["rtt"],
           event.metrics["rtt"]
         ]
       ]
@@ -1062,13 +1058,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "local_lost_packets"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_lost_packets" + " traceId=" + event.traceId + " value=" + event.metrics["lost"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_lost_packets" + " traceId=" + event.traceId + " value=" + event.metrics["lost"],
           event.metrics["lost"]
         ]
       ]
@@ -1084,7 +1079,7 @@ function ContextManager (self, tracerName, sessionObject) {
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_lost_packets" + " traceId=" + event.traceId + " value=" + event.metrics["lost-by-remote"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_lost_packets" + " traceId=" + event.traceId + " value=" + event.metrics["lost-by-remote"],
           event.metrics["lost-by-remote"]
         ]
       ]
@@ -1094,13 +1089,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "local_jitter"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_jitter" + " traceId=" + event.traceId + " value=" + event.metrics["jitter-local"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_jitter" + " traceId=" + event.traceId + " value=" + event.metrics["jitter-local"],
           event.metrics["jitter-local"]
         ]
       ]
@@ -1110,13 +1104,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "remote_jitter"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_jitter" + " traceId=" + event.traceId + " value=" + event.metrics["jitter-remote"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_jitter" + " traceId=" + event.traceId + " value=" + event.metrics["jitter-remote"],
           event.metrics["jitter-remote"]
         ]
       ]
@@ -1126,13 +1119,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "in_link_quality"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["in-link-quality"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["in-link-quality"],
           event.metrics["in-link-quality"]
         ]
       ]
@@ -1142,13 +1134,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "in_media_link_quality"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_media_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["in-media-link-quality"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_media_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["in-media-link-quality"],
           event.metrics["in-media-link-quality"]
         ]
       ]
@@ -1164,7 +1155,7 @@ function ContextManager (self, tracerName, sessionObject) {
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_link_quality " + " traceId=" + event.traceId + " value=" + event.metrics["out-link-quality"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_link_quality " + " traceId=" + event.traceId + " value=" + event.metrics["out-link-quality"],
           event.metrics["out-link-quality"]
         ]
       ]
@@ -1174,13 +1165,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "out_media_link_quality"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_media_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["out-media-link-quality"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_media_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["out-media-link-quality"],
           event.metrics["out-media-link-quality"]
         ]
       ]
@@ -1190,13 +1180,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "packets_received"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_received" + " traceId=" + event.traceId + " value=" + event.metrics["packets-received"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_received" + " traceId=" + event.traceId + " value=" + event.metrics["packets-received"],
           event.metrics["packets-received"]
         ]
       ]
@@ -1206,13 +1195,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "packets_sent"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_sent" + " traceId=" + event.traceId + " value=" + event.metrics["packets-sent"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_sent" + " traceId=" + event.traceId + " value=" + event.metrics["packets-sent"],
           event.metrics["packets-sent"]
         ]
       ]
@@ -1222,13 +1210,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "bytes_received"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-received"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-received"],
           event.metrics["bytes-received"]
         ]
       ]
@@ -1238,13 +1225,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "bytes_sent"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-sent"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-sent"],
           event.metrics["bytes-sent"]
         ]
       ]
@@ -1254,13 +1240,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "bytes_received_lastsec"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received_lastsec" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-received-lastsec"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received_lastsec" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-received-lastsec"],
           event.metrics["bytes-received-lastsec"]
         ]
       ]
@@ -1270,13 +1255,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "bytes_sent_lastsec"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent_lastsec" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-sent-lastsec"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent_lastsec" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-sent-lastsec"],
           event.metrics["bytes-sent-lastsec"]
         ]
       ]
@@ -1286,13 +1270,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "nacks_received"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_received" + " traceId=" + event.traceId + " value=" + event.metrics["nacks-received"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_received" + " traceId=" + event.traceId + " value=" + event.metrics["nacks-received"],
           event.metrics["nacks-received"]
         ]
       ]
@@ -1302,13 +1285,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "nacks_sent"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_sent" + " traceId=" + event.traceId + " value=" + event.metrics["nacks-sent"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_sent" + " traceId=" + event.traceId + " value=" + event.metrics["nacks-sent"],
           event.metrics["nacks-sent"]
         ]
       ]
@@ -1318,13 +1300,12 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "retransmission_received"
       },
       values: [
         [
           timestamp,
-          "session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "retransmission_received" + " traceId=" + event.traceId + " value=" + event.metrics["retransmission-received"],
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "retransmission_received" + " traceId=" + event.traceId + " value=" + event.metrics["retransmission-received"],
           event.metrics["retransmission-received"]
         ]
       ]
