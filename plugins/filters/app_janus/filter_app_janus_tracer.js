@@ -576,17 +576,16 @@ function ContextManager (self, tracerName, sessionObject) {
             values: [
               [
                 timestamp,
-                "emitter=" + line.emitter + " session_id=" + line.session_id.toString() + " name=" + "ice_duration" + "traceId=" + session.traceId + " value=" + session.iceSpan.duration,
+                "emitter=" + line.emitter + " session_id=" + line.session_id.toString() + " name=" + "ice_duration" + " traceId=" + session.traceId + " value=" + session.iceSpan.duration,
                 session.iceSpan.duration
               ]
             ]
           })
-          console.log('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
+          if (this.filter.debug) console.log('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
           this.filter.producer.send({
             topic: 'metrics',
             messages: [{
-              value: JSON.stringify(mediaMetrics),
-              ack: 0
+              value: JSON.stringify(mediaMetrics)
             }]
           })
         }
@@ -1314,8 +1313,7 @@ function ContextManager (self, tracerName, sessionObject) {
     await self.producer.send({
       topic: 'metrics',
       messages: [{
-        value: JSON.stringify(mediaMetrics),
-        ack: 0
+        value: JSON.stringify(mediaMetrics)
       }]
     })
   }
