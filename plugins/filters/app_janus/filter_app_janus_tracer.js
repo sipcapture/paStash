@@ -13,6 +13,7 @@ var util = require('util')
 var logger = require('@pastash/pastash').logger
 var crypto = require('crypto')
 const { Kafka } = require('kafkajs')
+const QuickLRU = require("quick-lru");
 
 function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this);
@@ -41,6 +42,7 @@ function FilterAppJanusTracer () {
 util.inherits(FilterAppJanusTracer, base_filter.BaseFilter);
 
 FilterAppJanusTracer.prototype.start = async function (callback) {
+  /* Kafka client */
   this.kafka = new Kafka({
     clientId: 'my-app',
     brokers: [this.kafkaHost],
@@ -49,12 +51,16 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   this.producer = this.kafka.producer()
   await this.producer.connect()
   console.log('Kafka Client connected to ', this.kafkaHost)
+  /* Type Filter setup */
   var filterArray = []
   for (var i = 0; i < this.filter.length; i++) {
     filterArray.push([parseInt(this.filter[i]), "allow"])
   }
   this.filterMap = new Map(filterArray)
-  this.ctx = new ContextManager(this, this.tracerName)
+  /* LRU setup */
+  this.lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false });
+  /* Context Manager setup */
+  this.ctx = new ContextManager(this, this.tracerName, this.lru)
   this.ctx.init()
   logger.info('Initialized App Janus Span Tracer');
   callback();
@@ -89,7 +95,7 @@ exports.create = function () {
     - Manage Duration through start and end
     */
 
-function ContextManager (self, tracerName, sessionObject) {
+function ContextManager (self, tracerName, lru) {
   /*
   Context Globals
   */
@@ -100,7 +106,7 @@ function ContextManager (self, tracerName, sessionObject) {
   /*
   Context Storage
   */
-  this.sessionMap = new Map()
+  this.sessionMap = lru
   this.buffer = []
 
   /*
@@ -973,31 +979,31 @@ function ContextManager (self, tracerName, sessionObject) {
     if (this.buffer.length > 15 || (this.buffer.length > 0 && sinceLast > 10000)) {
       this.lastflush = Date.now()
       this.flush()
-      this.sessionMap.forEach((session, key) => {
+      for (const entry of this.sessionMap.values()) {
+        let session = entry
         // Check timeout of session
         // console.log(session)
         try {
           if (Date.now() - session.lastEvent > (1000 * 1) && session.status === 'Closed') {
-            console.log('Session Map Size', this.sessionMap.size)
-            console.log('Session Map Size', this.sessionMap.keys())
             if (this.filter.debug) console.log('Deleting session from sessionMap, 1 sec timeout and closed')
-            this.sessionMap.delete(key)
-            this.sessionMap.delete(session?.pluginId)
+            this.sessionMap.delete(session.session_id)
+            this.sessionMap.delete(session?.eventId)
             this.sessionMap.delete(session?.transportId)
             session = null
-            console.log('Session Map Size', this.sessionMap.size)
-          } else if (Date.now() - session.lastEvent > (1000 * 5 * 60 * 60)) {
-            if (this.filter.debug) console.log('Deleting session from sessionMap, older than 5 hours')
-            this.sessionMap.delete(key)
-            this.sessionMap.delete(session?.pluginId)
+            console.log('Session Map Size Closed', this.sessionMap.size)
+          } else if (Date.now() - session.lastEvent > (1000 * 5 * 60)) {
+            if (this.filter.debug) console.log('Deleting session from sessionMap, older than 5 minutes')
+            this.sessionMap.delete(session.session_id)
+            this.sessionMap.delete(session?.eventId)
             this.sessionMap.delete(session?.transportId)
             session = null
+            console.log('Session Map Size TimedOut', this.sessionMap.size)
           }
         } catch (e) {
           // swallow e
           console.log('sessionMap', e)
         }
-      })
+      }
     }
   }
 
