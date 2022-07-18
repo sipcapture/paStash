@@ -177,6 +177,7 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         destroySpan.end(session.lastEvent)
         session.sessionSpan.end(session.lastEvent)
+        session.sessionSpan = null
         session.status = 'Closed'
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
@@ -247,6 +248,7 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         detachedSpan.end(session.lastEvent)
         session.handleSpan.end(session.lastEvent)
+        session.handleSpan = null
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       }
@@ -590,6 +592,7 @@ function ContextManager (self, tracerName, sessionObject) {
             }]
           })
         }
+        session.iceSpan = null
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
       }
@@ -837,6 +840,7 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         session.pubSpan = pubSpan
         session.confSpan.end(session.lastEvent)
+        session.confSpan = null
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
         /*
@@ -861,6 +865,7 @@ function ContextManager (self, tracerName, sessionObject) {
       } else if (line.event.data.event === 'subscribed') {
         const session = this.sessionMap.get(line.event.data.id)
         session.subSpan.end(session.lastEvent)
+        session.subSpan = null
         /*
         Update Event
         */
@@ -894,6 +899,8 @@ function ContextManager (self, tracerName, sessionObject) {
         unpubSpan.end(session.lastEvent)
         try {
           session.pubSpan.end(session.lastEvent)
+          session.pubSpan = null
+          session.pubSpan = {}
           session.pubSpan.end = () => {}
         } catch (e) {
           // swallow error
@@ -915,6 +922,8 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         leaveSpan.end(session.lastEvent)
         session.joinSpan.end(session.lastEvent)
+        session.joinSpan = null
+        session.joinSpan = {}
         session.joinSpan.end = () => {}
         session.lastEvent = Date.now().toString()
         session.status = 'Closed'
@@ -943,8 +952,8 @@ function ContextManager (self, tracerName, sessionObject) {
       // console.log('SPAN ----', span)
       span.duration = context.nano_now(Date.now()) - span.start
       if (lastEvent) { span.tags.lastEvent = lastEvent }
-      if (duration) { span.duration = duration * 1000 } // assuming rtt is in ms
-      context.buffer.push(span)
+      if (duration) { span.duration = duration * 1000000 } // assuming rtt is in ms
+      context.buffer.push({ ...span })
     }
     if (traceId) {
       span.traceId = traceId
@@ -968,15 +977,17 @@ function ContextManager (self, tracerName, sessionObject) {
         // Check timeout of session
         // console.log(session)
         try {
-          if (Date.now() - session.lastEvent > (1000 * 2) && session.status === 'Closed') {
-            console.log('Deleting session from sessionMap, 2 sec timeout and closed')
+          if (Date.now() - session.lastEvent > (1000 * 1) && session.status === 'Closed') {
+            console.log('Session Map Size', this.sessionMap.size)
+            console.log('Session Map Size', this.sessionMap.keys())
+            if (this.filter.debug) console.log('Deleting session from sessionMap, 1 sec timeout and closed')
             this.sessionMap.delete(key)
             this.sessionMap.delete(session?.pluginId)
             this.sessionMap.delete(session?.transportId)
             session = null
-            console.log('Session Map Size', this.sessionMap.size())
+            console.log('Session Map Size', this.sessionMap.size)
           } else if (Date.now() - session.lastEvent > (1000 * 5 * 60 * 60)) {
-            console.log('Deleting session from sessionMap, older than 5 hours')
+            if (this.filter.debug) console.log('Deleting session from sessionMap, older than 5 hours')
             this.sessionMap.delete(key)
             this.sessionMap.delete(session?.pluginId)
             this.sessionMap.delete(session?.transportId)
