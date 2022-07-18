@@ -941,7 +941,7 @@ function ContextManager (self, tracerName, sessionObject) {
     span.duration = 0
     span.end = function (lastEvent, duration) {
       // console.log('SPAN ----', span)
-      span.duration = this.nano_now(Date.now()) - span.start
+      span.duration = context.nano_now(Date.now()) - span.start
       if (lastEvent) { span.tags.lastEvent = lastEvent }
       if (duration) { span.duration = duration * 1000 } // assuming rtt is in ms
       context.buffer.push(span)
