@@ -6,13 +6,13 @@
 /* eslint-disable quote-props */
 /* eslint-disable dot-notation */
 
+'use strict';
+
 var base_filter = require('@pastash/pastash').base_filter
 var util = require('util')
 var logger = require('@pastash/pastash').logger
 var crypto = require('crypto')
 const { Kafka } = require('kafkajs')
-
-function nano_now (date) { return parseInt(date.toString().padEnd(16, '0')) }
 
 function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this);
@@ -43,7 +43,8 @@ util.inherits(FilterAppJanusTracer, base_filter.BaseFilter);
 FilterAppJanusTracer.prototype.start = async function (callback) {
   this.kafka = new Kafka({
     clientId: 'my-app',
-    brokers: [this.kafkaHost]
+    brokers: [this.kafkaHost],
+    enforceRequestTimeout: false
   })
   this.producer = this.kafka.producer()
   await this.producer.connect()
@@ -137,7 +138,7 @@ function ContextManager (self, tracerName, sessionObject) {
         event: line.event.name,
         emitter: line.emitter,
         session_id: line?.session_id?.toString() || line?.session_id,
-        timestamp: line.timestamp || nano_now(new Date().getTime())
+        timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
       /* CREATE event */
       if (line.event.name === 'created') {
@@ -203,7 +204,7 @@ function ContextManager (self, tracerName, sessionObject) {
         emitter: line.emitter,
         opaque_id: line?.opaque_id?.toString() || line?.opaque_id,
         session_id: line?.session_id?.toString() || line?.session_id,
-        timestamp: line.timestamp || nano_now(new Date().getTime())
+        timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
       /*
         Attach Event
@@ -267,7 +268,7 @@ function ContextManager (self, tracerName, sessionObject) {
         event: "External Event",
         session_id: line?.session_id?.toString() || line?.session_id,
         id: line?.session_id,
-        timestamp: line.timestamp || nano_now(new Date().getTime())
+        timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
       const session = this.sessionMap.get(line.session_id)
       const extSpan = this.startSpan(
@@ -304,7 +305,7 @@ function ContextManager (self, tracerName, sessionObject) {
         session_id: line?.session_id?.toString() || line?.session_id,
         sdp_type: line?.event?.jsep?.type || 'null',
         sdp: line?.event?.jsep?.sdp || 'null',
-        timestamp: line.timestamp || nano_now(new Date().getTime())
+        timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
       /*
         Remote SDP
@@ -367,7 +368,7 @@ function ContextManager (self, tracerName, sessionObject) {
           event: line?.event?.ice,
           session_id: line?.session_id?.toString() || line?.session_id,
           ice_state: line?.event?.ice || 'null',
-          timestamp: line.timestamp || nano_now(new Date().getTime())
+          timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
         if (line.event.ice === 'gathering') {
           const session = this.sessionMap.get(line.session_id)
@@ -434,7 +435,7 @@ function ContextManager (self, tracerName, sessionObject) {
           subtype: line.subtype,
           session_id: line?.session_id?.toString() || line?.session_id,
           candidate: line?.event["local-candidate"],
-          timestamp: line.timestamp || nano_now(new Date().getTime())
+          timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
         const session = this.sessionMap.get(line.session_id)
         const candidateSpan = this.startSpan(
@@ -457,7 +458,7 @@ function ContextManager (self, tracerName, sessionObject) {
           eventName: "Remote Candidates",
           session_id: line?.session_id?.toString() || line?.session_id,
           candidate: line?.event["remote-candidate"],
-          timestamp: line.timestamp || nano_now(new Date().getTime())
+          timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
         const session = this.sessionMap.get(line.session_id)
         const candidateSpan = this.startSpan(
@@ -480,7 +481,7 @@ function ContextManager (self, tracerName, sessionObject) {
           name: "Candidates selected",
           event: JSON.stringify(line?.event),
           session_id: line?.session_id?.toString() || line?.session_id,
-          timestamp: line.timestamp || nano_now(new Date().getTime())
+          timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
         const session = this.sessionMap.get(line.session_id)
         const candidateSpan = this.startSpan(
@@ -503,7 +504,7 @@ function ContextManager (self, tracerName, sessionObject) {
           eventName: "DTLS flow",
           event: line?.event?.dtls,
           session_id: line?.session_id?.toString() || line?.session_id,
-          timestamp: line.timestamp || nano_now(new Date().getTime())
+          timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
         /*
           trying
@@ -547,7 +548,7 @@ function ContextManager (self, tracerName, sessionObject) {
           eventName: "Connection Up",
           event: line?.event,
           session_id: line?.session_id?.toString() || line?.session_id,
-          timestamp: line.timestamp || nano_now(new Date().getTime())
+          timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
         const session = this.sessionMap.get(line.session_id)
         const conSpan = this.startSpan(
@@ -616,7 +617,7 @@ function ContextManager (self, tracerName, sessionObject) {
         media: line.event.media,
         emitter: line?.emitter,
         session_id: line?.session_id?.toString() || line.session_id,
-        timestamp: line.timestamp || nano_now(new Date().getTime())
+        timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
 
       if (line.event.media === "audio" && line.subtype === 3) {
@@ -632,7 +633,7 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         mediaSpan.annotations = [
           {
-            timestamp: nano_now(Date.now()),
+            timestamp: this.nano_now(Date.now()),
             value: JSON.stringify(line.event)
           }
         ]
@@ -662,7 +663,7 @@ function ContextManager (self, tracerName, sessionObject) {
         )
         mediaSpan.annotations = [
           {
-            timestamp: nano_now(Date.now()),
+            timestamp: this.nano_now(Date.now()),
             value: JSON.stringify(line.event)
           }
         ]
@@ -729,7 +730,7 @@ function ContextManager (self, tracerName, sessionObject) {
         eventName: "Status Event",
         server: line.emitter,
         subtype: line.subtype,
-        timestamp: line.timestamp || nano_now(new Date().getTime())
+        timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
       if (event.subtype === 1) {
         const serverSpan = this.startSpan(
@@ -773,7 +774,7 @@ function ContextManager (self, tracerName, sessionObject) {
         id: line.event.data.id?.toString() || line.event.data.id,
         session_id: line?.session_id?.toString() || line.session_id,
         room: line.event.data.room?.toString() || line.event.data.room,
-        timestamp: line.timestamp || nano_now(new Date().getTime())
+        timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
       if (!line.event.data) return
       /*
@@ -930,17 +931,17 @@ function ContextManager (self, tracerName, sessionObject) {
     span.name = name
     span.tags = event
     span.attributes = event
-    span.timestamp = nano_now(Date.now())
+    span.timestamp = this.nano_now(Date.now())
     span.localEndpoint = {
       serviceName: service
     }
     span['service.name'] = service
     span.kind = "SERVER"
-    span.start = nano_now(Date.now())
+    span.start = this.nano_now(Date.now())
     span.duration = 0
     span.end = function (lastEvent, duration) {
       // console.log('SPAN ----', span)
-      span.duration = nano_now(Date.now()) - span.start
+      span.duration = this.nano_now(Date.now()) - span.start
       if (lastEvent) { span.tags.lastEvent = lastEvent }
       if (duration) { span.duration = duration * 1000 } // assuming rtt is in ms
       context.buffer.push(span)
@@ -967,16 +968,19 @@ function ContextManager (self, tracerName, sessionObject) {
         // Check timeout of session
         // console.log(session)
         try {
-          if (Date.now() - session.lastEvent > (1000 * 10) && session.status === 'Closed') {
-            console.log('Deleting session from sessionMap, 10 sec timeout and closed')
+          if (Date.now() - session.lastEvent > (1000 * 2) && session.status === 'Closed') {
+            console.log('Deleting session from sessionMap, 2 sec timeout and closed')
             this.sessionMap.delete(key)
             this.sessionMap.delete(session?.pluginId)
             this.sessionMap.delete(session?.transportId)
-          } else if (Date.now() - session.lastEvent > (1000 * 24 * 60 * 60)) {
-            console.log('Deleting session from sessionMap, older than 24 hours')
+            session = null
+            console.log('Session Map Size', this.sessionMap.size())
+          } else if (Date.now() - session.lastEvent > (1000 * 5 * 60 * 60)) {
+            console.log('Deleting session from sessionMap, older than 5 hours')
             this.sessionMap.delete(key)
             this.sessionMap.delete(session?.pluginId)
             this.sessionMap.delete(session?.transportId)
+            session = null
           }
         } catch (e) {
           // swallow e
