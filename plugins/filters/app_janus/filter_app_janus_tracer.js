@@ -13,7 +13,7 @@ var util = require('util')
 var logger = require('@pastash/pastash').logger
 var crypto = require('crypto')
 const { Kafka } = require('kafkajs')
-const QuickLRU = require("quick-lru");
+const QuickLRU = require("quick-lru")
 
 function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this);
@@ -57,6 +57,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     filterArray.push([parseInt(this.filter[i]), "allow"])
   }
   this.filterMap = new Map(filterArray)
+  filterArray = null
   /* LRU setup */
   this.lru = new QuickLRU({ maxSize: 10000, maxAge: 3600000, onEviction: false });
   /* Context Manager setup */
@@ -149,11 +150,11 @@ function ContextManager (self, tracerName, lru) {
       }
       /* CREATE event */
       if (line.event.name === 'created') {
-        const sessionSpan = this.startSpan('Session', line, event, 'Session')
+        const sessionSpan = this.startSpan('Session', { ...line }, { ...event }, 'Session')
         const sessionCreateSpan = this.startSpan(
           'Session Created',
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Session',
           sessionSpan.traceId,
           sessionSpan.id
@@ -168,16 +169,15 @@ function ContextManager (self, tracerName, lru) {
           sessionStatus: 'Open',
           transportId: line.event.transport.id
         }
-        this.sessionMap.set(session.transportId, session)
-        this.sessionMap.set(session.session_id, session)
+        this.sessionMap.set(session.session_id, { ...session })
         // logger.info('PJU -- Session event:', sessionSpan, session)
       /* DESTROY event */
       } else if (line.event.name === 'destroyed') {
         const session = this.sessionMap.get(line.session_id)
         const destroySpan = this.startSpan(
           'Session destroyed',
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Session',
           session.traceId,
           session.sessionSpanId
@@ -187,7 +187,7 @@ function ContextManager (self, tracerName, lru) {
         session.sessionSpan = null
         session.status = 'Closed'
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
       }
     /*
     TYPE 2 - Handle related event
@@ -221,16 +221,16 @@ function ContextManager (self, tracerName, lru) {
         const session = this.sessionMap.get(line.session_id)
         const handleSpan = this.startSpan(
           "Handle",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Handle',
           session.traceId,
           session.sessionSpanId
         )
         const attachedSpan = this.startSpan(
           "Handle attached",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Handle',
           session.traceId,
           handleSpan.id
@@ -239,7 +239,7 @@ function ContextManager (self, tracerName, lru) {
         session.handleSpanId = handleSpan.id
         session.handleSpan = handleSpan
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
         /*
         Detach Event
         */
@@ -247,8 +247,8 @@ function ContextManager (self, tracerName, lru) {
         const session = this.sessionMap.get(line.session_id)
         const detachedSpan = this.startSpan(
           "Handle detached",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Handle',
           session.traceId,
           session.handleSpanId
@@ -257,7 +257,7 @@ function ContextManager (self, tracerName, lru) {
         session.handleSpan.end(session.lastEvent)
         session.handleSpan = null
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
       }
     /*
       Type 4 - External event
@@ -282,15 +282,15 @@ function ContextManager (self, tracerName, lru) {
       const session = this.sessionMap.get(line.session_id)
       const extSpan = this.startSpan(
         "External Event",
-        line,
-        event,
+        { ...line },
+        { ...event },
         "External",
         session.traceId,
         session.sessionSpanId
       )
       extSpan.end(session.lastEvent)
       session.lastEvent = Date.now().toString()
-      this.sessionMap.set(line.session_id, session)
+      this.sessionMap.set(line.session_id, { ...session })
     /*
       Type 8 - JSEP event
       */
@@ -323,15 +323,15 @@ function ContextManager (self, tracerName, lru) {
         const session = this.sessionMap.get(line.session_id)
         const sdpSpan = this.startSpan(
           "JSEP Event - Offer",
-          line,
-          event,
+          { ...line },
+          { ...event },
           "JSEP",
           session.traceId,
           session.sessionSpanId
         )
         sdpSpan.end(session.lastEvent)
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
       /*
         Local SDP
       */
@@ -339,15 +339,15 @@ function ContextManager (self, tracerName, lru) {
         const session = this.sessionMap.get(line.session_id)
         const sdpSpan = this.startSpan(
           "JSEP Event - Answer",
-          line,
-          event,
+          { ...line },
+          { ...event },
           "JSEP",
           session.traceId,
           session.sessionSpanId
         )
         sdpSpan.end(session.lastEvent)
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
       }
     /*
       Type 16 - WebRTC state event
@@ -383,8 +383,8 @@ function ContextManager (self, tracerName, lru) {
           const session = this.sessionMap.get(line.session_id)
           const iceSpan = this.startSpan(
             "ICE gathering",
-            line,
-            event,
+            { ...line },
+            { ...event },
             "ICE",
             session.traceId,
             session.sessionSpanId
@@ -392,46 +392,46 @@ function ContextManager (self, tracerName, lru) {
           session.iceSpanId = iceSpan.id
           session.iceSpan = iceSpan
           session.lastEvent = Date.now().toString()
-          this.sessionMap.set(line.session_id, session)
+          this.sessionMap.set(line.session_id, { ...session })
         } else if (event.ice_state === 'connecting') {
           const session = this.sessionMap.get(line.session_id)
           const conIceSpan = this.startSpan(
             "ICE connecting",
-            line,
-            event,
+            { ...line },
+            { ...event },
             "ICE",
             session.traceId,
             session.iceSpanId
           )
           conIceSpan.end(session.lastEvent)
           session.lastEvent = Date.now().toString()
-          this.sessionMap.set(line.session_id, session)
+          this.sessionMap.set(line.session_id, { ...session })
         } else if (line.event.ice === "connected") {
           const session = this.sessionMap.get(line.session_id)
           const conIceSpan = this.startSpan(
             "ICE connected",
-            line,
-            event,
+            { ...line },
+            { ...event },
             'ICE',
             session.traceId,
             session.iceSpanId
           )
           conIceSpan.end(session.lastEvent)
           session.lastEvent = Date.now().toString()
-          this.sessionMap.set(line.session_id, session)
+          this.sessionMap.set(line.session_id, { ...session })
         } else if (line.event.ice === "ready") {
           const session = this.sessionMap.get(line.session_id)
           const readySpan = this.startSpan(
             "ICE ready",
-            line,
-            event,
+            { ...line },
+            { ...event },
             'ICE',
             session.traceId,
             session.iceSpanId
           )
           readySpan.end(session.lastEvent)
           session.lastEvent = Date.now().toString()
-          this.sessionMap.set(line.session_id, session)
+          this.sessionMap.set(line.session_id, { ...session })
         }
       /*
         Subtype 2
@@ -449,15 +449,15 @@ function ContextManager (self, tracerName, lru) {
         const session = this.sessionMap.get(line.session_id)
         const candidateSpan = this.startSpan(
           "Local Candidate",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'ICE',
           session.traceId,
           session.iceSpanId
         )
         candidateSpan.end(session.lastEvent)
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
       /*
         Subtype 3
         Remote Candidates
@@ -472,15 +472,15 @@ function ContextManager (self, tracerName, lru) {
         const session = this.sessionMap.get(line.session_id)
         const candidateSpan = this.startSpan(
           "Remote Candidate",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'ICE',
           session.traceId,
           session.iceSpanId
         )
         candidateSpan.end(session.lastEvent)
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
       /*
         Subtype 4
         Connection Selected
@@ -495,15 +495,15 @@ function ContextManager (self, tracerName, lru) {
         const session = this.sessionMap.get(line.session_id)
         const candidateSpan = this.startSpan(
           "Selected Candidates",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'ICE',
           session.traceId,
           session.iceSpanId
         )
         candidateSpan.end(session.lastEvent)
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
       /*
         Subtype 5
         DTLS flow
@@ -522,15 +522,15 @@ function ContextManager (self, tracerName, lru) {
           const session = this.sessionMap.get(line.session_id)
           const trySpan = this.startSpan(
             "DTLS trying",
-            line,
-            event,
+            { ...line },
+            { ...event },
             'ICE',
             session.traceId,
             session.iceSpanId
           )
           trySpan.end(session.lastEvent)
           session.lastEvent = Date.now().toString()
-          this.sessionMap.set(line.session_id, session)
+          this.sessionMap.set(line.session_id, { ...session })
         /*
           connected
         */
@@ -538,15 +538,15 @@ function ContextManager (self, tracerName, lru) {
           const session = this.sessionMap.get(line.session_id)
           const conSpan = this.startSpan(
             "DTLS connected",
-            line,
-            event,
+            { ...line },
+            { ...event },
             'ICE',
             session.traceId,
             session.iceSpanId
           )
           conSpan.end(session.lastEvent)
           session.lastEvent = Date.now().toString()
-          this.sessionMap.set(line.session_id, session)
+          this.sessionMap.set(line.session_id, { ...session })
         }
       /*
         Subtype 6
@@ -562,8 +562,8 @@ function ContextManager (self, tracerName, lru) {
         const session = this.sessionMap.get(line.session_id)
         const conSpan = this.startSpan(
           "WebRTC Connection UP",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'ICE',
           session.traceId,
           session.iceSpanId
@@ -592,18 +592,20 @@ function ContextManager (self, tracerName, lru) {
             ]
           })
           if (this.filter.debug) logger.info('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
-          this.filter.producer.send({
+          let obj = {
             topic: 'metrics',
             messages: [{
               value: JSON.stringify(mediaMetrics)
             }]
-          })
+          }
+          this.filter.producer.send(obj)
           mediaMetrics = null
           timestamp = null
+          obj = null
         }
         session.iceSpan = null
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
       }
     /*
       Type 32 - Media Report
@@ -637,8 +639,8 @@ function ContextManager (self, tracerName, lru) {
         let session = this.sessionMap.get(line.session_id)
         let mediaSpan = this.startSpan(
           "Audio Media Report",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Media',
           session.traceId,
           session.sessionSpanId
@@ -662,15 +664,15 @@ function ContextManager (self, tracerName, lru) {
         // logger.info('mediaSpan -----------', mediaSpan)
         mediaSpan.end(session.lastEvent, line.event['rtt'])
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
         session = null
         mediaSpan = null
       } else if (line.event.media === "video" && line.subtype === 3) {
         let session = this.sessionMap.get(line.session_id)
         let mediaSpan = this.startSpan(
           "Video Media Report",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Media',
           session.traceId,
           session.sessionSpanId
@@ -693,7 +695,7 @@ function ContextManager (self, tracerName, lru) {
         }
         mediaSpan.end(session.lastEvent, line.event['rtt'])
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
+        this.sessionMap.set(line.session_id, { ...session })
         session = null
         mediaSpan = null
       }
@@ -728,8 +730,8 @@ function ContextManager (self, tracerName, lru) {
       const session = this.sessionMap.get(line.event.id)
       const transportSpan = this.startSpan(
         "Transport connected",
-        line,
-        event,
+        { ...line },
+        { ...event },
         "Transport Originated",
         session.traceId,
         session.sessionSpanId
@@ -749,21 +751,23 @@ function ContextManager (self, tracerName, lru) {
         timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
       if (event.subtype === 1) {
-        const serverSpan = this.startSpan(
+        let serverSpan = this.startSpan(
           "Startup",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Core'
         )
         serverSpan.end()
+        serverSpan = null
       } else if (event.subtype === 2) {
-        const serverSpan = this.startSpan(
+        let serverSpan = this.startSpan(
           "Shutdown",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Core'
         )
         serverSpan.end()
+        serverSpan = null
       }
 
     /*
@@ -800,18 +804,18 @@ function ContextManager (self, tracerName, lru) {
         let session = this.sessionMap.get(line.session_id)
         let joinSpan = this.startSpan(
           "User",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Plugin',
           session.traceId,
           session.sessionSpanId
         )
         session.joinSpanId = joinSpan.id
-        session.joinSpan = joinSpan
+        session.joinSpan = { ...joinSpan }
         let joinedSpan = this.startSpan(
           "User joined",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Plugin',
           session.traceId,
           session.joinSpanId
@@ -819,8 +823,8 @@ function ContextManager (self, tracerName, lru) {
         joinedSpan.end(session.lastEvent)
         session.eventId = line.event.data.id
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.session_id, session)
-        this.sessionMap.set(line.event.data.id, session)
+        this.sessionMap.set(line.session_id, { ...session })
+        this.sessionMap.set(line.event.data.id, { ...session })
         session = null
         joinSpan = null
         joinedSpan = null
@@ -832,15 +836,15 @@ function ContextManager (self, tracerName, lru) {
         let session = this.sessionMap.get(line.event.data.id)
         let confSpan = this.startSpan(
           "User configured",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Plugin',
           session.traceId,
           session.joinSpanId
         )
-        session.confSpan = confSpan
+        session.confSpan = { ...confSpan }
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, session)
+        this.sessionMap.set(line.event.data.id, { ...session })
         session = null
         confSpan = null
         /*
@@ -850,17 +854,17 @@ function ContextManager (self, tracerName, lru) {
         let session = this.sessionMap.get(line.event.data.id)
         let pubSpan = this.startSpan(
           "User published",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Plugin',
           session.traceId,
           session.joinSpanId
         )
-        session.pubSpan = pubSpan
+        session.pubSpan = { ...pubSpan }
         session.confSpan.end(session.lastEvent)
         session.confSpan = null
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, session)
+        this.sessionMap.set(line.event.data.id, { ...session })
         session = null
         pubSpan = null
         /*
@@ -870,15 +874,15 @@ function ContextManager (self, tracerName, lru) {
         let session = this.sessionMap.get(line.event.data.id)
         let subSpan = this.startSpan(
           "User subscribing",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Plugin',
           session.traceid,
           session.joinSpanId
         )
-        session.subSpan = subSpan
+        session.subSpan = { ...subSpan }
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, session)
+        this.sessionMap.set(line.event.data.id, { ...session })
         session = null
         subSpan = null
         /*
@@ -888,7 +892,7 @@ function ContextManager (self, tracerName, lru) {
         let session = this.sessionMap.get(line.event.data.id)
         session.subSpan.end(session.lastEvent)
         session.subSpan = null
-        this.sessionMap.set(line.event.data.id, session)
+        this.sessionMap.set(line.event.data.id, { ...session })
         session = null
         /*
         Update Event
@@ -897,16 +901,16 @@ function ContextManager (self, tracerName, lru) {
         let session = this.sessionMap.get(line.event.data.id)
         let upSpan = this.startSpan(
           "User updated",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Plugin',
           session.traceId,
           session.joinSpanId
         )
         upSpan.end(session.lastEvent)
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, session)
-        this.sessionMap.set(session.session_id, session)
+        this.sessionMap.set(line.event.data.id, { ...session })
+        this.sessionMap.set(session.session_id, { ...session })
         session = null
         upSpan = null
         /*
@@ -916,8 +920,8 @@ function ContextManager (self, tracerName, lru) {
         let session = this.sessionMap.get(line.event.data.id)
         let unpubSpan = this.startSpan(
           "User unpublished",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Plugin',
           session.traceId,
           session.joinSpanId
@@ -932,7 +936,7 @@ function ContextManager (self, tracerName, lru) {
           // swallow error
         }
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, session)
+        this.sessionMap.set(line.event.data.id, { ...session })
         session = null
         unpubSpan = null
         /*
@@ -942,8 +946,8 @@ function ContextManager (self, tracerName, lru) {
         let session = this.sessionMap.get(line.event.data.id)
         let leaveSpan = this.startSpan(
           "User leaving",
-          line,
-          event,
+          { ...line },
+          { ...event },
           'Plugin',
           session.traceId,
           session.joinSpanId
@@ -955,8 +959,8 @@ function ContextManager (self, tracerName, lru) {
         session.joinSpan.end = () => {}
         session.lastEvent = Date.now().toString()
         session.status = 'Closed'
-        this.sessionMap.set(line.event.data.id, session)
-        this.sessionMap.set(session.session_id, session)
+        this.sessionMap.set(line.event.data.id, { ...session })
+        this.sessionMap.set(session.session_id, { ...session })
         session = null
         leaveSpan = null
       }
@@ -1014,18 +1018,16 @@ function ContextManager (self, tracerName, lru) {
       // Check timeout of session
       // logger.info(session)
       try {
-        if (Date.now() - session.lastEvent > (1000 * 1) && session.status === 'Closed') {
-          if (this.filter.debug) logger.info('Deleting session from sessionMap, 1 sec timeout and closed')
+        if (Date.now() - session.lastEvent > (1000 * 2) && session.status === 'Closed') {
+          if (this.filter.debug) logger.info('Deleting session from sessionMap, 2 sec timeout and closed')
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)
-          this.sessionMap.delete(session?.transportId)
           session = null
           logger.info(`${this.sessionMap.size}, closed`)
         } else if (Date.now() - session.lastEvent > (1000 * 5 * 60)) {
           if (this.filter.debug) logger.info('Deleting session from sessionMap, older than 5 minutes')
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)
-          this.sessionMap.delete(session?.transportId)
           session = null
           logger.info(`${this.sessionMap.size}, timedout`)
         }
@@ -1048,12 +1050,14 @@ function ContextManager (self, tracerName, lru) {
     this.buffer = []
     let string = JSON.stringify(swap)
     if (this.filter.debug) logger.info(string)
-    this.filter.producer.send({
+    let obj = {
       topic: 'tempo',
       messages: [{ value: string }]
-    })
+    }
+    this.filter.producer.send(obj)
     swap = null
     string = null
+    obj = null
   }
 
   /*
