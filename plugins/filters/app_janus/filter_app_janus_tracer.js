@@ -50,7 +50,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   })
   this.producer = this.kafka.producer()
   await this.producer.connect()
-  console.log('Kafka Client connected to ', this.kafkaHost)
+  logger.info('Kafka Client connected to ', this.kafkaHost)
   /* Type Filter setup */
   var filterArray = []
   for (var i = 0; i < this.filter.length; i++) {
@@ -77,6 +77,7 @@ FilterAppJanusTracer.prototype.process = function (data) {
   } else {
     this.ctx.process(line, this)
   }
+  line = null
 }
 
 exports.create = function () {
@@ -128,7 +129,7 @@ function ContextManager (self, tracerName, lru) {
     var event = {}
 
     if (line.type === 1) {
-      // console.log('EVENT -----------', line)
+      // logger.info('EVENT -----------', line)
       /* Template
       line.emitter
       line.type
@@ -193,7 +194,7 @@ function ContextManager (self, tracerName, lru) {
     Handle Attachment and Detachment is traced
     */
     } else if (line.type === 2) {
-      // console.log('EVENT -----------', line)
+      // logger.info('EVENT -----------', line)
       /* Template
       line.emitter
       line.type
@@ -262,7 +263,7 @@ function ContextManager (self, tracerName, lru) {
       Type 4 - External event
       */
     } else if (line.type === 4) {
-      // console.log('EVENT -----------', line)
+      // logger.info('EVENT -----------', line)
       /* Template
       line.emitter
       line.type
@@ -294,7 +295,7 @@ function ContextManager (self, tracerName, lru) {
       Type 8 - JSEP event
       */
     } else if (line.type === 8) {
-      // console.log('EVENT -----------', line)
+      // logger.info('EVENT -----------', line)
       /* Template
       line.emitter
       line.type
@@ -352,7 +353,7 @@ function ContextManager (self, tracerName, lru) {
       Type 16 - WebRTC state event
       */
     } else if (line.type === 16) {
-      // console.log('EVENT -----------', line)
+      // logger.info('EVENT -----------', line)
       /* Template
       line.emitter
       line.type
@@ -570,11 +571,11 @@ function ContextManager (self, tracerName, lru) {
         conSpan.end(session.lastEvent)
         session.iceSpan.end(session.lastEvent)
         if (this.filter.metrics) {
-          const mediaMetrics = {
+          let mediaMetrics = {
             streams: []
           }
 
-          const timestamp = this.nano_now(Date.now()).toString().padEnd(19, '0')
+          let timestamp = this.nano_now(Date.now()).toString().padEnd(19, '0')
 
           mediaMetrics.streams.push({
             stream: {
@@ -590,13 +591,15 @@ function ContextManager (self, tracerName, lru) {
               ]
             ]
           })
-          if (this.filter.debug) console.log('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
+          if (this.filter.debug) logger.info('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
           this.filter.producer.send({
             topic: 'metrics',
             messages: [{
               value: JSON.stringify(mediaMetrics)
             }]
           })
+          mediaMetrics = null
+          timestamp = null
         }
         session.iceSpan = null
         session.lastEvent = Date.now().toString()
@@ -606,7 +609,7 @@ function ContextManager (self, tracerName, lru) {
       Type 32 - Media Report
     */
     } else if (line.type === 32) {
-      if (this.filter.debug) console.log('EVENT 32 -----------', line)
+      if (this.filter.debug) logger.info('EVENT 32 -----------', line)
       /* Template
       line.emitter
       line.type
@@ -630,9 +633,9 @@ function ContextManager (self, tracerName, lru) {
       }
 
       if (line.event.media === "audio" && line.subtype === 3) {
-        // console.log('event ----', event)
-        const session = this.sessionMap.get(line.session_id)
-        const mediaSpan = this.startSpan(
+        // logger.info('event ----', event)
+        let session = this.sessionMap.get(line.session_id)
+        let mediaSpan = this.startSpan(
           "Audio Media Report",
           line,
           event,
@@ -656,13 +659,15 @@ function ContextManager (self, tracerName, lru) {
             metrics: line.event
           }, this.filter)
         }
-        // console.log('mediaSpan -----------', mediaSpan)
+        // logger.info('mediaSpan -----------', mediaSpan)
         mediaSpan.end(session.lastEvent, line.event['rtt'])
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
+        session = null
+        mediaSpan = null
       } else if (line.event.media === "video" && line.subtype === 3) {
-        const session = this.sessionMap.get(line.session_id)
-        const mediaSpan = this.startSpan(
+        let session = this.sessionMap.get(line.session_id)
+        let mediaSpan = this.startSpan(
           "Video Media Report",
           line,
           event,
@@ -689,12 +694,14 @@ function ContextManager (self, tracerName, lru) {
         mediaSpan.end(session.lastEvent, line.event['rtt'])
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
+        session = null
+        mediaSpan = null
       }
     /*
       Type 128 - Transport-originated
       */
     } else if (line.type === 128) {
-      // console.log('Event ----', line)
+      // logger.info('Event ----', line)
       /*
       line.emitter
       line.type
@@ -765,7 +772,7 @@ function ContextManager (self, tracerName, lru) {
     Users Joining or Leaving Sessions
     */
     } else if (line.type === 64) {
-      // console.log('EVENT ----', line, line.event.data.event, line.event.data.name)
+      // logger.info('EVENT ----', line, line.event.data.event, line.event.data.name)
       /* Template
       line.emitter
       line.type
@@ -790,8 +797,8 @@ function ContextManager (self, tracerName, lru) {
         Joined Event
         */
       if (line.event.data.event === 'joined') {
-        const session = this.sessionMap.get(line.session_id)
-        const joinSpan = this.startSpan(
+        let session = this.sessionMap.get(line.session_id)
+        let joinSpan = this.startSpan(
           "User",
           line,
           event,
@@ -801,7 +808,7 @@ function ContextManager (self, tracerName, lru) {
         )
         session.joinSpanId = joinSpan.id
         session.joinSpan = joinSpan
-        const joinedSpan = this.startSpan(
+        let joinedSpan = this.startSpan(
           "User joined",
           line,
           event,
@@ -814,13 +821,16 @@ function ContextManager (self, tracerName, lru) {
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, session)
         this.sessionMap.set(line.event.data.id, session)
+        session = null
+        joinSpan = null
+        joinedSpan = null
         /*
         Configured Event
         */
       } else if (line.event.data.event === 'configured') {
-        // console.log('CONF', line, line.event.data.id, line?.session_id)
-        const session = this.sessionMap.get(line.event.data.id)
-        const confSpan = this.startSpan(
+        // logger.info('CONF', line, line.event.data.id, line?.session_id)
+        let session = this.sessionMap.get(line.event.data.id)
+        let confSpan = this.startSpan(
           "User configured",
           line,
           event,
@@ -831,12 +841,14 @@ function ContextManager (self, tracerName, lru) {
         session.confSpan = confSpan
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
+        session = null
+        confSpan = null
         /*
         Published Event
         */
       } else if (line.event.data.event === 'published') {
-        const session = this.sessionMap.get(line.event.data.id)
-        const pubSpan = this.startSpan(
+        let session = this.sessionMap.get(line.event.data.id)
+        let pubSpan = this.startSpan(
           "User published",
           line,
           event,
@@ -849,12 +861,14 @@ function ContextManager (self, tracerName, lru) {
         session.confSpan = null
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
+        session = null
+        pubSpan = null
         /*
         Subscribing Event
         */
       } else if (line.event.data.event === 'subscribing') {
-        const session = this.sessionMap.get(line.event.data.id)
-        const subSpan = this.startSpan(
+        let session = this.sessionMap.get(line.event.data.id)
+        let subSpan = this.startSpan(
           "User subscribing",
           line,
           event,
@@ -865,19 +879,23 @@ function ContextManager (self, tracerName, lru) {
         session.subSpan = subSpan
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
+        session = null
+        subSpan = null
         /*
         Subscribed Event
         */
       } else if (line.event.data.event === 'subscribed') {
-        const session = this.sessionMap.get(line.event.data.id)
+        let session = this.sessionMap.get(line.event.data.id)
         session.subSpan.end(session.lastEvent)
         session.subSpan = null
+        this.sessionMap.set(line.event.data.id, session)
+        session = null
         /*
         Update Event
         */
       } else if (line.event.data.event === 'updated') {
-        const session = this.sessionMap.get(line.event.data.id)
-        const upSpan = this.startSpan(
+        let session = this.sessionMap.get(line.event.data.id)
+        let upSpan = this.startSpan(
           "User updated",
           line,
           event,
@@ -889,12 +907,14 @@ function ContextManager (self, tracerName, lru) {
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
         this.sessionMap.set(session.session_id, session)
+        session = null
+        upSpan = null
         /*
         Unpublished Event
         */
       } else if (line.event.data.event === 'unpublished') {
-        const session = this.sessionMap.get(line.event.data.id)
-        const unpubSpan = this.startSpan(
+        let session = this.sessionMap.get(line.event.data.id)
+        let unpubSpan = this.startSpan(
           "User unpublished",
           line,
           event,
@@ -913,12 +933,14 @@ function ContextManager (self, tracerName, lru) {
         }
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.event.data.id, session)
+        session = null
+        unpubSpan = null
         /*
         Leaving Event
         */
       } else if (line.event.data.event === 'leaving') {
-        const session = this.sessionMap.get(line.event.data.id)
-        const leaveSpan = this.startSpan(
+        let session = this.sessionMap.get(line.event.data.id)
+        let leaveSpan = this.startSpan(
           "User leaving",
           line,
           event,
@@ -935,6 +957,8 @@ function ContextManager (self, tracerName, lru) {
         session.status = 'Closed'
         this.sessionMap.set(line.event.data.id, session)
         this.sessionMap.set(session.session_id, session)
+        session = null
+        leaveSpan = null
       }
     }
 
@@ -942,8 +966,8 @@ function ContextManager (self, tracerName, lru) {
   }
 
   this.startSpan = function (name, line, event, service, traceId, parentId) {
-    const span = {}
-    const context = this
+    let span = {}
+    let context = this
     span.id = this.generateSpanId()
     span.name = name
     span.tags = event
@@ -957,11 +981,13 @@ function ContextManager (self, tracerName, lru) {
     span.start = this.nano_now(Date.now())
     span.duration = 0
     span.end = function (lastEvent, duration) {
-      // console.log('SPAN ----', span)
+      // logger.info('SPAN ----', span)
       span.duration = context.nano_now(Date.now()) - span.start
       if (lastEvent) { span.tags.lastEvent = lastEvent }
       if (duration) { span.duration = duration * 1000 } // assuming rtt is in ms
       context.buffer.push({ ...span })
+      span = null
+      context = null
     }
     if (traceId) {
       span.traceId = traceId
@@ -971,56 +997,63 @@ function ContextManager (self, tracerName, lru) {
     if (parentId) {
       span.parentId = parentId
     }
-    if (this.filter.debug) { console.log('span ---', span) }
+    if (this.filter.debug) { logger.info('span ---', span) }
     return span
   }
 
   this.check = function () {
-    // console.log('this', this)
-    const sinceLast = Date.now() - this.lastflush
+    // logger.info('this', this)
+    let sinceLast = Date.now() - this.lastflush
     if (this.buffer.length > 15 || (this.buffer.length > 0 && sinceLast > 10000)) {
       this.lastflush = Date.now()
       this.flush()
     }
 
-    for (const entry of this.sessionMap.values()) {
+    for (let entry of this.sessionMap.values()) {
       let session = entry
       // Check timeout of session
-      // console.log(session)
+      // logger.info(session)
       try {
         if (Date.now() - session.lastEvent > (1000 * 1) && session.status === 'Closed') {
-          if (this.filter.debug) console.log('Deleting session from sessionMap, 1 sec timeout and closed')
+          if (this.filter.debug) logger.info('Deleting session from sessionMap, 1 sec timeout and closed')
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)
           this.sessionMap.delete(session?.transportId)
           session = null
-          console.log('Session Map Size Closed', this.sessionMap.size)
+          logger.info(`${this.sessionMap.size}, closed`)
         } else if (Date.now() - session.lastEvent > (1000 * 5 * 60)) {
-          if (this.filter.debug) console.log('Deleting session from sessionMap, older than 5 minutes')
+          if (this.filter.debug) logger.info('Deleting session from sessionMap, older than 5 minutes')
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)
           this.sessionMap.delete(session?.transportId)
           session = null
-          console.log('Session Map Size TimedOut', this.sessionMap.size)
+          logger.info(`${this.sessionMap.size}, timedout`)
         }
       } catch (e) {
         // swallow e
-        console.log('sessionMap', e)
+        logger.info('sessionMap', e)
       }
+      session = null
+      entry = null
     }
+
+    sinceLast = null
   }
 
   this.flush = function () {
-    // console.log('flushing', this.buffer)
-    const swap = [...this.buffer]
-    if (this.filter.debug) console.log('SWAP', swap)
+    // logger.info('flushing', this.buffer)
+    let swap = [...this.buffer]
+    if (this.filter.debug) logger.info('SWAP', swap)
+    this.buffer = null
     this.buffer = []
-    const string = JSON.stringify(swap)
-    if (this.filter.debug) console.log(string)
+    let string = JSON.stringify(swap)
+    if (this.filter.debug) logger.info(string)
     this.filter.producer.send({
       topic: 'tempo',
       messages: [{ value: string }]
     })
+    swap = null
+    string = null
   }
 
   /*
@@ -1054,11 +1087,11 @@ function ContextManager (self, tracerName, lru) {
   this.sendMetrics = async function (event, self) {
     if (self.debug) logger.info('Event Metrics', event)
 
-    const mediaMetrics = {
+    let mediaMetrics = {
       streams: []
     }
 
-    const timestamp = this.nano_now(Date.now()).toString().padEnd(19, '0')
+    let timestamp = this.nano_now(Date.now()).toString().padEnd(19, '0')
 
     mediaMetrics.streams.push({
       stream: {
@@ -1356,6 +1389,10 @@ function ContextManager (self, tracerName, lru) {
         value: JSON.stringify(mediaMetrics)
       }]
     })
+
+    mediaMetrics.streams = null
+    mediaMetrics = null
+    timestamp = null
 
     return true
   }
