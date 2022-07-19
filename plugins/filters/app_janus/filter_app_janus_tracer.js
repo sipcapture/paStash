@@ -574,7 +574,7 @@ function ContextManager (self, tracerName, lru) {
             streams: []
           }
 
-          const timestamp = this.nano_now(Date.now()).padEnd(19, '0')
+          const timestamp = this.nano_now(Date.now()).toString().padEnd(19, '0')
 
           mediaMetrics.streams.push({
             stream: {
@@ -937,6 +937,8 @@ function ContextManager (self, tracerName, lru) {
         this.sessionMap.set(session.session_id, session)
       }
     }
+
+    event = null
   }
 
   this.startSpan = function (name, line, event, service, traceId, parentId) {
@@ -958,7 +960,7 @@ function ContextManager (self, tracerName, lru) {
       // console.log('SPAN ----', span)
       span.duration = context.nano_now(Date.now()) - span.start
       if (lastEvent) { span.tags.lastEvent = lastEvent }
-      if (duration) { span.duration = duration * 1000000 } // assuming rtt is in ms
+      if (duration) { span.duration = duration * 1000 } // assuming rtt is in ms
       context.buffer.push({ ...span })
     }
     if (traceId) {
@@ -1046,7 +1048,7 @@ function ContextManager (self, tracerName, lru) {
   }
 
   this.nano_now = function (date) {
-    return date.toString().padEnd(16, '0')
+    return parseInt(date.toString().padEnd(16, '0'))
   }
 
   this.sendMetrics = async function (event, self) {
@@ -1056,7 +1058,7 @@ function ContextManager (self, tracerName, lru) {
       streams: []
     }
 
-    const timestamp = this.nano_now(Date.now()).padEnd(19, '0')
+    const timestamp = this.nano_now(Date.now()).toString().padEnd(19, '0')
 
     mediaMetrics.streams.push({
       stream: {
@@ -1089,6 +1091,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1105,6 +1108,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1120,6 +1124,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1135,6 +1140,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1150,6 +1156,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1165,6 +1172,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1181,6 +1189,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1196,6 +1205,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1211,6 +1221,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1226,6 +1237,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1241,6 +1253,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1256,6 +1269,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1271,6 +1285,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1286,6 +1301,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1301,6 +1317,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1316,6 +1333,7 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1332,11 +1350,13 @@ function ContextManager (self, tracerName, lru) {
       ]
     })
 
-    await self.producer.send({
+    self.producer.send({
       topic: 'metrics',
       messages: [{
         value: JSON.stringify(mediaMetrics)
       }]
     })
+
+    return true
   }
 }
