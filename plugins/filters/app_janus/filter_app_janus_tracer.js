@@ -979,30 +979,31 @@ function ContextManager (self, tracerName, lru) {
     if (this.buffer.length > 15 || (this.buffer.length > 0 && sinceLast > 10000)) {
       this.lastflush = Date.now()
       this.flush()
-      for (const entry of this.sessionMap.values()) {
-        let session = entry
-        // Check timeout of session
-        // console.log(session)
-        try {
-          if (Date.now() - session.lastEvent > (1000 * 1) && session.status === 'Closed') {
-            if (this.filter.debug) console.log('Deleting session from sessionMap, 1 sec timeout and closed')
-            this.sessionMap.delete(session.session_id)
-            this.sessionMap.delete(session?.eventId)
-            this.sessionMap.delete(session?.transportId)
-            session = null
-            console.log('Session Map Size Closed', this.sessionMap.size)
-          } else if (Date.now() - session.lastEvent > (1000 * 5 * 60)) {
-            if (this.filter.debug) console.log('Deleting session from sessionMap, older than 5 minutes')
-            this.sessionMap.delete(session.session_id)
-            this.sessionMap.delete(session?.eventId)
-            this.sessionMap.delete(session?.transportId)
-            session = null
-            console.log('Session Map Size TimedOut', this.sessionMap.size)
-          }
-        } catch (e) {
-          // swallow e
-          console.log('sessionMap', e)
+    }
+
+    for (const entry of this.sessionMap.values()) {
+      let session = entry
+      // Check timeout of session
+      // console.log(session)
+      try {
+        if (Date.now() - session.lastEvent > (1000 * 1) && session.status === 'Closed') {
+          if (this.filter.debug) console.log('Deleting session from sessionMap, 1 sec timeout and closed')
+          this.sessionMap.delete(session.session_id)
+          this.sessionMap.delete(session?.eventId)
+          this.sessionMap.delete(session?.transportId)
+          session = null
+          console.log('Session Map Size Closed', this.sessionMap.size)
+        } else if (Date.now() - session.lastEvent > (1000 * 5 * 60)) {
+          if (this.filter.debug) console.log('Deleting session from sessionMap, older than 5 minutes')
+          this.sessionMap.delete(session.session_id)
+          this.sessionMap.delete(session?.eventId)
+          this.sessionMap.delete(session?.transportId)
+          session = null
+          console.log('Session Map Size TimedOut', this.sessionMap.size)
         }
+      } catch (e) {
+        // swallow e
+        console.log('sessionMap', e)
       }
     }
   }
