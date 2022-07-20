@@ -944,25 +944,29 @@ function ContextManager (self, tracerName, lru) {
         */
       } else if (line.event.data.event === 'leaving') {
         let session = this.sessionMap.get(line.event.data.id)
-        let leaveSpan = this.startSpan(
-          "User leaving",
-          { ...line },
-          { ...event },
-          'Plugin',
-          session.traceId,
-          session.joinSpanId
-        )
-        leaveSpan.end(session.lastEvent)
-        session.joinSpan.end(session.lastEvent)
-        session.joinSpan = null
-        session.joinSpan = {}
-        session.joinSpan.end = () => {}
+        try {
+          let leaveSpan = this.startSpan(
+            "User leaving",
+            { ...line },
+            { ...event },
+            'Plugin',
+            session.traceId,
+            session.joinSpanId
+          )
+          leaveSpan.end(session.lastEvent)
+          leaveSpan = null
+          session.joinSpan.end(session.lastEvent)
+          session.joinSpan = null
+          session.joinSpan = {}
+          session.joinSpan.end = () => {}
+        } catch (e) {
+          // swallow error
+        }
         session.lastEvent = Date.now().toString()
         session.status = 'Closed'
         this.sessionMap.set(line.event.data.id, { ...session })
         this.sessionMap.set(session.session_id, { ...session })
         session = null
-        leaveSpan = null
       }
     }
 
