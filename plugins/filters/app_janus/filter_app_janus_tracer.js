@@ -1123,8 +1123,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + event.metrics["rtt"],
-          event.metrics["rtt"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
+          event.metrics["rtt"] || 0
         ]
       ]
     })
@@ -1139,8 +1139,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_lost_packets" + " traceId=" + event.traceId + " value=" + event.metrics["lost"],
-          event.metrics["lost"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_lost_packets" + " traceId=" + event.traceId + " value=" + (event.metrics["lost"] || 0),
+          event.metrics["lost"] || 0
         ]
       ]
     })
@@ -1155,8 +1155,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_lost_packets" + " traceId=" + event.traceId + " value=" + event.metrics["lost-by-remote"],
-          event.metrics["lost-by-remote"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_lost_packets" + " traceId=" + event.traceId + " value=" + (event.metrics["lost-by-remote"] || 0),
+          event.metrics["lost-by-remote"] || 0
         ]
       ]
     })
@@ -1171,8 +1171,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_jitter" + " traceId=" + event.traceId + " value=" + event.metrics["jitter-local"],
-          event.metrics["jitter-local"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "local_jitter" + " traceId=" + event.traceId + " value=" + (event.metrics["jitter-local"] || 0),
+          event.metrics["jitter-local"] || 0
         ]
       ]
     })
@@ -1187,8 +1187,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_jitter" + " traceId=" + event.traceId + " value=" + event.metrics["jitter-remote"],
-          event.metrics["jitter-remote"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "remote_jitter" + " traceId=" + event.traceId + " value=" + (event.metrics["jitter-remote"] || 0),
+          event.metrics["jitter-remote"] || 0
         ]
       ]
     })
@@ -1203,8 +1203,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["in-link-quality"],
-          event.metrics["in-link-quality"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_link_quality" + " traceId=" + event.traceId + " value=" + (event.metrics["in-link-quality"] || 0),
+          event.metrics["in-link-quality"] || 0
         ]
       ]
     })
@@ -1219,8 +1219,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_media_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["in-media-link-quality"],
-          event.metrics["in-media-link-quality"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "in_media_link_quality" + " traceId=" + event.traceId + " value=" + (event.metrics["in-media-link-quality"] || 0),
+          event.metrics["in-media-link-quality"] || 0
         ]
       ]
     })
@@ -1235,8 +1235,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_link_quality " + " traceId=" + event.traceId + " value=" + event.metrics["out-link-quality"],
-          event.metrics["out-link-quality"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_link_quality " + " traceId=" + event.traceId + " value=" + (event.metrics["out-link-quality"] || 0),
+          event.metrics["out-link-quality"] || 0
         ]
       ]
     })
@@ -1251,8 +1251,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_media_link_quality" + " traceId=" + event.traceId + " value=" + event.metrics["out-media-link-quality"],
-          event.metrics["out-media-link-quality"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "out_media_link_quality" + " traceId=" + event.traceId + " value=" + (event.metrics["out-media-link-quality"] || 0),
+          event.metrics["out-media-link-quality"] || 0
         ]
       ]
     })
@@ -1267,8 +1267,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_received" + " traceId=" + event.traceId + " value=" + event.metrics["packets-received"],
-          event.metrics["packets-received"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_received" + " traceId=" + event.traceId + " value=" + (event.metrics["packets-received"] || 0),
+          event.metrics["packets-received"] || 0
         ]
       ]
     })
@@ -1283,8 +1283,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_sent" + " traceId=" + event.traceId + " value=" + event.metrics["packets-sent"],
-          event.metrics["packets-sent"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "packets_sent" + " traceId=" + event.traceId + " value=" + (event.metrics["packets-sent"] || 0),
+          event.metrics["packets-sent"] || 0
         ]
       ]
     })
@@ -1299,8 +1299,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-received"],
-          event.metrics["bytes-received"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received" + " traceId=" + event.traceId + " value=" + (event.metrics["bytes-received"] || 0),
+          event.metrics["bytes-received"] || 0
         ]
       ]
     })
@@ -1315,8 +1315,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-sent"],
-          event.metrics["bytes-sent"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent" + " traceId=" + event.traceId + " value=" + (event.metrics["bytes-sent"] || 0),
+          event.metrics["bytes-sent"] || 0
         ]
       ]
     })
@@ -1331,8 +1331,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received_lastsec" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-received-lastsec"],
-          event.metrics["bytes-received-lastsec"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_received_lastsec" + " traceId=" + event.traceId + " value=" + (event.metrics["bytes-received-lastsec"] || 0),
+          event.metrics["bytes-received-lastsec"] || 0
         ]
       ]
     })
@@ -1347,8 +1347,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent_lastsec" + " traceId=" + event.traceId + " value=" + event.metrics["bytes-sent-lastsec"],
-          event.metrics["bytes-sent-lastsec"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "bytes_sent_lastsec" + " traceId=" + event.traceId + " value=" + (event.metrics["bytes-sent-lastsec"] || 0),
+          event.metrics["bytes-sent-lastsec"] || 0
         ]
       ]
     })
@@ -1363,8 +1363,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_received" + " traceId=" + event.traceId + " value=" + event.metrics["nacks-received"],
-          event.metrics["nacks-received"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_received" + " traceId=" + event.traceId + " value=" + (event.metrics["nacks-received"] || 0),
+          event.metrics["nacks-received"] || 0
         ]
       ]
     })
@@ -1379,8 +1379,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_sent" + " traceId=" + event.traceId + " value=" + event.metrics["nacks-sent"],
-          event.metrics["nacks-sent"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "nacks_sent" + " traceId=" + event.traceId + " value=" + (event.metrics["nacks-sent"] || 0),
+          event.metrics["nacks-sent"] || 0
         ]
       ]
     })
@@ -1395,8 +1395,8 @@ function ContextManager (self, tracerName, lru) {
       values: [
         [
           timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "retransmission_received" + " traceId=" + event.traceId + " value=" + event.metrics["retransmission-received"],
-          event.metrics["retransmission-received"]
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "retransmission_received" + " traceId=" + event.traceId + " value=" + (event.metrics["retransmission-received"] || 0),
+          event.metrics["retransmission-received"] || 0
         ]
       ]
     })
