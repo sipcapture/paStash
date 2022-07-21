@@ -1138,7 +1138,6 @@ function ContextManager (self, tracerName, lru) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "remote_lost_packets"
       },
       values: [
@@ -1219,7 +1218,6 @@ function ContextManager (self, tracerName, lru) {
         emitter: event.emitter,
         mediatype: event.media,
         type: '32',
-        session_id: event.session_id,
         metric: "out_link_quality"
       },
       values: [
