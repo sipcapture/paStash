@@ -824,7 +824,7 @@ function ContextManager (self, tracerName, lru) {
         session.eventId = line.event.data.id
         session.lastEvent = Date.now().toString()
         this.sessionMap.set(line.session_id, { ...session })
-        this.sessionMap.set(line.event.data.id, { ...session })
+        this.sessionMap.set(line.event.data.id, line.session_id)
         session = null
         joinSpan = null
         joinedSpan = null
@@ -833,7 +833,8 @@ function ContextManager (self, tracerName, lru) {
         */
       } else if (line.event.data.event === 'configured') {
         // logger.info('CONF', line, line.event.data.id, line?.session_id)
-        let session = this.sessionMap.get(line.event.data.id)
+        let session_id = this.sessionMap.get(line.event.data.id)
+        let session = this.sessionMap.get(session_id)
         let confSpan = this.startSpan(
           "User configured",
           { ...line },
@@ -844,14 +845,16 @@ function ContextManager (self, tracerName, lru) {
         )
         session.confSpan = { ...confSpan }
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, { ...session })
+        this.sessionMap.set(session_id, { ...session })
+        session_id = null
         session = null
         confSpan = null
         /*
         Published Event
         */
       } else if (line.event.data.event === 'published') {
-        let session = this.sessionMap.get(line.event.data.id)
+        let session_id = this.sessionMap.get(line.event.data.id)
+        let session = this.sessionMap.get(session_id)
         let pubSpan = this.startSpan(
           "User published",
           { ...line },
@@ -864,14 +867,16 @@ function ContextManager (self, tracerName, lru) {
         session.confSpan.end(session.lastEvent)
         session.confSpan = null
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, { ...session })
+        this.sessionMap.set(session_id, { ...session })
+        session_id = null
         session = null
         pubSpan = null
         /*
         Subscribing Event
         */
       } else if (line.event.data.event === 'subscribing') {
-        let session = this.sessionMap.get(line.event.data.id)
+        let session_id = this.sessionMap.get(line.event.data.id)
+        let session = this.sessionMap.get(session_id)
         let subSpan = this.startSpan(
           "User subscribing",
           { ...line },
@@ -882,23 +887,27 @@ function ContextManager (self, tracerName, lru) {
         )
         session.subSpan = { ...subSpan }
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, { ...session })
+        this.sessionMap.set(session_id, { ...session })
+        session_id = null
         session = null
         subSpan = null
         /*
         Subscribed Event
         */
       } else if (line.event.data.event === 'subscribed') {
-        let session = this.sessionMap.get(line.event.data.id)
+        let session_id = this.sessionMap.get(line.event.data.id)
+        let session = this.sessionMap.get(session_id)
         session.subSpan.end(session.lastEvent)
         session.subSpan = null
-        this.sessionMap.set(line.event.data.id, { ...session })
+        this.sessionMap.set(session_id, { ...session })
+        session_id = null
         session = null
         /*
         Update Event
         */
       } else if (line.event.data.event === 'updated') {
-        let session = this.sessionMap.get(line.event.data.id)
+        let session_id = this.sessionMap.get(line.event.data.id)
+        let session = this.sessionMap.get(session_id)
         let upSpan = this.startSpan(
           "User updated",
           { ...line },
@@ -909,15 +918,16 @@ function ContextManager (self, tracerName, lru) {
         )
         upSpan.end(session.lastEvent)
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, { ...session })
-        this.sessionMap.set(session.session_id, { ...session })
+        this.sessionMap.set(session_id, { ...session })
+        session_id = null
         session = null
         upSpan = null
         /*
         Unpublished Event
         */
       } else if (line.event.data.event === 'unpublished') {
-        let session = this.sessionMap.get(line.event.data.id)
+        let session_id = this.sessionMap.get(line.event.data.id)
+        let session = this.sessionMap.get(session_id)
         let unpubSpan = this.startSpan(
           "User unpublished",
           { ...line },
@@ -936,14 +946,16 @@ function ContextManager (self, tracerName, lru) {
           // swallow error
         }
         session.lastEvent = Date.now().toString()
-        this.sessionMap.set(line.event.data.id, { ...session })
+        this.sessionMap.set(session_id, { ...session })
+        session_id = null
         session = null
         unpubSpan = null
         /*
         Leaving Event
         */
       } else if (line.event.data.event === 'leaving') {
-        let session = this.sessionMap.get(line.event.data.id)
+        let session_id = this.sessionMap.get(line.event.data.id)
+        let session = this.sessionMap.get(session_id)
         try {
           let leaveSpan = this.startSpan(
             "User leaving",
@@ -964,8 +976,8 @@ function ContextManager (self, tracerName, lru) {
         }
         session.lastEvent = Date.now().toString()
         session.status = 'Closed'
-        this.sessionMap.set(line.event.data.id, { ...session })
-        this.sessionMap.set(session.session_id, { ...session })
+        this.sessionMap.set(session_id, { ...session })
+        session_id = null
         session = null
       }
     }
