@@ -1059,13 +1059,13 @@ function ContextManager (self, tracerName, lru) {
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)
           session = null
-          logger.info(`${this.sessionMap.size}, closed`)
+          if (this.filter.debug) logger.info(`${this.sessionMap.size}, closed`)
         } else if (Date.now() - session.lastEvent > (1000 * 5 * 60)) {
           if (this.filter.debug) logger.info('Deleting session from sessionMap, older than 5 minutes')
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)
           session = null
-          logger.info(`${this.sessionMap.size}, timedout`)
+          if (this.filter.debug) logger.info(`${this.sessionMap.size}, timedout`)
         }
       } catch (e) {
         // swallow e
