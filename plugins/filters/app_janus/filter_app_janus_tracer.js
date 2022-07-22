@@ -22,7 +22,7 @@ function FilterAppJanusTracer () {
     name: 'AppJanusTracer',
     optional_params: [
       'debug',
-      'port',
+      'bufferSize',
       'metrics',
       'filter',
       'tracerName',
@@ -32,11 +32,11 @@ function FilterAppJanusTracer () {
       'httpHost'
     ],
     default_values: {
-      'metrics': false,
-      'port': 9090,
       'debug': false,
+      'bufferSize': 15,
+      'metrics': false,
       'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
-      'tracerName': 'pastash_janus_trace',
+      'tracerName': 'pastash_janus_tracer',
       'kafkaSending': false,
       'kafkaHost': '127.0.0.1:9092',
       'httpSending': true,
@@ -1044,7 +1044,7 @@ function ContextManager (self, tracerName, lru) {
   this.check = function () {
     // logger.info('this', this)
     let sinceLast = Date.now() - this.lastflush
-    if (this.buffer.length > 15 || (this.buffer.length > 0 && sinceLast > 10000)) {
+    if (this.buffer.length > this.filter.bufferSize || (this.buffer.length > 0 && sinceLast > 10000)) {
       this.lastflush = Date.now()
       this.flush()
     }
