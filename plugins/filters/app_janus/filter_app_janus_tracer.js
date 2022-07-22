@@ -13,6 +13,7 @@ var util = require('util')
 var logger = require('@pastash/pastash').logger
 var crypto = require('crypto')
 const { Kafka } = require('kafkajs')
+const axios = require('axios')
 const QuickLRU = require("quick-lru")
 
 function FilterAppJanusTracer () {
@@ -25,7 +26,10 @@ function FilterAppJanusTracer () {
       'metrics',
       'filter',
       'tracerName',
-      'kafkaHost'
+      'kafkaSending',
+      'kafkaHost',
+      'httpSending',
+      'qryn-basepath'
     ],
     default_values: {
       'metrics': false,
@@ -33,7 +37,10 @@ function FilterAppJanusTracer () {
       'debug': false,
       'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
       'tracerName': 'pastash_janus_trace',
-      'kafkaHost': '127.0.0.1:9092'
+      'kafkaSending': false,
+      'kafkaHost': '127.0.0.1:9092',
+      'httpSending': true,
+      'qrynHost': 'http://127.0.0.1:3100'
     },
     start_hook: this.start.bind(this)
   });
@@ -42,15 +49,17 @@ function FilterAppJanusTracer () {
 util.inherits(FilterAppJanusTracer, base_filter.BaseFilter);
 
 FilterAppJanusTracer.prototype.start = async function (callback) {
-  /* Kafka client */
-  this.kafka = new Kafka({
-    clientId: 'my-app',
-    brokers: [this.kafkaHost],
-    enforceRequestTimeout: false
-  })
-  this.producer = this.kafka.producer()
-  await this.producer.connect()
-  logger.info('Kafka Client connected to ', this.kafkaHost)
+  if (this.kafkaSending) {
+    /* Kafka client */
+    this.kafka = new Kafka({
+      clientId: 'my-app',
+      brokers: [this.kafkaHost],
+      enforceRequestTimeout: false
+    })
+    this.producer = this.kafka.producer()
+    await this.producer.connect()
+    logger.info('Kafka Client connected to ', this.kafkaHost)
+  }
   /* Type Filter setup */
   var filterArray = []
   for (var i = 0; i < this.filter.length; i++) {
@@ -63,7 +72,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   /* Context Manager setup */
   this.ctx = new ContextManager(this, this.tracerName, this.lru)
   this.ctx.init()
-  logger.info('Initialized App Janus Span Tracer');
+  logger.info('Initialized App Janus Span + Metrics Tracer');
   callback();
 };
 
@@ -598,7 +607,7 @@ function ContextManager (self, tracerName, lru) {
               value: JSON.stringify(mediaMetrics)
             }]
           }
-          this.filter.producer.send(obj)
+          this.sendData(obj)
           mediaMetrics = null
           timestamp = null
           obj = null
@@ -1058,7 +1067,7 @@ function ContextManager (self, tracerName, lru) {
     sinceLast = null
   }
 
-  this.flush = function () {
+  this.flush = async function () {
     // logger.info('flushing', this.buffer)
     let swap = [...this.buffer]
     if (this.filter.debug) logger.info('SWAP', swap)
@@ -1066,14 +1075,28 @@ function ContextManager (self, tracerName, lru) {
     this.buffer = []
     let string = JSON.stringify(swap)
     if (this.filter.debug) logger.info(string)
-    let obj = {
-      topic: 'tempo',
-      messages: [{ value: string }]
+    if (this.filter.httpSending) {
+      try {
+        var response = await axios.post(`${this.qrynHost}/tempo/spans`, string, {
+          headers: {
+            'Content-Type': 'application/json',
+            tracer: 'qryn-test'
+          }
+        })
+        if (this.filter.debug) logger.info(response.statusText, response.statusCode)
+      } catch (e) {
+        logger.error(e)
+      }
+    } else if (this.filter.kafkaSending) {
+      let obj = {
+        topic: 'tempo',
+        messages: [{ value: string }]
+      }
+      this.filter.producer.send(obj)
+      obj = null
     }
-    this.filter.producer.send(obj)
     swap = null
     string = null
-    obj = null
   }
 
   /*
@@ -1401,12 +1424,25 @@ function ContextManager (self, tracerName, lru) {
       ]
     })
 
-    self.producer.send({
-      topic: 'metrics',
-      messages: [{
-        value: JSON.stringify(mediaMetrics)
-      }]
-    })
+    if (self.httpSending) {
+      try {
+        var response = await axios.post(`${self.httpHost}/loki/api/v1/push`, JSON.stringify(mediaMetrics), {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        if (self.debug) logger.info('Metrics posted', response.status, response.statusText)
+      } catch (err) {
+        logger.error('ERROR AXIOS - Metrics', err)
+      }
+    } else if (self.kafkaSending) {
+      self.producer.send({
+        topic: 'metrics',
+        messages: [{
+          value: JSON.stringify(mediaMetrics)
+        }]
+      })
+    }
 
     mediaMetrics.streams = null
     mediaMetrics = null
