@@ -601,16 +601,27 @@ function ContextManager (self, tracerName, lru) {
             ]
           })
           if (this.filter.debug) logger.info('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
-          let obj = {
-            topic: 'metrics',
-            messages: [{
-              value: JSON.stringify(mediaMetrics)
-            }]
+          if (this.filter.httpSending) {
+            try {
+              var response = await axios.post(`${this.filter.httpHost}/loki/api/v1/push`, JSON.stringify(mediaMetrics), {
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              })
+              if (this.filter.debug) logger.info('Metrics posted', response.status, response.statusText)
+            } catch (err) {
+              logger.error('ERROR AXIOS - Metrics', err)
+            }
+          } else if (this.filter.kafkaSending) {
+            this.filter.producer.send({
+              topic: 'metrics',
+              messages: [{
+                value: JSON.stringify(mediaMetrics)
+              }]
+            })
           }
-          this.sendData(obj)
           mediaMetrics = null
           timestamp = null
-          obj = null
         }
         session.iceSpan = null
         session.lastEvent = Date.now().toString()
@@ -1077,10 +1088,10 @@ function ContextManager (self, tracerName, lru) {
     if (this.filter.debug) logger.info(string)
     if (this.filter.httpSending) {
       try {
-        var response = await axios.post(`${this.qrynHost}/tempo/spans`, string, {
+        var response = await axios.post(`${this.filter.httpHost}/tempo/spans`, string, {
           headers: {
             'Content-Type': 'application/json',
-            tracer: 'qryn-test'
+            tracer: 'pastash'
           }
         })
         if (this.filter.debug) logger.info(response.statusText, response.statusCode)
