@@ -29,7 +29,7 @@ function FilterAppJanusTracer () {
       'kafkaSending',
       'kafkaHost',
       'httpSending',
-      'qryn-basepath'
+      'httpHost'
     ],
     default_values: {
       'metrics': false,
@@ -40,7 +40,7 @@ function FilterAppJanusTracer () {
       'kafkaSending': false,
       'kafkaHost': '127.0.0.1:9092',
       'httpSending': true,
-      'qrynHost': 'http://127.0.0.1:3100'
+      'httpHost': 'http://127.0.0.1:3100'
     },
     start_hook: this.start.bind(this)
   });
