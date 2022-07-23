@@ -5,6 +5,10 @@ let metricsToSend = []
 let spansToSend = []
 let onMetrics = []
 let onSpans = []
+let httpThroughputMetrics = [0,0,0,0,0]
+let sendingQueueLength = 0
+let sendingErrors = 0
+let waitingForResend = 0
 
 function fireMetrics() {
     metricsToSend.length && onMetrics.length && onMetrics.pop()()
@@ -31,7 +35,7 @@ async function startMetricsSender () {
         if (!metricsToSend.length) {
             await new Promise(f => onMetrics.push(f))
         }
-        const toSend = ['{"streams":[']
+        let toSend = ['{"streams":[']
         let len = 14
         let i = 0
         metricsToSend = metricsToSend.filter(m => m.payload)
@@ -45,27 +49,38 @@ async function startMetricsSender () {
             len += str.length
         }
         toSend.push(']}')
-        const sending = metricsToSend.slice(0, i)
+        let sending = metricsToSend.slice(0, i)
         metricsToSend = metricsToSend.slice(i)
         fireMetrics()
+        const body = toSend.join('')
+        toSend = null
+        const sendingLength = sending.length
+        sendingQueueLength += sendingLength
+        sending = sending.filter(s => s.retries < 4)
         try {
-            var response = await axios.post(`${module.exports.host}/loki/api/v1/push`, toSend.join(''), {
+            var response = await axios.post(`${module.exports.host}/loki/api/v1/push`, body, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             })
-            logger.debug('Metrics posted', response.status, response.statusText)
+            //logger.debug('Metrics posted', response.status, response.statusText)
         } catch (e) {
+            sendingErrors += sendingLength
             if (e instanceof axios.AxiosError) {
                 logger.error(`HTTP ERROR '${e.message}' [${e.response?.status}]: ${e.response?.data}`)
             } else {
                 logger.error(e)
             }
+            waitingForResend += sending.length
             setTimeout(() => {
                 metricsToSend.push.apply(metricsToSend,
-                    sending.filter(s => s.retries < 4).map(s => ({...s, retries: s.retries + 1})))
+                    sending.map(s => ({...s, retries: s.retries + 1})))
                 fireMetrics()
+                waitingForResend -= sending.length
             }, 10000)
+        } finally {
+            sendingQueueLength -= sendingLength
+            httpThroughputMetrics[Math.floor(Date.now()/1000) % 5] += body.length
         }
         await new Promise(f => setTimeout(f, 100))
     }
@@ -76,7 +91,7 @@ async function startSpansSender () {
         if (!spansToSend.length) {
             await new Promise(f => onSpans.push(f))
         }
-        const toSend = ['[']
+        let toSend = ['[']
         let len = 2
         let i = 0
         spansToSend = spansToSend.filter(m => m.payload)
@@ -93,27 +108,38 @@ async function startSpansSender () {
             len += str.length
         }
         toSend.push(']')
-        const sending = spansToSend.slice(0, i)
+        let sending = spansToSend.slice(0, i)
         spansToSend = spansToSend.slice(i)
         fireSpans()
+        const body = toSend.join('')
+        toSend = null
+        const sendingLength = sending.length
+        sendingQueueLength += sendingLength
+        sending = sending.filter(s => s.retries < 4)
         try {
-            var response = await axios.post(`${module.exports.host}/tempo/spans`, toSend.join(''), {
+            var response = await axios.post(`${module.exports.host}/tempo/spans`, body, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             })
-            logger.debug('Spans posted', response.status, response.statusText)
+            //logger.debug('Spans posted', response.status, response.statusText)
         } catch (e) {
+            sendingErrors += sendingLength
             if (e instanceof axios.AxiosError) {
                 logger.error(`HTTP ERROR '${e.message}' [${e.response?.status}]: ${e.response?.data}`)
             } else {
                 logger.error(e)
             }
+            waitingForResend += sending.length
             setTimeout(() => {
                 spansToSend.push.apply(spansToSend,
                     sending.filter(s => s.retries < 4).map(s => ({...s, retries: s.retries + 1})))
                 fireSpans()
+                waitingForResend -= sending.length
             }, 10000)
+        } finally {
+            sendingQueueLength -= sendingLength
+            httpThroughputMetrics[Math.floor(Date.now()/1000) % 5] += body.length
         }
         await new Promise(f => setTimeout(f, 100))
     }
@@ -123,6 +149,20 @@ for (let i = 0; i < 10; i++) {
     startMetricsSender()
     startSpansSender()
 }
+
+(() => {
+    let lastReport = Date.now()
+    setInterval(() => {
+        if (Date.now() - lastReport >= 5000) {
+            const avgThroughput = httpThroughputMetrics.reduce((sum, a) => sum + a, 0) / 5 / 1024 / 1024
+            logger.info(`input_queue=${metricsToSend.length + spansToSend.length} ` +
+                `errors=${sendingErrors} currently_sending=${sendingQueueLength} ` +
+                `avg_5s_throughput=${avgThroughput}MB/s`)
+            lastReport = Date.now()
+        }
+        httpThroughputMetrics[(Math.floor(Date.now()/1000) + 1) % 5] = 0
+    }, 1000)
+})()
 
 module.exports = {
     sendMetrics,
