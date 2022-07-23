@@ -200,14 +200,14 @@ class TopSpawner extends events.EventEmitter {
             res.push({
                 ...tags,
                 "__name__": metric,
-                "value": this.parseMemory(m.groups[metric]) / 1024,
+                "@value": this.parseMemory(m.groups[metric]) / 1024,
                 "@timestamp": new Date().toISOString()
             })
         }
         res.push({
             ...tags,
             "__name__": 'cpu',
-            "value": parseFloat(m.groups.cpu),
+            "@value": parseFloat(m.groups.cpu),
             "@timestamp": new Date().toISOString()
         })
         return res
