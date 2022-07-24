@@ -9,6 +9,8 @@ let httpThroughputMetrics = [0,0,0,0,0]
 let sendingQueueLength = 0
 let sendingErrors = 0
 let waitingForResend = 0
+let gaveUp = 0
+let retransmissions = 0
 
 function fireMetrics() {
     metricsToSend.length && onMetrics.length && onMetrics.pop()()
@@ -57,6 +59,7 @@ async function startMetricsSender () {
         const sendingLength = sending.length
         sendingQueueLength += sendingLength
         sending = sending.filter(s => s.retries < 4)
+        const givingUp = sendingQueueLength - sending.length
         try {
             var response = await axios.post(`${module.exports.host}/loki/api/v1/push`, body, {
                 maxBodyLength: 50 * 1024 * 1024,
@@ -74,11 +77,13 @@ async function startMetricsSender () {
                 logger.error(e)
             }
             waitingForResend += sending.length
+            gaveUp += givingUp
             setTimeout(() => {
                 metricsToSend.push.apply(metricsToSend,
                     sending.map(s => ({...s, retries: s.retries + 1})))
                 fireMetrics()
                 waitingForResend -= sending.length
+                retransmissions += sending.length
             }, 10000)
         } finally {
             sendingQueueLength -= sendingLength
@@ -118,6 +123,7 @@ async function startSpansSender () {
         const sendingLength = sending.length
         sendingQueueLength += sendingLength
         sending = sending.filter(s => s.retries < 4)
+        const givingUp = sendingQueueLength - sending.length
         try {
             var response = await axios.post(`${module.exports.host}/tempo/spans`, body, {
                 maxBodyLength: 50 * 1024 * 1024,
@@ -135,11 +141,13 @@ async function startSpansSender () {
                 logger.error(e)
             }
             waitingForResend += sending.length
+            gaveUp += givingUp
             setTimeout(() => {
                 spansToSend.push.apply(spansToSend,
                     sending.filter(s => s.retries < 4).map(s => ({...s, retries: s.retries + 1})))
                 fireSpans()
                 waitingForResend -= sending.length
+                retransmissions += sending.length
             }, 10000)
         } finally {
             sendingQueueLength -= sendingLength
@@ -161,6 +169,7 @@ for (let i = 0; i < 10; i++) {
             const avgThroughput = httpThroughputMetrics.reduce((sum, a) => sum + a, 0) / 5 / 1024 / 1024
             logger.info(`input_queue=${metricsToSend.length + spansToSend.length} ` +
                 `errors=${sendingErrors} currently_sending=${sendingQueueLength} ` +
+                `retransmitted_requests=${retransmissions} failed_requests=${gaveUp} ` +
                 `avg_5s_throughput=${avgThroughput}MB/s`)
             lastReport = Date.now()
         }
