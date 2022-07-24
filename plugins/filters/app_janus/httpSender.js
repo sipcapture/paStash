@@ -59,7 +59,7 @@ async function startMetricsSender () {
         const sendingLength = sending.length
         sendingQueueLength += sendingLength
         sending = sending.filter(s => s.retries < 4)
-        const givingUp = sendingQueueLength - sending.length
+        const givingUp = sendingLength - sending.length
         try {
             var response = await axios.post(`${module.exports.host}/loki/api/v1/push`, body, {
                 maxBodyLength: 50 * 1024 * 1024,
@@ -123,7 +123,7 @@ async function startSpansSender () {
         const sendingLength = sending.length
         sendingQueueLength += sendingLength
         sending = sending.filter(s => s.retries < 4)
-        const givingUp = sendingQueueLength - sending.length
+        const givingUp = sendingLength - sending.length
         try {
             var response = await axios.post(`${module.exports.host}/tempo/spans`, body, {
                 maxBodyLength: 50 * 1024 * 1024,
