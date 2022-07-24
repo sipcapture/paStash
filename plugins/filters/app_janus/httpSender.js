@@ -59,6 +59,8 @@ async function startMetricsSender () {
         sending = sending.filter(s => s.retries < 4)
         try {
             var response = await axios.post(`${module.exports.host}/loki/api/v1/push`, body, {
+                maxBodyLength: 50 * 1024 * 1024,
+                maxContentLength: 50 * 1024 * 1024,
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -118,6 +120,8 @@ async function startSpansSender () {
         sending = sending.filter(s => s.retries < 4)
         try {
             var response = await axios.post(`${module.exports.host}/tempo/spans`, body, {
+                maxBodyLength: 50 * 1024 * 1024,
+                maxContentLength: 50 * 1024 * 1024,
                 headers: {
                     'Content-Type': 'application/json'
                 }
