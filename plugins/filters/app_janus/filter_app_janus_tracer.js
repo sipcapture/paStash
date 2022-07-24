@@ -13,6 +13,7 @@ var util = require('util')
 var logger = require('@pastash/pastash').logger
 var crypto = require('crypto')
 const { Kafka } = require('kafkajs')
+const http = require('http')
 const axios = require('axios')
 const QuickLRU = require("quick-lru")
 
@@ -60,6 +61,8 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     await this.producer.connect()
     logger.info('Kafka Client connected to ', this.kafkaHost)
   }
+  this.httpAgent = new http.Agent({ keepAlive: true })
+
   /* Type Filter setup */
   var filterArray = []
   for (var i = 0; i < this.filter.length; i++) {
@@ -606,7 +609,8 @@ function ContextManager (self, tracerName, lru) {
               var response = await axios.post(`${this.filter.httpHost}/loki/api/v1/push`, JSON.stringify(mediaMetrics), {
                 headers: {
                   'Content-Type': 'application/json'
-                }
+                },
+                httpAgent: this.filter.httpAgent
               })
               if (this.filter.debug) logger.info('Metrics posted', response.status, response.statusText)
             } catch (err) {
@@ -1092,7 +1096,8 @@ function ContextManager (self, tracerName, lru) {
           headers: {
             'Content-Type': 'application/json',
             tracer: 'pastash'
-          }
+          },
+          httpAgent: this.filter.httpAgent
         })
         if (this.filter.debug) logger.info(response.statusText, response.statusCode)
       } catch (e) {
@@ -1440,7 +1445,8 @@ function ContextManager (self, tracerName, lru) {
         var response = await axios.post(`${self.httpHost}/loki/api/v1/push`, JSON.stringify(mediaMetrics), {
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          httpAgent: self.httpAgent
         })
         if (self.debug) logger.info('Metrics posted', response.status, response.statusText)
       } catch (err) {
