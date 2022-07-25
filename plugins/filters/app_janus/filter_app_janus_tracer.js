@@ -13,7 +13,6 @@ var util = require('util')
 var logger = require('@pastash/pastash').logger
 var crypto = require('crypto')
 const { Kafka } = require('kafkajs')
-const axios = require('axios')
 const QuickLRU = require("quick-lru")
 const sender = require('./httpSender')
 
@@ -603,16 +602,6 @@ function ContextManager (self, tracerName, lru) {
           })
           if (this.filter.debug) logger.info('type 16: ', mediaMetrics, JSON.stringify(mediaMetrics))
           if (this.filter.httpSending) {
-            /*try {
-              var response = await axios.post(`${this.filter.httpHost}/loki/api/v1/push`, JSON.stringify(mediaMetrics), {
-                headers: {
-                  'Content-Type': 'application/json'
-                }
-              })
-              if (this.filter.debug) logger.info('Metrics posted', response.status, response.statusText)
-            } catch (err) {
-              logger.error('ERROR AXIOS - Metrics', err)
-            }*/
             sender.host = this.filter.httpHost
             sender.sendMetrics(mediaMetrics)
           } else if (this.filter.kafkaSending) {
@@ -1090,17 +1079,6 @@ function ContextManager (self, tracerName, lru) {
     let string = JSON.stringify(swap)
     if (this.filter.debug) logger.info(string)
     if (this.filter.httpSending) {
-      /*try {
-        var response = await axios.post(`${this.filter.httpHost}/tempo/spans`, string, {
-          headers: {
-            'Content-Type': 'application/json',
-            tracer: 'pastash'
-          }
-        })
-        if (this.filter.debug) logger.info(response.statusText, response.statusCode)
-      } catch (e) {
-        logger.error(e)
-      }*/
       sender.host = this.filter.httpHost
       sender.sendSpans(swap)
     } else if (this.filter.kafkaSending) {
@@ -1441,16 +1419,6 @@ function ContextManager (self, tracerName, lru) {
     })
 
     if (self.httpSending) {
-      /*try {
-        var response = await axios.post(`${self.httpHost}/loki/api/v1/push`, JSON.stringify(mediaMetrics), {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-        if (self.debug) logger.info('Metrics posted', response.status, response.statusText)
-      } catch (err) {
-        logger.error('ERROR AXIOS - Metrics', err)
-      }*/
       sender.host = self.httpHost
       sender.sendMetrics(mediaMetrics)
     } else if (self.kafkaSending) {
@@ -1462,7 +1430,6 @@ function ContextManager (self, tracerName, lru) {
       })
     }
 
-    //mediaMetrics.streams = null
     mediaMetrics = null
     timestamp = null
 
