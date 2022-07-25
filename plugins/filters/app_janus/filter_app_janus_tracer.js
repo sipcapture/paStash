@@ -60,7 +60,6 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     await this.producer.connect()
     logger.info('Kafka Client connected to ', this.kafkaHost)
   }
-  this.httpAgent = new http.Agent({ keepAlive: true })
 
   /* Type Filter setup */
   var filterArray = []
