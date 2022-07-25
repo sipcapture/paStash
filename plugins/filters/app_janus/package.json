@@ -9,12 +9,9 @@
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "@opentelemetry/exporter-prometheus": "^0.28.0",
-    "@opentelemetry/sdk-metrics-base": "^0.28.0",
     "axios": "^0.27.2",
     "cross-fetch": "^3.1.5",
     "kafkajs": "^2.1.0",
-    "quick-lru": "^5.1.0",
-    "record-cache": "^1.2.0"
+    "quick-lru": "^5.1.0"
   }
 }
