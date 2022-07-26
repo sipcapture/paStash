@@ -8,10 +8,10 @@
 
 'use strict';
 
-var base_filter = require('@pastash/pastash').base_filter
-var util = require('util')
-var logger = require('@pastash/pastash').logger
-var crypto = require('crypto')
+const base_filter = require('@pastash/pastash').base_filter
+const util = require('util')
+const logger = require('@pastash/pastash').logger
+const crypto = require('crypto')
 const { Kafka } = require('kafkajs')
 const QuickLRU = require("quick-lru")
 const sender = require('./httpSender')
@@ -29,7 +29,8 @@ function FilterAppJanusTracer () {
       'kafkaSending',
       'kafkaHost',
       'httpSending',
-      'httpHost'
+      'httpHost',
+      'sendSize'
     ],
     default_values: {
       'debug': false,
@@ -40,7 +41,8 @@ function FilterAppJanusTracer () {
       'kafkaSending': false,
       'kafkaHost': '127.0.0.1:9092',
       'httpSending': true,
-      'httpHost': 'http://127.0.0.1:3100'
+      'httpHost': 'http://127.0.0.1:3100',
+      'sendSize': 5
     },
     start_hook: this.start.bind(this)
   });
@@ -58,12 +60,13 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     })
     this.producer = this.kafka.producer()
     await this.producer.connect()
+    sender.init(this)
     logger.info('Kafka Client connected to ', this.kafkaHost)
   }
 
   /* Type Filter setup */
-  var filterArray = []
-  for (var i = 0; i < this.filter.length; i++) {
+  let filterArray = []
+  for (let i = 0; i < this.filter.length; i++) {
     filterArray.push([parseInt(this.filter[i]), "allow"])
   }
   this.filterMap = new Map(filterArray)
@@ -80,7 +83,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
 FilterAppJanusTracer.prototype.process = function (data) {
   if (!data.message) return;
 
-  var line = JSON.parse(data.message);
+  let line = JSON.parse(data.message);
   if (Array.isArray(line)) {
     line.forEach((item, i) => {
       this.ctx.process(item, this)
@@ -137,7 +140,7 @@ function ContextManager (self, tracerName, lru) {
     /* Ignore all events not in filter */
     if (!self.filterMap.has(line.type)) return
     if (this.filter.debug) logger.info('Allowed through Filter', line.type, line.session_id, line.event)
-    var event = {}
+    let event = {}
 
     if (line.type === 1) {
       // logger.info('EVENT -----------', line)
@@ -1046,15 +1049,16 @@ function ContextManager (self, tracerName, lru) {
       let session = entry
       // Check timeout of session
       // logger.info(session)
-      logger.info(session.lastEvent, Date.now() - (new Date(session.lastEvent)).getTime())
+      if (!session.lastEvent) { return }
+      if (this.filter.debug) logger.info(session.lastEvent, Date.now() - (new Date(parseInt(session.lastEvent))))
       try {
-        if (Date.now() - (new Date(session.lastEvent)).getTime() > (1000 * 2) && session.status === 'Closed') {
+        if (Date.now() - (new Date(parseInt(session.lastEvent))) > (1000 * 2) && session.status === 'Closed') {
           if (this.filter.debug) logger.info('Deleting session from sessionMap, 2 sec timeout and closed')
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)
           session = null
           if (this.filter.debug) logger.info(`${this.sessionMap.size}, closed`)
-        } else if (Date.now() - (new Date(session.lastEvent)).getTime() > (1000 * 5 * 60)) {
+        } else if (Date.now() - (new Date(parseInt(session.lastEvent))) > (1000 * 5 * 60)) {
           if (this.filter.debug) logger.info('Deleting session from sessionMap, older than 5 minutes')
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)

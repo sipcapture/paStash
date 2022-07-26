@@ -1,7 +1,8 @@
 const axios = require('axios')
 const { logger } = require('@pastash/pastash')
 
-const debug = false
+let debug = false
+let sendSize = 5
 let metricsToSend = []
 let spansToSend = []
 const onMetrics = []
@@ -11,6 +12,12 @@ let sendingQueueLength = 0
 let sendingErrors = 0
 let gaveUp = 0
 let retransmissions = 0
+
+function init (self) {
+  debug = self.debug
+  sendSize = self.sendSize
+  logger.info(`Set debug to ${debug} and sending Size to ${sendSize} mb.`)
+}
 
 function fireMetrics () {
   metricsToSend.length && onMetrics.length && onMetrics.pop()()
@@ -41,7 +48,7 @@ async function startMetricsSender () {
     let len = 14
     let i = 0
     metricsToSend = metricsToSend.filter(m => m.payload)
-    for (; i < metricsToSend.length && len < 20 * 1024 * 1024; i++) {
+    for (; i < metricsToSend.length && len < sendSize * 1024 * 1024; i++) {
       if (i > 0) {
         toSend.push(',')
       }
@@ -61,7 +68,7 @@ async function startMetricsSender () {
     sending = sending.filter(s => s.retries < 4)
     const givingUp = sendingLength - sending.length
     try {
-      var response = await axios.post(`${module.exports.host}/loki/api/v1/push`, body, {
+      const response = await axios.post(`${module.exports.host}/loki/api/v1/push`, body, {
         maxBodyLength: 50 * 1024 * 1024,
         maxContentLength: 50 * 1024 * 1024,
         headers: {
@@ -100,7 +107,7 @@ async function startSpansSender () {
     let len = 2
     let i = 0
     spansToSend = spansToSend.filter(m => m.payload)
-    for (; i < spansToSend.length && len < 20 * 1024 * 1024; i++) {
+    for (; i < spansToSend.length && len < sendSize * 1024 * 1024; i++) {
       if (i > 0) {
         toSend.push(',')
       }
@@ -123,7 +130,7 @@ async function startSpansSender () {
     sending = sending.filter(s => s.retries < 4)
     const givingUp = sendingLength - sending.length
     try {
-      var response = await axios.post(`${module.exports.host}/tempo/spans`, body, {
+      const response = await axios.post(`${module.exports.host}/tempo/spans`, body, {
         maxBodyLength: 50 * 1024 * 1024,
         maxContentLength: 50 * 1024 * 1024,
         headers: {
