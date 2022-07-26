@@ -41,7 +41,7 @@ async function startMetricsSender () {
     let len = 14
     let i = 0
     metricsToSend = metricsToSend.filter(m => m.payload)
-    for (; i < metricsToSend.length && len < 20 * 1024 * 1024; i++) {
+    for (; i < metricsToSend.length && len < 5 * 1024 * 1024; i++) {
       if (i > 0) {
         toSend.push(',')
       }
@@ -100,7 +100,7 @@ async function startSpansSender () {
     let len = 2
     let i = 0
     spansToSend = spansToSend.filter(m => m.payload)
-    for (; i < spansToSend.length && len < 20 * 1024 * 1024; i++) {
+    for (; i < spansToSend.length && len < 5 * 1024 * 1024; i++) {
       if (i > 0) {
         toSend.push(',')
       }
