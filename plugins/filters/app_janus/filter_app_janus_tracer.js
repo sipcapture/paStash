@@ -60,7 +60,6 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     })
     this.producer = this.kafka.producer()
     await this.producer.connect()
-    sender.init(this)
     logger.info('Kafka Client connected to ', this.kafkaHost)
   }
 
@@ -77,6 +76,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   this.ctx = new ContextManager(this, this.tracerName, this.lru)
   this.ctx.init()
   logger.info('Initialized App Janus Span + Metrics Tracer');
+  sender.init(this)
   callback();
 };
 

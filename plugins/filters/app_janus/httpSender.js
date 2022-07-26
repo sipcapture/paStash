@@ -16,7 +16,7 @@ let retransmissions = 0
 function init (self) {
   debug = self.debug
   sendSize = self.sendSize
-  logger.info(`Set debug to ${debug} and sending Size to ${sendSize} mb.`)
+  console.log(`Set debug to ${debug} and sending Size to ${sendSize} mb.`)
 }
 
 function fireMetrics () {
@@ -185,5 +185,6 @@ if (debug) {
 module.exports = {
   sendMetrics,
   sendSpans,
+  init,
   host: ''
 }
