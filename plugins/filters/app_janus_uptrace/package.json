@@ -1,6 +1,6 @@
 {
   "name": "@pastash/filter_app_janus_uptrace",
-  "version": "0.3.0",
+  "version": "0.2.0",
   "description": "Janus Tracing Plugin for @pastash/pastash",
   "main": "filter_app_janus_uptrace.js",
   "scripts": {

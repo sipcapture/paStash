@@ -29,22 +29,22 @@ function FilterAppJanusTracer () {
     optional_params: [
       'debug',
       'uptrace_dsn',
-      'uptrace_host',
+      'cloki_dsn',
       'bypass',
       'service_name',
       'filter',
       'metrics',
-      'project_id',
+      'port',
       'interval'
     ],
     default_values: {
-      'uptrace_host': 'http://platform.uptrace.dev',
-      'uptrace_dsn': 'http://token@uptrace.dev',
+      'uptrace_dsn': 'http://token@uptrace.host.ip:14318/<project_id>',
+      'cloki_dsn': 'http://127.0.0.1:3100',
       'service_name': 'pastash-janus',
       'bypass': true,
       'filter': ["1", "128", "2", "4", "8", "16", "32", "64", "256"],
       'metrics': false,
-      'project_id': '/1',
+      'port': 9090,
       'interval': 10000,
       'debug': false
     },
@@ -78,15 +78,14 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
     headers: {
       'uptrace-dsn': this.uptrace_dsn
     },
-    url: `${this.uptrace_host}/v1/traces`
+    url: `${dsn.otlpAddr()}/v1/traces`
   })
 
   const exporter_CL = new ZipkinExporter({
     headers: {
-      'tracer': 'cloki',
-      'uptrace-dsn': this.uptrace_dsn
+      'tracer': 'cloki'
     },
-    url: `${this.uptrace_host}/api/v2/spans`
+    url: this.cloki_dsn + '/tempo/api/push'
   })
 
   provider.addSpanProcessor(new BatchSpanProcessor(exporter_UT, {
@@ -130,34 +129,14 @@ FilterAppJanusTracer.prototype.process = async function (data) {
   // logger.info('PJU -- Tracer tracking event', this.lru.has('tracer_instance'))
 
   // bypass
-  if (this.bypass) {
-    this.emit('output', data)
-  } else {
-    // TODO emit logs directly into uptrace logging
-    var log = JSON.parse(data.message)
-    var msg = {
-      streams: [
-        {
-          stream: {
-            type: log.type,
-            subtype: log?.subtype,
-            emitter: log.emitter
-          },
-          values: [
-            [(Date.now() * 1000000).toString(), JSON.stringify(log)]
-          ]
-        }
-      ]
-    }
-    postData(JSON.stringify(msg), this)
-  }
+  if (this.bypass) this.emit('output', data)
   if (!data.message) return
   var event = {}
   var line = JSON.parse(data.message)
-  // logger.info('Incoming line', line.type, line.event)
+  logger.info('Incoming line', line.type, line.event)
   /* Ignore all other events */
   if (!this.filterMap.has(line.type)) return
-  // logger.info('Filtered', line.type, line.session_id, line.handle_id)
+  logger.info('Filtered', line.type, line.session_id, line.handle_id)
   /*
   TYPE 1 - Session related event
   Create Session and Destroy Session events are traced
@@ -177,13 +156,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       })
       sessionSpan.setAttribute('service.name', 'Session')
       sessionSpan.resource.attributes['service.name'] = 'Session'
-      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const createdSpan = tracer.startSpan("Session Created", {
-        attributes: event,
-        kind: otel.SpanKind.SERVER
-      }, ctx)
-      createdSpan.setAttribute('service.name', 'Session')
-      createdSpan.end()
       // logger.info('PJU -- Session event:', sessionSpan)
       this.lru.set("sess_" + event.session_id, sessionSpan)
     /* DESTROY event */
@@ -218,18 +190,12 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     if (event.name === "attached") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const attachedSpan = tracer.startSpan("Handle", {
+      const attachedSpan = tracer.startSpan("Handle attached", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
       attachedSpan.setAttribute('service.name', 'Handle')
       this.lru.set("att_" + event.session_id, attachedSpan)
-      const createdSpan = tracer.startSpan("Handle attached", {
-        attributes: event,
-        kind: otel.SpanKind.SERVER
-      }, ctx)
-      createdSpan.setAttribute('service.name', 'Handle')
-      createdSpan.end()
       /*
       Detach Event
       */
@@ -275,7 +241,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       id: line?.session_id,
       timestamp: line.timestamp || nano_now(new Date().getTime())
     }
-    // logger.info("TYPE 8 EVENT", event.event)
+    logger.info("TYPE 8 EVENT", event.event)
     /*
       Remote SDP
     */
@@ -287,25 +253,26 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         kind: otel.SpanKind.SERVER
       }, ctx)
       sdpSpan.setAttribute('service.name', 'JSEP')
-      sdpSpan.end()
+      this.lru.set("sdp_" + event.session_id, sdpSpan)
     /*
       Local SDP
     */
     } else if (event.event == "local") {
-      const sessionSpan = this.lru.get("sess_" + event.session_id)
-      const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
+      const offerSpan = this.lru.get("sdp_" + event.session_id)
+      const ctx = otel.trace.setSpan(otel.context.active(), offerSpan)
       const sdpSpan = tracer.startSpan("JSEP Event - Answer", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
       sdpSpan.setAttribute('service.name', 'JSEP')
       sdpSpan.end()
+      offerSpan.end()
     }
   /*
     Type 16 - WebRTC state event
     */
   } else if (line.type == 16) {
-    // logger.info("TYPE 16", line)
+    logger.info("TYPE 16", line)
     /*
       Subtype 1
       ICE flow
@@ -500,7 +467,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       event = Object.assign(event, line?.event)
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      event.traceId = sessionSpan._spanContext.traceId
       const mediaSpan = tracer.startSpan("Audio Media Report", {
         attributes: event,
         kind: otel.SpanKind.SERVER
@@ -515,7 +481,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       event = Object.assign(event, line?.event)
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      event.traceId = sessionSpan._spanContext.traceId
       const mediaSpan = tracer.startSpan("Video Media Report", {
         attributes: event,
         kind: otel.SpanKind.SERVER
@@ -581,18 +546,12 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     if (event.event === "joined") {
       const sessionSpan = this.lru.get("sess_" + event.session_id)
       const ctx = otel.trace.setSpan(otel.context.active(), sessionSpan)
-      const joinSpan = tracer.startSpan("User", {
+      const joinSpan = tracer.startSpan("User joined", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
       joinSpan.setAttribute('service.name', 'Plugin')
       this.lru.set("join_" + event.id, joinSpan)
-      const createdSpan = tracer.startSpan("User joined", {
-        attributes: event,
-        kind: otel.SpanKind.SERVER
-      }, ctx)
-      createdSpan.setAttribute('service.name', 'Plugin')
-      createdSpan.end()
       /*
       Configured Event
       */
@@ -611,7 +570,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
     } else if (event.event === "published") {
       const joinSpan = this.lru.get('join_' + event.id)
       const ctx = otel.trace.setSpan(otel.context.active(), joinSpan)
-      const pubSpan = tracer.startSpan("User Media Published", {
+      const pubSpan = tracer.startSpan("User published", {
         attributes: event,
         kind: otel.SpanKind.SERVER
       }, ctx)
@@ -620,13 +579,6 @@ FilterAppJanusTracer.prototype.process = async function (data) {
 
       const confSpan = this.lru.get('conf_' + event.id)
       confSpan.end()
-
-      const createdSpan = tracer.startSpan("User published", {
-        attributes: event,
-        kind: otel.SpanKind.SERVER
-      }, ctx)
-      createdSpan.setAttribute('service.name', 'Plugin')
-      createdSpan.end()
       /*
       Subscribing Event
       */
@@ -670,9 +622,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
       unpubSpan.setAttribute('service.name', 'Plugin')
       unpubSpan.end()
       const pubSpan = this.lru.get('pub_' + event.id)
-      if (pubSpan) {
-        pubSpan.end()
-      }
+      pubSpan.end()
       /*
       Leaving Event
       */
@@ -687,9 +637,7 @@ FilterAppJanusTracer.prototype.process = async function (data) {
         }, ctx)
         leaveSpan.setAttribute('service.name', 'Plugin')
         leaveSpan.end()
-        if (joinSpan) {
-          joinSpan.end()
-        }
+        joinSpan.end()
       } catch (e) {
         console.log(e)
       }
@@ -704,7 +652,7 @@ exports.create = function () {
 /* Metrics Sender to cloki */
 
 function sendMetrics (event, self) {
-  // logger.info('Event Metrics', event)
+  logger.info('Event Metrics', event)
 
   const mediaMetrics = {
     streams: []
@@ -717,12 +665,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "local_lost_packets"
     },
     values: [
       [
         timestamp,
-        `local_lost_packets session_id=${event.session_id} traceid=${event.traceId} value=${event.event["lost"]}`,
+        "local_lost_packets",
         event.event["lost"]
       ]
     ]
@@ -732,12 +681,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "remote_lost_packets"
     },
     values: [
       [
         timestamp,
-        `remote_lost_packets session_id=${event.session_id} traceid=${event.traceId} value=${event.event["lost-by-remote"]}`,
+        "remote_lost_packets",
         event.event["lost-by-remote"]
       ]
     ]
@@ -747,12 +697,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "local_jitter"
     },
     values: [
       [
         timestamp,
-        `local_jitter session_id=${event.session_id} traceid=${event.traceId} value=${event.event["jitter-local"]}`,
+        "local_jitter",
         event.event["jitter-local"]
       ]
     ]
@@ -762,12 +713,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "remote_jitter"
     },
     values: [
       [
         timestamp,
-        `remote_jitter session_id=${event.session_id} traceid=${event.traceId} value=${event.event["jitter-remote"]}`,
+        "remote_jitter",
         event.event["jitter-remote"]
       ]
     ]
@@ -777,12 +729,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "in_link_quality"
     },
     values: [
       [
         timestamp,
-        `in_link_quality session_id=${event.session_id} traceid=${event.traceId} value=${event.event["in-link-quality"]}`,
+        "in_link_quality",
         event.event["in-link-quality"]
       ]
     ]
@@ -792,12 +745,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "in_media_link_quality"
     },
     values: [
       [
         timestamp,
-        `in_media_link_quality session_id=${event.session_id} traceid=${event.traceId} value=${event.event["in-media-link-quality"]}`,
+        "in_media_link_quality",
         event.event["in-media-link-quality"]
       ]
     ]
@@ -807,12 +761,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "out_link_quality"
     },
     values: [
       [
         timestamp,
-        `out_link_quality session_id=${event.session_id} traceid=${event.traceId} value=${event.event["out-link-quality"]}`,
+        "out_link_quality",
         event.event["out-link-quality"]
       ]
     ]
@@ -822,12 +777,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "out_media_link_quality"
     },
     values: [
       [
         timestamp,
-        `out_media_link_quality session_id=${event.session_id} traceid=${event.traceId} value=${event.event["out-media-link-quality"]}`,
+        "out_media_link_quality",
         event.event["out-media-link-quality"]
       ]
     ]
@@ -837,12 +793,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "packets_received"
     },
     values: [
       [
         timestamp,
-        `packets_received session_id=${event.session_id} traceid=${event.traceId} value=${event.event["packets-received"]}`,
+        "packets_received",
         event.event["packets-received"]
       ]
     ]
@@ -852,12 +809,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "packets_sent"
     },
     values: [
       [
         timestamp,
-        `packets_sent session_id=${event.session_id} traceid=${event.traceId} value=${event.event["packets-sent"]}`,
+        "packets_sent",
         event.event["packets-sent"]
       ]
     ]
@@ -867,12 +825,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "bytes_received"
     },
     values: [
       [
         timestamp,
-        `bytes_received session_id=${event.session_id} traceid=${event.traceId} value=${event.event["bytes-received"]}`,
+        "bytes_received",
         event.event["bytes-received"]
       ]
     ]
@@ -882,12 +841,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "bytes_sent"
     },
     values: [
       [
         timestamp,
-        `bytes_sent session_id=${event.session_id} traceid=${event.traceId} value=${event.event["bytes-sent"]}`,
+        "bytes_sent",
         event.event["bytes-sent"]
       ]
     ]
@@ -897,12 +857,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "bytes_received_lastsec"
     },
     values: [
       [
         timestamp,
-        `bytes_received_lastsec session_id=${event.session_id} traceid=${event.traceId} value=${event.event["bytes-received-lastsec"]}`,
+        "bytes_received_lastsec",
         event.event["bytes-received-lastsec"]
       ]
     ]
@@ -912,12 +873,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "bytes_sent_lastsec"
     },
     values: [
       [
         timestamp,
-        `bytes_sent_lastsec session_id=${event.session_id} traceid=${event.traceId} value=${event.event["bytes-sent-lastsec"]}`,
+        "bytes_sent_lastsec",
         event.event["bytes-sent-lastsec"]
       ]
     ]
@@ -927,12 +889,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "nacks_received"
     },
     values: [
       [
         timestamp,
-        `nacks_received session_id=${event.session_id} traceid=${event.traceId} value=${event.event["nacks-received"]}`,
+        "nacks_received",
         event.event["nacks-received"]
       ]
     ]
@@ -942,12 +905,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "nacks_sent"
     },
     values: [
       [
         timestamp,
-        `nacks_sent session_id=${event.session_id} traceid=${event.traceId} value=${event.event["nacks-sent"]}`,
+        "nacks_sent",
         event.event["nacks-sent"]
       ]
     ]
@@ -957,12 +921,13 @@ function sendMetrics (event, self) {
       emitter: event.emitter,
       mediatype: event.media,
       type: 32,
+      session_id: event.session_id,
       metric: "retransmission_received"
     },
     values: [
       [
         timestamp,
-        `retransmission_received session_id=${event.session_id} traceid=${event.traceId} value=${event.event["retransmission-received"]}`,
+        "retransmission_received",
         event.event["retransmission-received"]
       ]
     ]
@@ -973,13 +938,12 @@ function sendMetrics (event, self) {
 
 async function postData (data, self) {
   try {
-    var response = await axios.post(self.uptrace_host + self.project_id + '/loki/api/v1/push', data, {
+    var response = await axios.post(self.cloki_dsn + '/loki/api/v1/push', data, {
       headers: {
-        'Content-Type': 'application/json',
-        'uptrace-dsn': self.uptrace_dsn
+        'Content-Type': 'application/json'
       }
     })
-    // logger.info('AXIOS Metrics send', response.status, response.statusText)
+    logger.info('AXIOS Metrics send', response.status, response.statusText)
   } catch (err) {
     logger.info('ERROR AXIOS Metrics send', err)
   }
