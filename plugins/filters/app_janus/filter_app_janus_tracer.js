@@ -172,7 +172,7 @@ function ContextManager (self, tracerName, lru) {
         sessionCreateSpan.end()
         const session = {
           session_id: line.session_id,
-          lastEvent: Date.now(),
+          lastEvent: Date.now().toString(),
           traceId: sessionSpan.traceId,
           sessionSpanId: sessionSpan.id,
           sessionSpan: sessionSpan,
@@ -1046,14 +1046,15 @@ function ContextManager (self, tracerName, lru) {
       let session = entry
       // Check timeout of session
       // logger.info(session)
+      logger.info(session.lastEvent, Date.now() - (new Date(session.lastEvent)).getTime())
       try {
-        if (Date.now() - session.lastEvent > (1000 * 2) && session.status === 'Closed') {
+        if (Date.now() - (new Date(session.lastEvent)).getTime() > (1000 * 2) && session.status === 'Closed') {
           if (this.filter.debug) logger.info('Deleting session from sessionMap, 2 sec timeout and closed')
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)
           session = null
           if (this.filter.debug) logger.info(`${this.sessionMap.size}, closed`)
-        } else if (Date.now() - session.lastEvent > (1000 * 5 * 60)) {
+        } else if (Date.now() - (new Date(session.lastEvent)).getTime() > (1000 * 5 * 60)) {
           if (this.filter.debug) logger.info('Deleting session from sessionMap, older than 5 minutes')
           this.sessionMap.delete(session.session_id)
           this.sessionMap.delete(session?.eventId)

@@ -138,13 +138,11 @@ async function startSpansSender () {
       } else {
         logger.error(e)
       }
-      waitingForResend += sending.length
       gaveUp += givingUp
       setTimeout(() => {
         spansToSend.push.apply(spansToSend,
           sending.filter(s => s.retries < 4).map(s => ({ ...s, retries: s.retries + 1 })))
         fireSpans()
-        waitingForResend -= sending.length
         retransmissions += sending.length
       }, 10000)
     } finally {
