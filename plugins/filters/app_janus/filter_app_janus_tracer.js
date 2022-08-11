@@ -1135,7 +1135,7 @@ function ContextManager (self, tracerName, lru) {
     }
 
     let timestamp = this.nano_now(Date.now()).toString().padEnd(19, '0')
-
+    /* RTT or Round Trip Time Metric */
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1151,6 +1151,135 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
+    /* Building a Histogram based on these metrics
+        Buckets should be an even size, we are mostly interested and
+        the Bucket 500 - 1000 as these would indicate higher than usual
+        rss and would allow us to identify potentially bad connections
+
+        Bucket Width should be 100 from 200 - 1500 / +Inf
+
+        Buckets are less or equal to the Bucket upper bounds expressed
+        below with <= upperBound
+    */
+
+    const rtt = event.metrics["rtt"] || 0
+
+    if (rtt <= 10) {
+      mediaMetrics.streams.push({
+        stream: {
+          __name__: 'rtt_bucket',
+          emitter: event.emitter,
+          server: event.emitter,
+          client: 'rtt',
+          le: '10'
+        },
+        values: [
+          [
+            timestamp,
+            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
+            event.metrics["rtt"] || 0
+          ]
+        ]
+      })
+    }
+
+    if (rtt <= 200) {
+      mediaMetrics.streams.push({
+        stream: {
+          __name__: 'rtt_bucket',
+          emitter: event.emitter,
+          server: event.emitter,
+          client: 'rtt',
+          le: '200'
+        },
+        values: [
+          [
+            timestamp,
+            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
+            event.metrics["rtt"] || 0
+          ]
+        ]
+      })
+    }
+
+    if (rtt <= 400) {
+      mediaMetrics.streams.push({
+        stream: {
+          __name__: 'rtt_bucket',
+          emitter: event.emitter,
+          server: event.emitter,
+          client: 'rtt',
+          le: '400'
+        },
+        values: [
+          [
+            timestamp,
+            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
+            event.metrics["rtt"] || 0
+          ]
+        ]
+      })
+    }
+
+    if (rtt <= 700) {
+      mediaMetrics.streams.push({
+        stream: {
+          __name__: 'rtt_bucket',
+          emitter: event.emitter,
+          server: event.emitter,
+          client: 'rtt',
+          le: '700'
+        },
+        values: [
+          [
+            timestamp,
+            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
+            event.metrics["rtt"] || 0
+          ]
+        ]
+      })
+    }
+
+    if (rtt <= 1500) {
+      mediaMetrics.streams.push({
+        stream: {
+          __name__: 'rtt_bucket',
+          emitter: event.emitter,
+          server: event.emitter,
+          client: 'rtt',
+          le: '1500'
+        },
+        values: [
+          [
+            timestamp,
+            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
+            event.metrics["rtt"] || 0
+          ]
+        ]
+      })
+    }
+
+    /* infinitiy bucket */
+
+    mediaMetrics.streams.push({
+      stream: {
+        __name__: 'rtt_bucket',
+        emitter: event.emitter,
+        server: event.emitter,
+        client: 'rtt',
+        le: '+Inf'
+      },
+      values: [
+        [
+          timestamp,
+          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
+          event.metrics["rtt"] || 0
+        ]
+      ]
+    })
+
+    /* Lost Packets Locally Metric */
 
     mediaMetrics.streams.push({
       stream: {
