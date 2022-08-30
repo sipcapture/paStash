@@ -509,7 +509,7 @@ function ContextManager (self, tracerName, lru) {
             session_id: line.session_id.toString(),
             emitter: line.emitter,
             media: line.event.media,
-            traceId: this.generateParentSpanId(line.session_id.toString()),
+            traceId: this.generateTraceId(line.session_id.toString()),
             metrics: line.event
           }, this.filter)
         }
@@ -520,7 +520,7 @@ function ContextManager (self, tracerName, lru) {
             session_id: line.session_id.toString(),
             emitter: line.emitter,
             media: line.event.media,
-            traceId: this.generateParentSpanId(line.session_id.toString()),
+            traceId: this.generateTraceId(line.session_id.toString()),
             metrics: line.event
           }, this.filter)
         }
