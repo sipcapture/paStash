@@ -158,8 +158,8 @@ function ContextManager (self, tracerName, lru) {
       }
       /* CREATE event */
       if (line.event.name === 'created') {
-        const sessionSpan = this.startSpan('Session', { ...line }, { ...event }, 'Session', true)
-        const sessionCreateSpan = this.startSpan(
+        let sessionSpan = this.startSpan('Session', { ...line }, { ...event }, 'Session', true)
+        let sessionCreateSpan = this.startSpan(
           'Session Created',
           { ...line },
           { ...event },
@@ -167,18 +167,22 @@ function ContextManager (self, tracerName, lru) {
         )
         sessionCreateSpan.end()
         sessionSpan.end()
+        sessionCreateSpan = null
+        sessionSpan = null
         // logger.info('PJU -- Session event:', sessionSpan, session)
       /* DESTROY event */
       } else if (line.event.name === 'destroyed') {
         /* Termination of a session that was already in place */
-        const destroySpan = this.startSpan(
+        let destroySpan = this.startSpan(
           'Session destroyed',
           { ...line },
           { ...event },
           'Session'
         )
         destroySpan.end()
+        destroySpan = null
       }
+    event = null
     /*
     TYPE 2 - Handle related event
     Handle Attachment and Detachment is traced
@@ -208,25 +212,28 @@ function ContextManager (self, tracerName, lru) {
         Attach Event
         */
       if (line.event.name === 'attached') {
-        const attachedSpan = this.startSpan(
+        let attachedSpan = this.startSpan(
           "Handle attached",
           { ...line },
           { ...event },
           'Handle'
         )
         attachedSpan.end()
+        attachedSpan = null
         /*
         Detach Event
         */
       } else if (line.event.name === 'detached') {
-        const detachedSpan = this.startSpan(
+        let detachedSpan = this.startSpan(
           "Handle detached",
           { ...line },
           { ...event },
           'Handle'
         )
         detachedSpan.end()
+        detachedSpan = null
       }
+    event = null
     /*
       Type 4 - External event
       */
@@ -247,13 +254,15 @@ function ContextManager (self, tracerName, lru) {
         id: line?.session_id,
         timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
-      const extSpan = this.startSpan(
+      let extSpan = this.startSpan(
         "External Event",
         { ...line },
         { ...event },
         "External"
       )
       extSpan.end()
+      extSpan = null
+    event = null
     /*
       Type 8 - JSEP event
       */
@@ -283,25 +292,28 @@ function ContextManager (self, tracerName, lru) {
         Remote SDP
       */
       if (line.event.owner === "remote") {
-        const sdpSpan = this.startSpan(
+        let sdpSpan = this.startSpan(
           "JSEP Event - Offer",
           { ...line },
           { ...event },
           "JSEP"
         )
         sdpSpan.end()
+        sdpSpan = null
       /*
         Local SDP
       */
       } else if (line.event.owner === "local") {
-        const sdpSpan = this.startSpan(
+        let sdpSpan = this.startSpan(
           "JSEP Event - Answer",
           { ...line },
           { ...event },
           "JSEP"
         )
         sdpSpan.end()
+        sdpSpan = null
       }
+    event = null
     /*
       Type 16 - WebRTC state event
       */
@@ -333,38 +345,43 @@ function ContextManager (self, tracerName, lru) {
           timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
         if (line.event.ice === 'gathering') {
-          const iceSpan = this.startSpan(
+          let iceSpan = this.startSpan(
             "ICE gathering",
             { ...line },
             { ...event },
             "ICE"
           )
           iceSpan.end()
+          iceSpan = null
         } else if (event.ice_state === 'connecting') {
-          const conIceSpan = this.startSpan(
+          let conIceSpan = this.startSpan(
             "ICE connecting",
             { ...line },
             { ...event },
             "ICE"
           )
           conIceSpan.end()
+          conIceSpan = null
         } else if (line.event.ice === "connected") {
-          const conIceSpan = this.startSpan(
+          let conIceSpan = this.startSpan(
             "ICE connected",
             { ...line },
             { ...event },
             'ICE'
           )
           conIceSpan.end()
+          conIceSpan = null
         } else if (line.event.ice === "ready") {
-          const readySpan = this.startSpan(
+          let readySpan = this.startSpan(
             "ICE ready",
             { ...line },
             { ...event },
             'ICE'
           )
           readySpan.end()
+          readySpan = null
         }
+      event = null
       /*
         Subtype 2
         Local Candidates
@@ -378,13 +395,15 @@ function ContextManager (self, tracerName, lru) {
           candidate: line?.event["local-candidate"],
           timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
-        const candidateSpan = this.startSpan(
+        let candidateSpan = this.startSpan(
           "Local Candidate",
           { ...line },
           { ...event },
           'ICE'
         )
         candidateSpan.end()
+        candidateSpan = null
+      event = null
       /*
         Subtype 3
         Remote Candidates
@@ -396,13 +415,15 @@ function ContextManager (self, tracerName, lru) {
           candidate: line?.event["remote-candidate"],
           timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
-        const candidateSpan = this.startSpan(
+        let candidateSpan = this.startSpan(
           "Remote Candidate",
           { ...line },
           { ...event },
           'ICE'
         )
         candidateSpan.end()
+        candidateSpan = null
+      event = null
       /*
         Subtype 4
         Connection Selected
@@ -414,13 +435,15 @@ function ContextManager (self, tracerName, lru) {
           session_id: line?.session_id?.toString() || line?.session_id,
           timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
-        const candidateSpan = this.startSpan(
+        let candidateSpan = this.startSpan(
           "Selected Candidates",
           { ...line },
           { ...event },
           'ICE'
         )
         candidateSpan.end()
+        candidateSpan = null
+      event = null
       /*
         Subtype 5
         DTLS flow
@@ -436,25 +459,28 @@ function ContextManager (self, tracerName, lru) {
           trying
         */
         if (event.event === 'trying') {
-          const trySpan = this.startSpan(
+          let trySpan = this.startSpan(
             "DTLS trying",
             { ...line },
             { ...event },
             'ICE'
           )
           trySpan.end()
+          trySpan = null
         /*
           connected
         */
         } else if (event.event === 'connected') {
-          const conSpan = this.startSpan(
+          let conSpan = this.startSpan(
             "DTLS connected",
             { ...line },
             { ...event },
             'ICE'
           )
           conSpan.end()
+          conSpan = null
         }
+      event = null
       /*
         Subtype 6
         Connection Up
@@ -466,13 +492,15 @@ function ContextManager (self, tracerName, lru) {
           session_id: line?.session_id?.toString() || line?.session_id,
           timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
-        const conSpan = this.startSpan(
+        let conSpan = this.startSpan(
           "WebRTC Connection UP",
           { ...line },
           { ...event },
           'ICE'
         )
         conSpan.end()
+        conSpan = null
+      event = null
       }
     /*
       Type 32 - Media Report
@@ -525,6 +553,7 @@ function ContextManager (self, tracerName, lru) {
           }, this.filter)
         }
       }
+    event = null
     /*
       Type 128 - Transport-originated
       */
@@ -552,13 +581,15 @@ function ContextManager (self, tracerName, lru) {
         type: line?.type,
         timestamp: line?.timestamp
       }
-      const transportSpan = this.startSpan(
+      let transportSpan = this.startSpan(
         "Transport connected",
         { ...line },
         { ...event },
         "Transport Originated"
       )
       transportSpan.end()
+      transportSpan = null
+    event = null
     /*
       Type 256 - Core event
       */
@@ -570,23 +601,25 @@ function ContextManager (self, tracerName, lru) {
         timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
       if (event.subtype === 1) {
-        const serverSpan = this.startSpan(
+        let serverSpan = this.startSpan(
           "Startup",
           { ...line },
           { ...event },
           'Core'
         )
         serverSpan.end()
+        serverSpan = null
       } else if (event.subtype === 2) {
-        const serverSpan = this.startSpan(
+        let serverSpan = this.startSpan(
           "Shutdown",
           { ...line },
           { ...event },
           'Core'
         )
         serverSpan.end()
+        serverSpan = null
       }
-
+    event = null
     /*
     TYPE 64 - Plugin-originated event
 
@@ -618,99 +651,108 @@ function ContextManager (self, tracerName, lru) {
         Joined Event
         */
       if (line.event.data.event === 'joined') {
-        const joinedSpan = this.startSpan(
+        let joinedSpan = this.startSpan(
           "User joined",
           { ...line },
           { ...event },
           'Plugin'
         )
         joinedSpan.end()
+        joinedSpan = null
         /*
         Configured Event
         */
       } else if (line.event.data.event === 'configured') {
         // logger.info('CONF', line, line.event.data.id, line?.session_id)
         /* Capture Starts mid-Session */
-        const confSpan = this.startSpan(
+        let confSpan = this.startSpan(
           "User configured",
           { ...line },
           { ...event },
           'Plugin'
         )
         confSpan.end()
+        confSpan = null
         /*
         Published Event
         */
       } else if (line.event.data.event === 'published') {
         /* Capture Starts mid-Session */
-        const pubSpan = this.startSpan(
+        let pubSpan = this.startSpan(
           "User published",
           { ...line },
           { ...event },
           'Plugin'
         )
         pubSpan.end()
+        pubSpan = null
         /*
         Subscribing Event
         */
       } else if (line.event.data.event === 'subscribing') {
-        const subSpan = this.startSpan(
+        let subSpan = this.startSpan(
           "User subscribing",
           { ...line },
           { ...event },
           'Plugin'
         )
         subSpan.end()
+        subSpan = null
         /*
         Subscribed Event
         */
       } else if (line.event.data.event === 'subscribed') {
-        const subdSpan = this.startSpan(
+        let subdSpan = this.startSpan(
           "User subscribed",
           { ...line },
           { ...event },
           'Plugin'
         )
         subdSpan.end()
+        subdSpan = null
         /*
         Update Event
         */
       } else if (line.event.data.event === 'updated') {
-        const upSpan = this.startSpan(
+        let upSpan = this.startSpan(
           "User updated",
           { ...line },
           { ...event },
           'Plugin'
         )
         upSpan.end()
+        upSpan = null
         /*
         Unpublished Event
         */
       } else if (line.event.data.event === 'unpublished') {
-        const unpubSpan = this.startSpan(
+        let unpubSpan = this.startSpan(
           "User unpublished",
           { ...line },
           { ...event },
           'Plugin'
         )
         unpubSpan.end()
+        unpubSpan = null
         /*
         Leaving Event
         */
       } else if (line.event.data.event === 'leaving') {
         try {
-          const leaveSpan = this.startSpan(
+          let leaveSpan = this.startSpan(
             "User leaving",
             { ...line },
             { ...event },
             'Plugin'
           )
           leaveSpan.end()
+          leaveSpan = null
         } catch (e) {
           /* swallow error */
           if (this.filter.debug) logger.info(e)
         }
       }
+      event = null
     }
     event = null
   }
