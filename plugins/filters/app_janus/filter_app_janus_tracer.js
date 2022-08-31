@@ -337,8 +337,8 @@ function ContextManager (self, tracerName, lru) {
       if (line.subtype === 1) {
         event = {
           eventName: "Ice Flow",
-          type: line.type,
-          subtype: line.subtype,
+          type: line.type.toString(),
+          subtype: line.subtype.toString(),
           event: line?.event?.ice,
           session_id: line?.session_id?.toString() || line?.session_id,
           ice_state: line?.event?.ice || 'null',
@@ -389,8 +389,8 @@ function ContextManager (self, tracerName, lru) {
       } else if (line.subtype === 2) {
         event = {
           eventName: "Local Candidates",
-          type: line.type,
-          subtype: line.subtype,
+          type: line.type.toString(),
+          subtype: line.subtype.toString(),
           session_id: line?.session_id?.toString() || line?.session_id,
           candidate: line?.event["local-candidate"],
           timestamp: line.timestamp || this.nano_now(new Date().getTime())
@@ -521,8 +521,8 @@ function ContextManager (self, tracerName, lru) {
       */
       event = {
         eventName: "Media Report",
-        type: line.type,
-        subtype: line.subtype,
+        type: line.type.toString(),
+        subtype: line.subtype.toString(),
         media: line.event.media,
         emitter: line?.emitter,
         session_id: line?.session_id?.toString() || line.session_id,
@@ -578,7 +578,7 @@ function ContextManager (self, tracerName, lru) {
         emitter: line?.emitter,
         transport: line?.event?.transport,
         session_id: (Math.random() * 1000000).toString(),
-        type: line?.type,
+        type: line?.type.toString(),
         timestamp: line?.timestamp
       }
       let transportSpan = this.startSpan(
@@ -597,7 +597,7 @@ function ContextManager (self, tracerName, lru) {
       event = {
         eventName: "Status Event",
         server: line.emitter,
-        subtype: line.subtype,
+        subtype: line.subtype.toString(),
         timestamp: line.timestamp || this.nano_now(new Date().getTime())
       }
       if (event.subtype === 1) {
