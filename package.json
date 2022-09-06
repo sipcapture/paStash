@@ -59,7 +59,8 @@
     "lru-cache": "4.1.x",
     "mkdirp": "0.5.1",
     "optimist": "0.6.1",
-    "requireg": "^0.2.1"
+    "requireg": "^0.2.1",
+    "prom-client": "^14.1.0"
   },
   "optionalDependencies": {
     "amqplib": "0.5.1",
