@@ -77,6 +77,21 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   this.ctx.init()
   logger.info('Initialized App Janus Span + Metrics Tracer');
   sender.init(this)
+
+  this.histogram = new (require('./prometheus').client.Histogram)({
+    name: 'real_rtt',
+    help: 'metric_help',
+    buckets: [10, 200, 400, 700, 1500],
+    labelNames: ['emitter', 'server', 'client']
+  }); //new histogram([10, 200, 400, 700, 1500], 'real_rtt');
+  require('./prometheus').registry.registerMetric(this.histogram);
+  require('./prometheus').emitter.on('data', data => {
+    if (!data.streams.length) {
+      return
+    }
+    sender.sendMetrics(data);
+  });
+
   callback();
 };
 
@@ -152,7 +167,7 @@ function ContextManager (self, tracerName, lru) {
       line.event
       line.event.name -> created
       line.event.transport
-      line.event.transport.id
+      line.event.transport?.id || 'undef'
       */
       event = {
         eventName: line.event.name,
@@ -180,7 +195,7 @@ function ContextManager (self, tracerName, lru) {
           sessionSpanId: sessionSpan.id,
           sessionSpan: sessionSpan,
           status: 'Open',
-          transportId: line.event.transport.id
+          transportId: line.event.transport?.id || 'undef'
         }
         this.sessionMap.set(session.session_id, { ...session })
         // logger.info('PJU -- Session event:', sessionSpan, session)
@@ -197,7 +212,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         const destroySpan = this.startSpan(
@@ -255,7 +270,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         const handleSpan = this.startSpan(
@@ -299,7 +314,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         const detachedSpan = this.startSpan(
@@ -352,7 +367,7 @@ function ContextManager (self, tracerName, lru) {
           sessionSpanId: sessionSpan.id,
           sessionSpan: sessionSpan,
           status: 'Open',
-          transportId: line.event.transport.id
+          transportId: line.event.transport?.id || 'undef'
         }
       }
       const extSpan = this.startSpan(
@@ -406,7 +421,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         const sdpSpan = this.startSpan(
@@ -435,7 +450,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         const sdpSpan = this.startSpan(
@@ -492,7 +507,7 @@ function ContextManager (self, tracerName, lru) {
               sessionSpanId: sessionSpan.id,
               sessionSpan: sessionSpan,
               status: 'Open',
-              transportId: line.event.transport.id
+              transportId: line.event.transport?.id || 'undef'
             }
           }
           const iceSpan = this.startSpan(
@@ -519,7 +534,7 @@ function ContextManager (self, tracerName, lru) {
               sessionSpanId: sessionSpan.id,
               sessionSpan: sessionSpan,
               status: 'Open',
-              transportId: line.event.transport.id
+              transportId: line.event.transport?.id || 'undef'
             }
           }
           const conIceSpan = this.startSpan(
@@ -545,7 +560,7 @@ function ContextManager (self, tracerName, lru) {
               sessionSpanId: sessionSpan.id,
               sessionSpan: sessionSpan,
               status: 'Open',
-              transportId: line.event.transport.id
+              transportId: line.event.transport?.id || 'undef'
             }
           }
           const conIceSpan = this.startSpan(
@@ -571,7 +586,7 @@ function ContextManager (self, tracerName, lru) {
               sessionSpanId: sessionSpan.id,
               sessionSpan: sessionSpan,
               status: 'Open',
-              transportId: line.event.transport.id
+              transportId: line.event.transport?.id || 'undef'
             }
           }
           const readySpan = this.startSpan(
@@ -610,7 +625,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         const candidateSpan = this.startSpan(
@@ -646,7 +661,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         const candidateSpan = this.startSpan(
@@ -682,7 +697,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         const candidateSpan = this.startSpan(
@@ -722,7 +737,7 @@ function ContextManager (self, tracerName, lru) {
               sessionSpanId: sessionSpan.id,
               sessionSpan: sessionSpan,
               status: 'Open',
-              transportId: line.event.transport.id
+              transportId: line.event.transport?.id || 'undef'
             }
           }
           const trySpan = this.startSpan(
@@ -751,7 +766,7 @@ function ContextManager (self, tracerName, lru) {
               sessionSpanId: sessionSpan.id,
               sessionSpan: sessionSpan,
               status: 'Open',
-              transportId: line.event.transport.id
+              transportId: line.event.transport?.id || 'undef'
             }
           }
           const conSpan = this.startSpan(
@@ -788,7 +803,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         const conSpan = this.startSpan(
@@ -886,7 +901,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         let mediaSpan = this.startSpan(
@@ -931,7 +946,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undefined'
           }
         }
         let mediaSpan = this.startSpan(
@@ -1077,7 +1092,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         let joinSpan = this.startSpan(
@@ -1123,7 +1138,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         let confSpan = this.startSpan(
@@ -1156,7 +1171,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         let pubSpan = this.startSpan(
@@ -1196,7 +1211,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         let subSpan = this.startSpan(
@@ -1229,7 +1244,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         try {
@@ -1258,7 +1273,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         let upSpan = this.startSpan(
@@ -1291,7 +1306,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         let unpubSpan = this.startSpan(
@@ -1333,7 +1348,7 @@ function ContextManager (self, tracerName, lru) {
             sessionSpanId: sessionSpan.id,
             sessionSpan: sessionSpan,
             status: 'Open',
-            transportId: line.event.transport.id
+            transportId: line.event.transport?.id || 'undef'
           }
         }
         try {
@@ -1528,7 +1543,11 @@ function ContextManager (self, tracerName, lru) {
         below with <= upperBound
     */
 
-    const rtt = event.metrics["rtt"] || 0
+    const rtt = parseInt(event.metrics["rtt"] || 0)
+
+    if (!isNaN(rtt)) {
+      self.histogram.labels(event.emitter, event.emitter, 'rtt').observe(rtt)
+    }
 
     if (rtt <= 10) {
       mediaMetrics.streams.push({
