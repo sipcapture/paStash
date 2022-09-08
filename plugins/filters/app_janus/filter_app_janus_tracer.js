@@ -14,6 +14,7 @@ const logger = require('@pastash/pastash').logger
 const crypto = require('crypto')
 const { Kafka } = require('kafkajs')
 const sender = require('./httpSender')
+const prometheus = require('./prometheus')
 
 function FilterAppJanusTracer () {
   base_filter.BaseFilter.call(this);
@@ -74,6 +75,21 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   this.ctx.init()
   logger.info('Initialized App Janus Span + Metrics Tracer');
   sender.init(this)
+
+  this.histogram = new (prometheus.client.Histogram)({
+    name: 'rtt_bucket',
+    help: 'RTT over emitters',
+    buckets: [10, 250, 400, 700, 1500],
+    labelNames: ['emitter', 'server', 'client']
+  })
+  prometheus.registry.registerMetric(this.histogram);
+  prometheus.emitter.on('data', data => {
+    if (!data.streams.length) {
+      return
+    }
+    sender.sendMetrics(data)
+  })
+
   callback();
 };
 
@@ -182,7 +198,7 @@ function ContextManager (self, tracerName, lru) {
         destroySpan.end()
         destroySpan = null
       }
-    event = null
+      event = null
     /*
     TYPE 2 - Handle related event
     Handle Attachment and Detachment is traced
@@ -233,7 +249,7 @@ function ContextManager (self, tracerName, lru) {
         detachedSpan.end()
         detachedSpan = null
       }
-    event = null
+      event = null
     /*
       Type 4 - External event
       */
@@ -262,7 +278,7 @@ function ContextManager (self, tracerName, lru) {
       )
       extSpan.end()
       extSpan = null
-    event = null
+      event = null
     /*
       Type 8 - JSEP event
       */
@@ -313,7 +329,7 @@ function ContextManager (self, tracerName, lru) {
         sdpSpan.end()
         sdpSpan = null
       }
-    event = null
+      event = null
     /*
       Type 16 - WebRTC state event
       */
@@ -362,7 +378,7 @@ function ContextManager (self, tracerName, lru) {
           )
           conIceSpan.end()
           conIceSpan = null
-        } else if (line.event.ice === "connected") {
+        } else if (line.event.ice === 'connected') {
           let conIceSpan = this.startSpan(
             "ICE connected",
             { ...line },
@@ -371,7 +387,7 @@ function ContextManager (self, tracerName, lru) {
           )
           conIceSpan.end()
           conIceSpan = null
-        } else if (line.event.ice === "ready") {
+        } else if (line.event.ice === 'ready') {
           let readySpan = this.startSpan(
             "ICE ready",
             { ...line },
@@ -381,7 +397,7 @@ function ContextManager (self, tracerName, lru) {
           readySpan.end()
           readySpan = null
         }
-      event = null
+        event = null
       /*
         Subtype 2
         Local Candidates
@@ -403,7 +419,7 @@ function ContextManager (self, tracerName, lru) {
         )
         candidateSpan.end()
         candidateSpan = null
-      event = null
+        event = null
       /*
         Subtype 3
         Remote Candidates
@@ -423,7 +439,7 @@ function ContextManager (self, tracerName, lru) {
         )
         candidateSpan.end()
         candidateSpan = null
-      event = null
+        event = null
       /*
         Subtype 4
         Connection Selected
@@ -443,7 +459,7 @@ function ContextManager (self, tracerName, lru) {
         )
         candidateSpan.end()
         candidateSpan = null
-      event = null
+        event = null
       /*
         Subtype 5
         DTLS flow
@@ -480,7 +496,7 @@ function ContextManager (self, tracerName, lru) {
           conSpan.end()
           conSpan = null
         }
-      event = null
+        event = null
       /*
         Subtype 6
         Connection Up
@@ -493,14 +509,14 @@ function ContextManager (self, tracerName, lru) {
           timestamp: line.timestamp || this.nano_now(new Date().getTime())
         }
         let conSpan = this.startSpan(
-          "WebRTC Connection UP",
+          "Connection Up",
           { ...line },
           { ...event },
           'ICE'
         )
         conSpan.end()
         conSpan = null
-      event = null
+        event = null
       }
     /*
       Type 32 - Media Report
@@ -553,7 +569,7 @@ function ContextManager (self, tracerName, lru) {
           }, this.filter)
         }
       }
-    event = null
+      event = null
     /*
       Type 128 - Transport-originated
       */
@@ -589,7 +605,7 @@ function ContextManager (self, tracerName, lru) {
       )
       transportSpan.end()
       transportSpan = null
-    event = null
+      event = null
     /*
       Type 256 - Core event
       */
@@ -619,7 +635,7 @@ function ContextManager (self, tracerName, lru) {
         serverSpan.end()
         serverSpan = null
       }
-    event = null
+      event = null
     /*
     TYPE 64 - Plugin-originated event
 
@@ -893,121 +909,10 @@ function ContextManager (self, tracerName, lru) {
         below with <= upperBound
     */
 
-    const rtt = event.metrics["rtt"] || 0
-
-    if (rtt <= 10) {
-      mediaMetrics.streams.push({
-        stream: {
-          __name__: 'rtt_bucket',
-          emitter: event.emitter,
-          server: event.emitter,
-          client: 'rtt',
-          le: '10'
-        },
-        values: [
-          [
-            timestamp,
-            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
-            event.metrics["rtt"] || 0
-          ]
-        ]
-      })
+    const rtt = parseInt(event.metrics["rtt"] || 0)
+    if (!isNaN(rtt)) {
+      self.histogram.labels(event.emitter, event.emitter, 'rtt').observe(rtt)
     }
-
-    if (rtt <= 200) {
-      mediaMetrics.streams.push({
-        stream: {
-          __name__: 'rtt_bucket',
-          emitter: event.emitter,
-          server: event.emitter,
-          client: 'rtt',
-          le: '200'
-        },
-        values: [
-          [
-            timestamp,
-            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
-            event.metrics["rtt"] || 0
-          ]
-        ]
-      })
-    }
-
-    if (rtt <= 400) {
-      mediaMetrics.streams.push({
-        stream: {
-          __name__: 'rtt_bucket',
-          emitter: event.emitter,
-          server: event.emitter,
-          client: 'rtt',
-          le: '400'
-        },
-        values: [
-          [
-            timestamp,
-            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
-            event.metrics["rtt"] || 0
-          ]
-        ]
-      })
-    }
-
-    if (rtt <= 700) {
-      mediaMetrics.streams.push({
-        stream: {
-          __name__: 'rtt_bucket',
-          emitter: event.emitter,
-          server: event.emitter,
-          client: 'rtt',
-          le: '700'
-        },
-        values: [
-          [
-            timestamp,
-            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
-            event.metrics["rtt"] || 0
-          ]
-        ]
-      })
-    }
-
-    if (rtt <= 1500) {
-      mediaMetrics.streams.push({
-        stream: {
-          __name__: 'rtt_bucket',
-          emitter: event.emitter,
-          server: event.emitter,
-          client: 'rtt',
-          le: '1500'
-        },
-        values: [
-          [
-            timestamp,
-            "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
-            event.metrics["rtt"] || 0
-          ]
-        ]
-      })
-    }
-
-    /* infinity bucket */
-
-    mediaMetrics.streams.push({
-      stream: {
-        __name__: 'rtt_bucket',
-        emitter: event.emitter,
-        server: event.emitter,
-        client: 'rtt',
-        le: '+Inf'
-      },
-      values: [
-        [
-          timestamp,
-          "emitter=" + event.emitter + " session_id=" + event.session_id + " mediatype=" + event.media + " name=" + "rtt" + " traceId=" + event.traceId + " value=" + (event.metrics["rtt"] || 0),
-          event.metrics["rtt"] || 0
-        ]
-      ]
-    })
 
     /* Lost Packets Locally Metric on Server Side */
 
