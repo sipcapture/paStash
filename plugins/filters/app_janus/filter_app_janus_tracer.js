@@ -76,13 +76,22 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   logger.info('Initialized App Janus Span + Metrics Tracer');
   sender.init(this)
 
-  this.histogram = new (prometheus.client.Histogram)({
-    name: 'rtt_bucket',
+  this.rtt = new (prometheus.client.Histogram)({
+    name: 'rtt',
     help: 'RTT over emitters',
     buckets: [10, 250, 400, 700, 1500],
     labelNames: ['emitter', 'server', 'client']
   })
-  prometheus.registry.registerMetric(this.histogram);
+  prometheus.registry.registerMetric(this.rtt)
+
+  this.localPl = new (prometheus.client.Histogram)({
+    name: 'local_packetloss',
+    help: 'Packet Loss on Janus Instance',
+    buckets: [10, 100, 1000, 10000],
+    labelNames: ['emitter', 'server', 'client']
+  })
+  prometheus.registry.registerMetric(this.localPl)
+
   prometheus.emitter.on('data', data => {
     if (!data.streams.length) {
       return
@@ -898,20 +907,13 @@ function ContextManager (self, tracerName, lru) {
       ]
     })
 
-    /* Building a Histogram based on these metrics
-        Buckets should be an even size, we are mostly interested and
-        the Bucket 500 - 1000 as these would indicate higher than usual
-        rss and would allow us to identify potentially bad connections
-
-        Bucket Width should be 100 from 200 - 1500 / +Inf
-
-        Buckets are less or equal to the Bucket upper bounds expressed
-        below with <= upperBound
+    /*
+    Building a Histogram based on these metrics
     */
 
     const rtt = parseInt(event.metrics["rtt"] || 0)
     if (!isNaN(rtt)) {
-      self.histogram.labels(event.emitter, event.emitter, 'rtt').observe(rtt)
+      self.rtt.labels(event.emitter, event.emitter, 'rtt').observe(rtt)
     }
 
     /* Lost Packets Locally Metric on Server Side */
@@ -931,6 +933,15 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
+    /*
+    Building a Histogram based on these metrics
+    */
+
+    const lost = parseInt(event.metrics["lost"] || 0)
+    if (!isNaN(lost)) {
+      self.lostPl.labels(event.emitter, event.emitter, 'local_packetloss').observe(lost)
+    }
 
     /* Lost Packets Remote Metric on Client Side */
 
