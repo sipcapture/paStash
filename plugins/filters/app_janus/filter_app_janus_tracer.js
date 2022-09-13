@@ -429,6 +429,8 @@ function ContextManager (self, tracerName, lru) {
       */
       } else if (line.subtype === 3) {
         event = {
+          type: line.type.toString(),
+          subtype: line.subtype.toString(),
           eventName: "Remote Candidates",
           session_id: line?.session_id?.toString() || line?.session_id,
           candidate: line?.event["remote-candidate"]
@@ -448,6 +450,8 @@ function ContextManager (self, tracerName, lru) {
       */
       } else if (line.subtype === 4) {
         event = {
+          type: line.type.toString(),
+          subtype: line.subtype.toString(),
           name: "Candidates selected",
           event: JSON.stringify(line?.event),
           session_id: line?.session_id?.toString() || line?.session_id
@@ -467,6 +471,8 @@ function ContextManager (self, tracerName, lru) {
       */
       } else if (line.subtype === 5) {
         event = {
+          type: line.type.toString(),
+          subtype: line.subtype.toString(),
           eventName: "DTLS flow",
           event: line?.event?.dtls,
           session_id: line?.session_id?.toString() || line?.session_id
@@ -503,8 +509,10 @@ function ContextManager (self, tracerName, lru) {
       */
       } else if (line.subtype === 6) {
         event = {
+          type: line.type.toString(),
+          subtype: line.subtype.toString(),
           eventName: "Connection Up",
-          event: line?.event,
+          event: JSON.stringify(line?.event),
           session_id: line?.session_id?.toString() || line?.session_id
         }
         let conSpan = this.startSpan(
@@ -586,9 +594,9 @@ function ContextManager (self, tracerName, lru) {
       */
       event = {
         name: line?.event?.data?.event,
-        adminApi: line?.event?.data?.admin_api,
+        adminApi: line?.event?.data?.admin_api.toString(),
         ip: line?.event?.data?.ip,
-        transportId: line?.event?.id,
+        transportId: line?.event?.id.toString(),
         emitter: line?.emitter,
         transport: line?.event?.transport,
         session_id: (Math.random() * 1000000).toString(),
@@ -926,7 +934,7 @@ function ContextManager (self, tracerName, lru) {
 
     const lost = parseInt(event.metrics["lost"] || 0)
     if (!isNaN(lost)) {
-      self.lostPl.labels(event.emitter, event.emitter, 'local_packetloss').observe(lost)
+      self.localPl.labels(event.emitter, event.emitter, 'local_packetloss').observe(lost)
     }
 
     /* Lost Packets Remote Metric on Client Side */
