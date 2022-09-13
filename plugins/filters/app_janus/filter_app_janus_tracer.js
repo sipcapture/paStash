@@ -178,8 +178,7 @@ function ContextManager (self, tracerName, lru) {
         eventName: line.event.name,
         event: line.event.name,
         emitter: line.emitter,
-        session_id: line?.session_id?.toString() || line?.session_id,
-        timestamp: line.timestamp || this.nano_now(new Date().getTime())
+        session_id: line?.session_id?.toString() || line?.session_id
       }
       /* CREATE event */
       if (line.event.name === 'created') {
@@ -230,8 +229,7 @@ function ContextManager (self, tracerName, lru) {
         event: line.event.name,
         emitter: line.emitter,
         opaque_id: line?.opaque_id?.toString() || line?.opaque_id,
-        session_id: line?.session_id?.toString() || line?.session_id,
-        timestamp: line.timestamp || this.nano_now(new Date().getTime())
+        session_id: line?.session_id?.toString() || line?.session_id
       }
       /*
         Attach Event
@@ -276,8 +274,7 @@ function ContextManager (self, tracerName, lru) {
         eventName: "External Event",
         event: "External Event",
         session_id: line?.session_id?.toString() || line?.session_id,
-        id: line?.session_id,
-        timestamp: line.timestamp || this.nano_now(new Date().getTime())
+        id: line?.session_id
       }
       let extSpan = this.startSpan(
         "External Event",
@@ -310,8 +307,7 @@ function ContextManager (self, tracerName, lru) {
         event: line?.event?.owner,
         session_id: line?.session_id?.toString() || line?.session_id,
         sdp_type: line?.event?.jsep?.type || 'null',
-        sdp: line?.event?.jsep?.sdp || 'null',
-        timestamp: line.timestamp || this.nano_now(new Date().getTime())
+        sdp: line?.event?.jsep?.sdp || 'null'
       }
       /*
         Remote SDP
@@ -366,8 +362,7 @@ function ContextManager (self, tracerName, lru) {
           subtype: line.subtype.toString(),
           event: line?.event?.ice,
           session_id: line?.session_id?.toString() || line?.session_id,
-          ice_state: line?.event?.ice || 'null',
-          timestamp: line.timestamp || this.nano_now(new Date().getTime())
+          ice_state: line?.event?.ice || 'null'
         }
         if (line.event.ice === 'gathering') {
           let iceSpan = this.startSpan(
@@ -417,8 +412,7 @@ function ContextManager (self, tracerName, lru) {
           type: line.type.toString(),
           subtype: line.subtype.toString(),
           session_id: line?.session_id?.toString() || line?.session_id,
-          candidate: line?.event["local-candidate"],
-          timestamp: line.timestamp || this.nano_now(new Date().getTime())
+          candidate: line?.event["local-candidate"]
         }
         let candidateSpan = this.startSpan(
           "Local Candidate",
@@ -437,8 +431,7 @@ function ContextManager (self, tracerName, lru) {
         event = {
           eventName: "Remote Candidates",
           session_id: line?.session_id?.toString() || line?.session_id,
-          candidate: line?.event["remote-candidate"],
-          timestamp: line.timestamp || this.nano_now(new Date().getTime())
+          candidate: line?.event["remote-candidate"]
         }
         let candidateSpan = this.startSpan(
           "Remote Candidate",
@@ -457,8 +450,7 @@ function ContextManager (self, tracerName, lru) {
         event = {
           name: "Candidates selected",
           event: JSON.stringify(line?.event),
-          session_id: line?.session_id?.toString() || line?.session_id,
-          timestamp: line.timestamp || this.nano_now(new Date().getTime())
+          session_id: line?.session_id?.toString() || line?.session_id
         }
         let candidateSpan = this.startSpan(
           "Selected Candidates",
@@ -477,8 +469,7 @@ function ContextManager (self, tracerName, lru) {
         event = {
           eventName: "DTLS flow",
           event: line?.event?.dtls,
-          session_id: line?.session_id?.toString() || line?.session_id,
-          timestamp: line.timestamp || this.nano_now(new Date().getTime())
+          session_id: line?.session_id?.toString() || line?.session_id
         }
         /*
           trying
@@ -514,8 +505,7 @@ function ContextManager (self, tracerName, lru) {
         event = {
           eventName: "Connection Up",
           event: line?.event,
-          session_id: line?.session_id?.toString() || line?.session_id,
-          timestamp: line.timestamp || this.nano_now(new Date().getTime())
+          session_id: line?.session_id?.toString() || line?.session_id
         }
         let conSpan = this.startSpan(
           "Connection Up",
@@ -550,8 +540,7 @@ function ContextManager (self, tracerName, lru) {
         subtype: line.subtype.toString(),
         media: line.event.media,
         emitter: line?.emitter,
-        session_id: line?.session_id?.toString() || line.session_id,
-        timestamp: line.timestamp || this.nano_now(new Date().getTime())
+        session_id: line?.session_id?.toString() || line.session_id
       }
 
       if (line.event.media === "audio" && line.subtype === 3) {
@@ -603,8 +592,7 @@ function ContextManager (self, tracerName, lru) {
         emitter: line?.emitter,
         transport: line?.event?.transport,
         session_id: (Math.random() * 1000000).toString(),
-        type: line?.type.toString(),
-        timestamp: line?.timestamp
+        type: line?.type.toString()
       }
       let transportSpan = this.startSpan(
         "Transport connected",
@@ -622,8 +610,7 @@ function ContextManager (self, tracerName, lru) {
       event = {
         eventName: "Status Event",
         server: line.emitter,
-        subtype: line.subtype.toString(),
-        timestamp: line.timestamp || this.nano_now(new Date().getTime())
+        subtype: line.subtype.toString()
       }
       if (event.subtype === 1) {
         let serverSpan = this.startSpan(
@@ -668,8 +655,7 @@ function ContextManager (self, tracerName, lru) {
         display: line?.event?.data?.display || 'null',
         id: line.event.data.id?.toString() || line.event.data.id,
         session_id: line?.session_id?.toString() || line.session_id || line.event.data?.id.toString(),
-        room: line.event?.data?.room?.toString() || line.event?.data?.room,
-        timestamp: line.timestamp || this.nano_now(new Date().getTime())
+        room: line.event?.data?.room?.toString() || line.event?.data?.room
       }
       if (!line.event.data) return
       /*
