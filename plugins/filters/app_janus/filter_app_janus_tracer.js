@@ -594,7 +594,7 @@ function ContextManager (self, tracerName, lru) {
       */
       event = {
         name: line?.event?.data?.event,
-        adminApi: line?.event?.data?.admin_api.toString(),
+        adminApi: line?.event?.data?.admin_api?.toString(),
         ip: line?.event?.data?.ip,
         transportId: line?.event?.id.toString(),
         emitter: line?.emitter,
