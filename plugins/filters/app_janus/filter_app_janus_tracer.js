@@ -73,7 +73,7 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   /* Context Manager setup */
   this.ctx = new ContextManager(this, this.tracerName, this.lru)
   this.ctx.init()
-  logger.info('Initialized App Janus Span + Metrics Tracer');
+  logger.info('Initialized Janus Tracer v1.3.2');
   sender.init(this)
 
   this.rtt = new (prometheus.client.Histogram)({
@@ -85,12 +85,52 @@ FilterAppJanusTracer.prototype.start = async function (callback) {
   prometheus.registry.registerMetric(this.rtt)
 
   this.localPl = new (prometheus.client.Histogram)({
-    name: 'local_packetloss',
+    name: 'local_lost_packets',
     help: 'Packet Loss on Janus Instance',
     buckets: [10, 100, 1000, 10000],
     labelNames: ['emitter', 'server', 'client']
   })
   prometheus.registry.registerMetric(this.localPl)
+
+  this.remotePl = new (prometheus.client.Histogram)({
+    name: 'remote_lost_packets',
+    help: 'Packet Loss on Client Instance',
+    buckets: [10, 100, 1000, 10000],
+    labelNames: ['emitter', 'server', 'client']
+  })
+  prometheus.registry.registerMetric(this.remotePl)
+
+  this.localJit = new (prometheus.client.Histogram)({
+    name: 'local_jitter',
+    help: 'Jitter on Janus Instance',
+    buckets: [10, 100, 1000, 10000],
+    labelNames: ['emitter', 'server', 'client']
+  })
+  prometheus.registry.registerMetric(this.localJit)
+
+  this.remoteJit = new (prometheus.client.Histogram)({
+    name: 'remote_jitter',
+    help: 'Jitter on Client Instance',
+    buckets: [10, 100, 1000, 10000],
+    labelNames: ['emitter', 'server', 'client']
+  })
+  prometheus.registry.registerMetric(this.remoteJit)
+
+  this.inLinkMedia = new (prometheus.client.Histogram)({
+    name: 'in_link_media_quality',
+    help: 'Media Link Coming In',
+    buckets: [25, 50, 90, 101],
+    labelNames: ['emitter', 'server', 'client']
+  })
+  prometheus.registry.registerMetric(this.inLinkMedia)
+
+  this.outLinkMedia = new (prometheus.client.Histogram)({
+    name: 'out_link_media_quality',
+    help: 'Media Link Coming In',
+    buckets: [25, 50, 90, 101],
+    labelNames: ['emitter', 'server', 'client']
+  })
+  prometheus.registry.registerMetric(this.outLinkMedia)
 
   prometheus.emitter.on('data', data => {
     if (!data.streams.length) {
@@ -175,8 +215,8 @@ function ContextManager (self, tracerName, lru) {
       line.event.transport.id
       */
       event = {
-        eventName: line.event.name,
-        event: line.event.name,
+        eventName: line.event?.name,
+        event: line.event?.name,
         emitter: line.emitter,
         session_id: line?.session_id?.toString() || line?.session_id
       }
@@ -358,8 +398,8 @@ function ContextManager (self, tracerName, lru) {
       if (line.subtype === 1) {
         event = {
           eventName: "Ice Flow",
-          type: line.type.toString(),
-          subtype: line.subtype.toString(),
+          type: line.type?.toString(),
+          subtype: line.subtype?.toString(),
           event: line?.event?.ice,
           session_id: line?.session_id?.toString() || line?.session_id,
           ice_state: line?.event?.ice || 'null'
@@ -409,8 +449,8 @@ function ContextManager (self, tracerName, lru) {
       } else if (line.subtype === 2) {
         event = {
           eventName: "Local Candidates",
-          type: line.type.toString(),
-          subtype: line.subtype.toString(),
+          type: line.type?.toString(),
+          subtype: line.subtype?.toString(),
           session_id: line?.session_id?.toString() || line?.session_id,
           candidate: line?.event["local-candidate"]
         }
@@ -429,8 +469,8 @@ function ContextManager (self, tracerName, lru) {
       */
       } else if (line.subtype === 3) {
         event = {
-          type: line.type.toString(),
-          subtype: line.subtype.toString(),
+          type: line.type?.toString(),
+          subtype: line.subtype?.toString(),
           eventName: "Remote Candidates",
           session_id: line?.session_id?.toString() || line?.session_id,
           candidate: line?.event["remote-candidate"]
@@ -450,8 +490,8 @@ function ContextManager (self, tracerName, lru) {
       */
       } else if (line.subtype === 4) {
         event = {
-          type: line.type.toString(),
-          subtype: line.subtype.toString(),
+          type: line.type?.toString(),
+          subtype: line.subtype?.toString(),
           name: "Candidates selected",
           event: JSON.stringify(line?.event),
           session_id: line?.session_id?.toString() || line?.session_id
@@ -471,8 +511,8 @@ function ContextManager (self, tracerName, lru) {
       */
       } else if (line.subtype === 5) {
         event = {
-          type: line.type.toString(),
-          subtype: line.subtype.toString(),
+          type: line.type?.toString(),
+          subtype: line.subtype?.toString(),
           eventName: "DTLS flow",
           event: line?.event?.dtls,
           session_id: line?.session_id?.toString() || line?.session_id
@@ -509,8 +549,8 @@ function ContextManager (self, tracerName, lru) {
       */
       } else if (line.subtype === 6) {
         event = {
-          type: line.type.toString(),
-          subtype: line.subtype.toString(),
+          type: line.type?.toString(),
+          subtype: line.subtype?.toString(),
           eventName: "Connection Up",
           event: JSON.stringify(line?.event),
           session_id: line?.session_id?.toString() || line?.session_id
@@ -544,8 +584,8 @@ function ContextManager (self, tracerName, lru) {
       */
       event = {
         eventName: "Media Report",
-        type: line.type.toString(),
-        subtype: line.subtype.toString(),
+        type: line.type?.toString(),
+        subtype: line.subtype?.toString(),
         media: line.event.media,
         emitter: line?.emitter,
         session_id: line?.session_id?.toString() || line.session_id
@@ -556,10 +596,10 @@ function ContextManager (self, tracerName, lru) {
         /* Split out data and send to metrics counter */
         if (this.filter.metrics) {
           this.sendMetrics({
-            session_id: line.session_id.toString(),
+            session_id: line.session_id?.toString(),
             emitter: line.emitter,
             media: line.event.media,
-            traceId: this.generateTraceId(line.session_id.toString()),
+            traceId: this.generateTraceId(line.session_id?.toString()),
             metrics: line.event
           }, this.filter)
         }
@@ -567,10 +607,10 @@ function ContextManager (self, tracerName, lru) {
         /* Split out data and send to metrics counter */
         if (this.filter.metrics) {
           this.sendMetrics({
-            session_id: line.session_id.toString(),
+            session_id: line.session_id?.toString(),
             emitter: line.emitter,
             media: line.event.media,
-            traceId: this.generateTraceId(line.session_id.toString()),
+            traceId: this.generateTraceId(line.session_id?.toString()),
             metrics: line.event
           }, this.filter)
         }
@@ -596,11 +636,11 @@ function ContextManager (self, tracerName, lru) {
         name: line?.event?.data?.event,
         adminApi: line?.event?.data?.admin_api?.toString(),
         ip: line?.event?.data?.ip,
-        transportId: line?.event?.id.toString(),
+        transportId: line?.event?.id?.toString(),
         emitter: line?.emitter,
         transport: line?.event?.transport,
         session_id: (Math.random() * 1000000).toString(),
-        type: line?.type.toString()
+        type: line?.type?.toString()
       }
       let transportSpan = this.startSpan(
         "Transport connected",
@@ -618,7 +658,7 @@ function ContextManager (self, tracerName, lru) {
       event = {
         eventName: "Status Event",
         server: line.emitter,
-        subtype: line.subtype.toString()
+        subtype: line.subtype?.toString()
       }
       if (event.subtype === 1) {
         let serverSpan = this.startSpan(
@@ -661,8 +701,8 @@ function ContextManager (self, tracerName, lru) {
         eventName: line?.event?.plugin,
         event: line?.event?.data?.event,
         display: line?.event?.data?.display || 'null',
-        id: line.event.data.id?.toString() || line.event.data.id,
-        session_id: line?.session_id?.toString() || line.session_id || line.event.data?.id.toString(),
+        id: line.event.data?.id?.toString() || line.event.data.id,
+        session_id: line?.session_id?.toString() || line.session_id || line.event.data?.id?.toString(),
         room: line.event?.data?.room?.toString() || line.event?.data?.room
       }
       if (!line.event.data) return
@@ -934,7 +974,7 @@ function ContextManager (self, tracerName, lru) {
 
     const lost = parseInt(event.metrics["lost"] || 0)
     if (!isNaN(lost)) {
-      self.localPl.labels(event.emitter, event.emitter, 'local_packetloss').observe(lost)
+      self.localPl.labels(event.emitter, event.emitter, 'local_lost_packets').observe(lost)
     }
 
     /* Lost Packets Remote Metric on Client Side */
@@ -955,6 +995,15 @@ function ContextManager (self, tracerName, lru) {
       ]
     })
 
+    /*
+    Building a Histogram based on these metrics
+    */
+
+    const remotePl = parseInt(event.metrics["lost-by-remote"] || 0)
+    if (!isNaN(remotePl)) {
+      self.remotePl.labels(event.emitter, event.emitter, 'remote_lost_packets').observe(remotePl)
+    }
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -971,6 +1020,15 @@ function ContextManager (self, tracerName, lru) {
       ]
     })
 
+    /*
+    Building a Histogram based on these metrics
+    */
+
+    const localJit = parseInt(event.metrics["jitter-local"] || 0)
+    if (!isNaN(localJit)) {
+      self.localJit.labels(event.emitter, event.emitter, 'local_jitter').observe(localJit)
+    }
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -986,6 +1044,15 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
+    /*
+    Building a Histogram based on these metrics
+    */
+
+    const remoteJit = parseInt(event.metrics["jitter-remote"] || 0)
+    if (!isNaN(remoteJit)) {
+      self.remoteJit.labels(event.emitter, event.emitter, 'remote_jitter').observe(remoteJit)
+    }
 
     mediaMetrics.streams.push({
       stream: {
@@ -1019,6 +1086,15 @@ function ContextManager (self, tracerName, lru) {
       ]
     })
 
+    /*
+    Building a Histogram based on these metrics
+    */
+
+    const inLinkMedia = parseInt(event.metrics["in-media-link-quality"] || 0)
+    if (!isNaN(inLinkMedia)) {
+      self.inLinkMedia.labels(event.emitter, event.emitter, 'in_link_media_quality').observe(inLinkMedia)
+    }
+
     mediaMetrics.streams.push({
       stream: {
         emitter: event.emitter,
@@ -1050,6 +1126,15 @@ function ContextManager (self, tracerName, lru) {
         ]
       ]
     })
+
+    /*
+    Building a Histogram based on these metrics
+    */
+
+    const outLinkMedia = parseInt(event.metrics["out-media-link-quality"] || 0)
+    if (!isNaN(outLinkMedia)) {
+      self.outLinkMedia.labels(event.emitter, event.emitter, 'out_link_media_quality').observe(outLinkMedia)
+    }
 
     mediaMetrics.streams.push({
       stream: {
