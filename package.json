@@ -78,7 +78,7 @@
     "mustache": "2.3.0",
     "object.omit": "3.0.0",
     "oniguruma": "7.0.x",
-    "redis": "3.1.1",
+    "redis": "4.6.3",
     "tinymath": "0.1.11",
     "ws": "4.0.0",
     "zmq": "*"
