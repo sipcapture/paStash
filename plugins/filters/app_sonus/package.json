@@ -1,6 +1,6 @@
 {
   "name": "@pastash/filter_app_sonuslog",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Sonus TRC Filter Plugin for @pastash/pastash",
   "main": "filter_app_sonuslog.js",
   "scripts": {
