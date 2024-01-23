@@ -10,6 +10,7 @@ This example recipe parse, reassemble and convert Audiocodes SBC logs back into 
 
 #### Dependencies
 * Audiocodes Mediant SBC
+  * 7.40A.500 _(or higher)_
   * 7.20A.260.012 _(or higher)_
   * 7.20A.256.511 _(or lower)_
 * NodeJS 10.x+ and paStash need to be installed before execution
@@ -85,7 +86,8 @@ Parameters for `app_audiocodes`:
 * `correlation_hdr`: SIP Header to use for correlation IDs. Default : false.
 * `correlation_contact`: Auto-Extract correlation from Contact x-c. Default : false.
 * `debug`: Enable debug logs. Default : false.
-* `version`: Syslog parser version. Supports `7.20A.260.012` _(or higher)_. Default: 7.20A.260.012
+* `file_debug`: Enable debug using file input. (For development) Default : false.
+* `version`: Syslog parser version. Supports `7.40A.500` _(or higher)_. Default: 7.20A.260.012
 
 For full instructions consult the [plugin documentation](https://github.com/sipcapture/paStash/blob/next/plugins/filters/app_audiocodes/app_audiocodes.md)
 
