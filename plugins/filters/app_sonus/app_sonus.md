@@ -8,14 +8,14 @@ The filter is used to parse/reassemble Sonus TRC logs to complete HEP-SIP payloa
 Example 1: parse SM logs.
 ````
 filter {
-  app_sonuslog {}
+  app_sonus {}
 }
 `````
 
 Example 2: parse SM logs and extract ``correlation_hdr`` for HEP pairing.
 ````
 filter {
-  app_sonuslog {
+  app_sonus {
     correlation_hdr => "X-CID"
   }
 }
