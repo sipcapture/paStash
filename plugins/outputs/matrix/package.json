@@ -10,7 +10,7 @@
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "matrix-js-sdk": "^13.0.0",
+    "matrix-js-sdk": "^26.2.0",
     "olm": "https://packages.matrix.org/npm/olm/olm-3.1.4.tgz"
   }
 }
