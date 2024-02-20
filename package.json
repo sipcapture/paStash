@@ -80,7 +80,7 @@
     "oniguruma": "7.0.x",
     "redis": "3.1.1",
     "tinymath": "0.1.11",
-    "ws": "4.0.0",
+    "ws": "8.14.2",
     "zmq": "*"
   },
   "directories": {
