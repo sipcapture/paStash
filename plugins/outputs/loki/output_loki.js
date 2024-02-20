@@ -35,6 +35,7 @@ LokiPost.prototype.start = function(callback) {
                 var resp = { "ts": row['@timestamp']||new Date().toISOString() };
                 if (row.message){ resp.line = row.message; }
                 if (row.value)  { resp.value = row.value; }
+                if (row['@value'])  { resp.value = row['@value']; }
                 line.streams[0].entries.push(resp);
              });
              line = JSON.stringify(line);
@@ -80,7 +81,7 @@ LokiPost.prototype.process = function(data) {
         // Group by Labels fingerprint        
         var labels = [];
         const stripped = Object.entries(data)
-                .filter(([key]) => !['message', '@timestamp', '@version'].includes(key))
+                .filter(([key]) => !['message', '@timestamp', '@version', '@value'].includes(key))
                 .reduce((data, [key, val]) => Object.assign(data, { [key]: val }), {});
         Object.keys(stripped).forEach(key => {
           labels.push( key+"=\""+stripped[key]+"\"" );
