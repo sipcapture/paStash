@@ -5,6 +5,12 @@ Status : functional, experimental plugin.
 
 The filter is used to parse/reassemble Sonus Monitor Profile messages to complete HEP-SIP payloads.
 
+Installation:
+```
+# sudo npm install -g @pastash/pastash @pastash/filter_app_sonus_monitor
+```
+
+
 Example 1: parse SM logs.
 ````
 filter {
