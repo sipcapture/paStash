@@ -1,4 +1,4 @@
-App Sonus filter
+App Sonus Monitor
 ---
 
 Status : functional, experimental plugin.
