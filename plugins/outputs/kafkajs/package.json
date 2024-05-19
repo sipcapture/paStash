@@ -1,6 +1,6 @@
 {
   "name": "@pastash/output_kafkajs",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "kafkajs Output Plugin for @pastash/pastash",
   "main": "output_kafkajs.js",
   "scripts": {
