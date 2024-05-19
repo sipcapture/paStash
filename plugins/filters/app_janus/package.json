@@ -9,7 +9,7 @@
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.28.0",
+    "axios": "^1.7.0",
     "cross-fetch": "^4.0.0",
     "kafkajs": "^2.1.0",
     "prom-client": "^14.1.0",
