@@ -44,7 +44,7 @@
     "jison": "0.4.x",
     "js-beautify": "1.14.x",
     "jshint": "^2.9.6",
-    "rimraf": "2.6.x",
+    "rimraf": "5.0.x",
     "vows": "0.7.0",
     "vows-batch-retry": "0.0.4",
     "which": "^4.0.0"
