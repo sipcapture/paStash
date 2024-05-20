@@ -79,7 +79,7 @@
     "object.omit": "3.0.0",
     "oniguruma": "7.2.x",
     "redis": "4.6.10",
-    "tinymath": "0.1.11",
+    "tinymath": "1.2.1",
     "ws": "8.17.0",
     "zmq": "*"
   },
