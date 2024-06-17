@@ -75,7 +75,7 @@
     "maxmind-geolite-mirror": "1.0.x",
     "moment": "2.29.4",
     "msgpack": "1.0.x",
-    "mustache": "2.3.0",
+    "mustache": "4.2.0",
     "object.omit": "3.0.0",
     "oniguruma": "7.2.x",
     "redis": "4.6.14",
