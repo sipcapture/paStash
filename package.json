@@ -42,7 +42,7 @@
   "devDependencies": {
     "istanbul": "0.4.x",
     "jison": "0.4.x",
-    "js-beautify": "1.14.x",
+    "js-beautify": "1.15.x",
     "jshint": "^2.9.6",
     "rimraf": "5.0.x",
     "vows": "0.7.0",
