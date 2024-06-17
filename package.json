@@ -71,7 +71,7 @@
     "http-proxy-agent": "3.x",
     "https-proxy-agent": "7.0.4",
     "lumberjack-protocol": "git://github.com/bpaquet/node-lumberjack-protocol.git",
-    "maxmind": "0.6.x",
+    "maxmind": "4.3.x",
     "maxmind-geolite-mirror": "1.0.x",
     "moment": "2.30.1",
     "msgpack": "1.0.x",
