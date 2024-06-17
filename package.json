@@ -57,7 +57,7 @@
     "csv-parser": "^2.3.3",
     "log4node": "0.1.6",
     "lru-cache": "4.1.x",
-    "mkdirp": "0.5.1",
+    "mkdirp": "3.0.1",
     "optimist": "0.6.1",
     "requireg": "^0.2.1"
   },
