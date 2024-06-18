@@ -1,0 +1,12 @@
+{
+  "name": "@pastash/filter_ipproto",
+  "version": "1.0.0",
+  "description": "Port to Protocol plugin for @pastash/pastash",
+  "main": "filter_ipproto.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "license": "ISC",
+  "dependencies": {}
+}
