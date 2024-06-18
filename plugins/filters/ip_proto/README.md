@@ -7,6 +7,12 @@ Status : functional, experimental plugin.
 
 Resolves a port number to IP protocol
 
+
+### Installation
+```
+npm install -g @pastash/filter_ipproto@1.0.0
+```
+
 ##### Example
 ```
 filter {
