@@ -1,6 +1,6 @@
 {
   "name": "@pastash/filter_ipproto",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Port to Protocol plugin for @pastash/pastash",
   "main": "filter_ipproto.js",
   "scripts": {
