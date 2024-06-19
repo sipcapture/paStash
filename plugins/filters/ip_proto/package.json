@@ -1,8 +1,8 @@
 {
-  "name": "@pastash/filter_ipproto",
-  "version": "1.0.1",
+  "name": "@pastash/filter_ip_proto",
+  "version": "1.0.2",
   "description": "Port to Protocol plugin for @pastash/pastash",
-  "main": "filter_ipproto.js",
+  "main": "filter_ip_proto.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
