@@ -9,8 +9,11 @@ Resolves a port number to IP protocol
 
 
 ### Installation
+
+Install the plugin globally _(mandatory)_
+
 ```
-npm install -g @pastash/filter_ipproto@1.0.0
+npm install -g @pastash/filter_ip_proto
 ```
 
 ##### Example
