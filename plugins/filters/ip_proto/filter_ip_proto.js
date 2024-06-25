@@ -52,7 +52,7 @@ FilterIPProto.prototype.start = function(callback) {
     var pairs = this.custom.split(',');
     pairs.forEach(pair => {
         let [ip, proto] = pair.split(':');
-        ipProto.push({ ip: parseInt(ip), proto: proto });
+	ipProto[parseInt(ip)] = proto;
     });
   }
 
