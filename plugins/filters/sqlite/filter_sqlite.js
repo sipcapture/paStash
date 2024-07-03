@@ -1,18 +1,18 @@
-/* 
-   PASTASH SQLITE Filter
+/*
+   PASTASH SQLITE Filter w/ better-sqlite3
 */
 
 var base_filter = require('@pastash/pastash').base_filter,
   util = require('util'),
   logger = require('@pastash/pastash').logger;
 
-var sqlite3 = require('sqlite3');
+var sqlite3 = require('better-sqlite3');
 var sqdb;
 
 function FilterSqlite() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
-    name: 'Sqlite',
+    name: 'sqlite',
     optional_params: ['db', 'table', 'query', 'source_field', 'target_field', 'filter'],
     default_values: {
       'target_field': 'sqlite'
@@ -25,9 +25,9 @@ util.inherits(FilterSqlite, base_filter.BaseFilter);
 
 FilterSqlite.prototype.start = function(callback) {
 
-  if (this.db) { 
+  if (this.db) {
 	try {
-		sqdb = new sqlite3.cached.Database(this.db);
+		sqdb = new sqlite3(this.db);
 	  	logger.info('Initializing Filter Sqlite3:',this.db);
 	} catch(e){ logger.error('Failed Initializing Filter Sqlite3',e); }
   }
@@ -41,19 +41,15 @@ FilterSqlite.prototype.process = function(raw) {
 
    try {
 
-	if ( !this.filter && this.source_field ){
-		this.filter = raw[this.source_field];
-	}
-
-	logger.info('test query!',this.query,this.filter);
+	this.filter = raw[this.source_field];
 	if (this.db) {
-		sqdb.get(this.query, this.filter, function(err, row) {
-			if (err||!row) this.emit('output', raw);
-			else {
-				raw[this.target_field] = row;
-				this.emit('output', raw);
-			}
-		}.bind(this));	
+		let row = sqdb.prepare(this.query).get(this.filter);
+		if (!row) this.emit('output', raw);
+		else {
+			raw[this.target_field] = row;
+			this.emit('output', raw);
+		}
+
 	} else { return raw; }
    } catch(e) { logger.info('failed processing sqlite!',e); return raw; }
 
