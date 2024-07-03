@@ -1,5 +1,5 @@
-/*
-   PASTASH SQLITE Filter w/ better-sqlite3
+/* 
+   PASTASH SQLITE Filter
 */
 
 var base_filter = require('@pastash/pastash').base_filter,
@@ -27,7 +27,8 @@ FilterSqlite.prototype.start = function(callback) {
 
   if (this.db) {
 	try {
-		sqdb = new sqlite3(this.db);
+		this.db = new sqlite3(this.db);
+		this.db.pragma('cache_size = 0');
 	  	logger.info('Initializing Filter Sqlite3:',this.db);
 	} catch(e){ logger.error('Failed Initializing Filter Sqlite3',e); }
   }
@@ -36,23 +37,22 @@ FilterSqlite.prototype.start = function(callback) {
 };
 
 FilterSqlite.prototype.process = function(raw) {
-   if (!sqdb||!this.query) return raw;
+   if (!this.query) return raw;
    if (!this.source_field && !this.filter) return raw;
-
    try {
 
 	this.filter = raw[this.source_field];
 	if (this.db) {
-		let row = sqdb.prepare(this.query).get(this.filter);
-		if (!row) this.emit('output', raw);
-		else {
-			raw[this.target_field] = row;
-			this.emit('output', raw);
-		}
+
+		const row = this.db.prepare(this.query).get(this.filter);
+			if (!row) this.emit('output', raw);
+			else {
+				raw[this.target_field] = row[this.target_field];
+				this.emit('output', raw);
+			}
 
 	} else { return raw; }
    } catch(e) { logger.info('failed processing sqlite!',e); return raw; }
-
 };
 
 FilterSqlite.prototype.close = function(callback) {
