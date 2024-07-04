@@ -47,7 +47,7 @@ FilterSqlite.prototype.process = function(raw) {
 		const row = this.db.prepare(this.query).get(this.filter);
 			if (!row) this.emit('output', raw);
 			else {
-				raw[this.target_field] = row[this.target_field];
+				raw[this.target_field] =  Object.values(row)[0];
 				this.emit('output', raw);
 			}
 
