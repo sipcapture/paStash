@@ -1,14 +1,14 @@
 {
   "name": "@pastash/filter_sqlite",
-  "version": "1.0.1",
+  "version": "1.1.1",
   "description": "SQLite Filter Plugin for @pastash/pastash",
   "main": "filter_sqlite.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "optionalDependencies": {
-    "sqlite3": "3.1.13"
-  },
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^11.1.2"
+  }
 }
