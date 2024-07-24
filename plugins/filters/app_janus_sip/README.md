@@ -5,7 +5,7 @@ App Janus SIP
 
 Status : functional plugin.
 
-This pass-through plugin produces HEP from SIP sent via the Janus SIP Plugin.
+This pass-through plugin produces HEP from SIP Events sent via the Janus SIP Plugin.
 
 
 Example 1: parse janus events as hep.
@@ -18,6 +18,26 @@ filter {
 `````
 
 
-Supported optionas are:
+Supported options are:
 
 'debug' => true for debugging loggers
+
+### Janus Config
+
+To enable events, one must add the websocket eventhandler.
+The recommended settings are as below:
+
+janus.jcfg
+```
+broadcast = true
+combine_media_stats = true
+stats_period = 15
+```
+
+janus.eventhandler.wsevh.jcfg
+```
+enable = true
+grouping = false
+json = "plain"
+backend = "ws://pastash.is.here:8090"
+```
