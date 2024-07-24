@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
+  "author": "Jachen Duschletta <jcduschletta@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "@pastash/pastash": "^1.0.82",
