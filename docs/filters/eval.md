@@ -12,8 +12,9 @@ Config using logstash format:
 ````
 filter {
   eval {
-    field => delay
-    operation => "x * 1000"
+    source_field => message
+    target_field => message
+    operation => "x * 100"
   }
 }
 `````
@@ -32,6 +33,6 @@ filter {
 `````
 Parameters:
 
-* ``field``: which field to work on.
-* ``operation``: javascript code to execute. The input field is in the ``x`` variable.
+* ``source_field``: which field to work on.
 * ``target_field``: field to store the result. Default : source field.
+* ``operation``: javascript code to execute. The input field is in the ``x`` variable.
