@@ -1,5 +1,5 @@
 /*
-   Custom, Unoptimized Sonus Log to SIP/HEP3 Parser w/ reassembly of rows
+   Custom, Unoptimized Sonus Log to SIP/HEP3 Parser w/ Header extraction
    (C) 2024 QXIP BV
 */
 
@@ -13,7 +13,7 @@ function FilterAppSonusMonitor() {
   base_filter.BaseFilter.call(this);
   this.mergeConfig({
     name: 'AppSonusMonitor',
-    optional_params: ['correlation_hdr','type'],
+    optional_params: ['correlation_hdr','remove_headers', 'debug'],
     default_values: {
       'correlation_hdr': false,
       'remove_headers': false,
@@ -37,7 +37,7 @@ FilterAppSonusMonitor.prototype.process = function(data) {
 	  // PARSE HEADERS
           const srcRegex = [...data.payload.matchAll(/srcIp: ([0-9.]+):([0-9]+)/g)];
           const dstRegex = [...data.payload.matchAll(/dstIp: ([0-9.]+):([0-9]+)/g)];
-          const tsRegex = [...data.payload.matchAll(/Timestamp=([0-9.]+).([0-9]+)/g)];
+          const tsRegex =  [...data.payload.matchAll(/Timestamp=([0-9.]+).([0-9]+)/g)];
 
 	  // REMOVE HEADERS
 	  if (this.remove_headers) {
@@ -68,8 +68,8 @@ FilterAppSonusMonitor.prototype.process = function(data) {
 		if (xcid && xcid[1]) data.rcinfo.correlation_id = xcid[1].trim();
 	 }
 
-	 if (last.indexOf('2.0/TCP') !== -1 || last.indexOf('2.0/TLS') !== -1){
-		rcinfo.protocol = 6;
+	 if (data.payload.indexOf('2.0/TCP') !== -1 || data.payload.indexOf('2.0/TLS') !== -1){
+		data.rcinfo.protocol = 6;
          }
 
 	 this.emit('output', data);
