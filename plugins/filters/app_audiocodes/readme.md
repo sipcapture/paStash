@@ -13,7 +13,7 @@ This example recipe parse, reassemble and convert Audiocodes SBC logs back into 
   * 7.40A.500 _(or higher)_
   * 7.20A.260.012 _(or higher)_
   * 7.20A.256.511 _(or lower)_
-* NodeJS 16.x+ and paStash need to be installed before execution
+* NodeJS 18.x+ and paStash need to be installed before execution
 
 
 #### NPM
