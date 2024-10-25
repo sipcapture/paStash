@@ -43,7 +43,7 @@ util.inherits(FilterAppAudiocodes, base_filter.BaseFilter);
 
 FilterAppAudiocodes.prototype.start = function(callback) {
     logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
-      if (this.ini){
+    if (this.ini) {
         logger.info('Reading INI file to resolver...', this.ini);
         try {
             this.resolver = parseIni(this.ini);
@@ -52,11 +52,11 @@ FilterAppAudiocodes.prototype.start = function(callback) {
             if (this.debug) console.log(this.resolver);
             if (this.iniwatch) watchIni(this.ini, this.resolver);
         } catch(err) { logger.error(err) }
-     }
+    }
 
-      this.postProcess = function(ipcache,last,type){
-         if(!last||!ipcache) return;
-        last = last.replace(/#012/g, '\r\n').trim() + "\r\n\r\n";
+    this.postProcess = function(session, message, type) {
+        if ( !message||!session ) return
+        message = message.replace(/#012/g, '\r\n').trim() + '\r\n\r\n'
         var rcinfo = {
             type: 'HEP',
             version: 3,
@@ -64,43 +64,43 @@ FilterAppAudiocodes.prototype.start = function(callback) {
             ip_family: 2,
             protocol: 17,
             proto_type: type || 1,
-            correlation_id: ipcache.callId || '',
-            srcIp: ipcache.srcIp || this.localip,
-            srcPort: ipcache.srcPort || 0,
-            dstIp: ipcache.dstIp || this.localip,
-            dstPort: ipcache.dstPort || 0,
-            time_sec: ipcache.ts || parseInt(new Date().getTime() / 1000),
-            time_usec: ipcache.usec || new Date().getMilliseconds()
-        };
-
+            correlation_id: session.callId || '',
+            srcIp: session.srcIp || this.localip,
+            srcPort: session.srcPort || 0,
+            dstIp: session.dstIp || this.localip,
+            dstPort: session.dstPort || 0,
+            time_sec: session.ts || parseInt(new Date().getTime() / 1000),
+            time_usec: session.usec || new Date().getMilliseconds()
+        }
         // EXTRACT CORRELATION HEADER, IF ANY
-        if (this.correlation_hdr && rcinfo.proto_type == 1 && last.startsWith('INVITE')) {
-           var xcid = last.match(this.correlation_hdr+":\s?(.*)\r\n\r\n");
-            if (xcid && xcid[1]) rcinfo.correlation_id = xcid[1].trim();
-            if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id);
+        if (this.correlation_hdr && rcinfo.proto_type == 1 && message.startsWith('INVITE')) {
+          var xcid = message.match(this.correlation_hdr+":\s?(.*)\r\n\r\n")
+          if (xcid && xcid[1]) rcinfo.correlation_id = xcid[1].trim()
+         if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id)
         }
 
-         if (this.correlation_contact && rcinfo.proto_type == 1 && last.startsWith('INVITE')) {
-            var extract = /x-c=(.*?)\//.exec(last);
+        if (this.correlation_contact && rcinfo.proto_type == 1 && message.startsWith('INVITE')) {
+            var extract = /x-c=(.*?)\//.exec(message)
             if (extract[1]) {
-                rcinfo.correlation_id = extract[1];
-                if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id);
+                rcinfo.correlation_id = extract[1]
+               if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id)
             }
-         }
+        }
 
-         if (last.indexOf('2.0/TCP') !== -1 || last.indexOf('2.0/TLS') !== -1 ){
+        if (message.indexOf('2.0/TCP') !== -1 || message.indexOf('2.0/TLS') !== -1 ){
             rcinfo.protocol = 6;
-            if (this.autolocal) rcinfo.dstPort = 5061;
+            if (this.autolocal) rcinfo.dstPort = 5061
         }
 
-        if (last && rcinfo) {
-           var data = { payload: last, rcinfo: rcinfo };
-            console.log('FINAL DATA')
-            console.log(data.payload)
-            return data;
+        if (message && rcinfo) {
+            var data = { payload: message, rcinfo: rcinfo }
+            if (this.debug) console.log('FINAL DATA')
+            if (this.debug) console.log(data.payload)
+            this.emit('output', data)
+            return
         }
-      }
-      callback();
+    }
+    callback();
 };
 
 /**
@@ -109,73 +109,171 @@ FilterAppAudiocodes.prototype.start = function(callback) {
  */
 let sessionManager = {
     evaluateMessage: function (line) {
+        /* Extract SID and SEQ from SIP Message */
         var seqObj = /.*\[S=(?<seq>[0-9]+)\].*/.exec(line)
 	    var sidObj = /\[SID=(?<sid>.*?)\]/.exec(line)
+
         if (!seqObj || !sidObj) {
             if (this.bypass) return data
-            throw new Error(`Invalid SIP Message, missing SID or SEQ in Line: ${line}`)
+            logger.error(`Invalid SIP Message, missing SID or SEQ in Line: ${line}`)
+            return
         }
+        /* Unwrap SID and SEQ from Regexp */
         let seq = seqObj[1]
         let sid = sidObj[1]
+        /* Remove SEQ and SID from line */
+        line = line.replace(/\[S=[0-9]+\] \[SID=.*\]  /, '')
+
+        
+
+        if ((line.indexOf('Incoming SIP') !== -1 || line.indexOf('Outgoing SIP') !== -1) && line.trim().endsWith('#012#012')) {
+            if (this.debug) console.log('FULL SIP MESSAGE', line)
+            return sessionManager.createSession(sid, seq, line)
+        }
+
         let session = {}
+        /* Check if we are waiting for another part of this session */
         if (this.findSession(sid)) {
-            if (this.debug) logger.info('FOUND SESSION', sid)
+            if (this.debug) logger.info('Found existing session', sid)
             session = this.addFragment(sid, seq, line)
         } else {
-            if (this.debug) logger.info('NEW SESSION', sid)
+            if (this.debug) logger.info('Created new entry', sid)
             session = this.createSession(sid, seq, line)
         }
+        
         return session
     },
     findSession: function (sid) {
-        if(sid_cache.has(sid)) {
-            return sid_cache.get(sid)
-        } else {
-            return false
-        }
-    },
-    createSession:function(sid, seq, message) {
-        let session = {
-            sid: sid,
-            seq: seq,
-            currentMessage: message,
-            payloads: [{message: message, seq: seq}]
-        }
-        sid_cache.set(sid, session)
-        return session
-    },
-    addFragment:function(sid, seq, message) {
-        let session = this.findSession(sid)
-        /* TODO: add message to payload in sequence */
-        if(session) {
-            session.seq = seq
-            session.currentMessage = message
-            session.payloads.push({message: message, seq: seq})
-            sid_cache.set(sid, session)
-            // this.checkComplete(session)
+        if (this.debug) console.log('Finding session with sid: ', sid)
+        if (sid_cache.has(sid)) {
+            let session = sid_cache.get(sid)
             return session
         } else {
             return false
         }
     },
-    checkComplete:function(session) {
-        let check = session.payload.match(/\r\n\r\n/g)
-        console.log('CHECK COMPLETE', check)
-        if (check.length < 1) {
-            console.log('NOT complete')
-            return false
+    createSession: function(sid, seq, message) {
+        if (this.debug) console.log('Creating a session for a fragment', sid, seq)
+        let messages = message.split(/(?=\(N  )/g)
+        let session = {
+            sid: sid,
+            seq: seq,
+            currentMessage: messages,
+            buffer: [{message: message, seq: seq}],
         }
-        return true
+        sid_cache.set(sid, session)
+        return session
+    },
+    addFragment: function(sid, seq, message) {
+        let session = this.findSession(sid)
+        if (this.debug) console.log('Adding fragment to session', sid, seq)
+        let messages = message.split(/(?=\(N  )/g)
+        for (let i = 0; i < messages.length; i++) {
+            session.buffer.push({message: messages[i], seq: seq + (i / 10)})
+            session.buffer = session.buffer.sort((a, b) => a.seq - b.seq)
+        }
+        session.currentMessage = this.rawSip(session)
+        sid_cache.set(sid, session)
+        return session
+    },
+    rawSip: function(session) {
+        let rawSIP = []
+        /* Determine complete messages based on content, not messages */
+        for (let i = 0; i < session.buffer.length; i++) {
+            let type = this.preScreen(session.buffer[i].message)
+            if (this.debug) console.log('Prescreening Type for completion check', type)
+            if (type === 'incoming' || type === 'outgoing') {
+                rawSIP.push(session.buffer[i].message)
+            } else if (type === 'incomplete') {
+                if (i + 1 >= session.buffer.length) {
+                    logger.info('Incomplete SIP Message no more to add at this time, will cache', session.buffer[i].message) 
+                    continue
+                }
+                let type = this.preScreen(session.buffer[i].message + session.buffer[i + 1].message)
+                if (this.debug) console.log('Fragmented, looking ahead in buffer')
+                if (type === 'incoming' || type === 'outgoing') {
+                    rawSIP.push(session.buffer[i].message + session.buffer[i + 1].message)
+                    i++
+                    continue
+                } else {
+                    if (this.debug) console.log('Merging Fragments and caching')
+                    session.buffer[i].message += session.buffer[i + 1].message
+                    session.buffer.splice(i + 1, 1)
+                    continue
+                }
+            } else {
+                /* Unknown type should be sent as log */
+                rawSIP.push(session.buffer[i].message)
+            }
+        }
+        return rawSIP
+    },
+    removeFragment: function(session, sipPayload) {
+        let newBuffer = session.buffer.filter((a) => !sipPayload.includes(a.message))
+        if (this.debug) console.log('Removing Fragment from Session', session.sid)
+        if (newBuffer.length === 0) {
+            if (this.debug) console.log('Removing Session from Cache', session.sid)
+            sid_cache.del(session.sid)
+            return
+        }
+        session.buffer = newBuffer
+        sid_cache.set(session.sid, session)
+        return
+    },
+    preScreen: function(message) {
+        if (message.indexOf('Incoming SIP Message') !== -1) {
+            if (message.endsWith('#012#012')) {
+                return 'incoming'
+            } else {
+                let test = agnostic.exec(message)
+                if (!test?.groups?.sip) {
+                    return 'incomplete'
+                } else {
+                    if (test.groups.sip.endsWith('#012#012')) {
+                        return 'incoming'
+                    } else {
+                        if (test.groups.sip.endsWith('#012')) {
+                            test.groups.sip += '#012'
+                            return 'incoming'
+                        } else {
+                            return 'incomplete'
+                        }
+                    }
+                }
+            }
+        } else if (message.indexOf('Outgoing SIP Message') !== -1) {
+            if (message.endsWith('#012#012')) {
+                return 'outgoing'
+            } else {
+                let test = agnostic.exec(message)
+                if (!test?.groups?.sip) {
+                    return 'incomplete'
+                } else {
+                    if (test.groups.sip.endsWith('#012#012')) {
+                        return 'outgoing'
+                    } else {
+                        if (test.groups.sip.endsWith('#012')) {
+                            test.groups.sip += '#012'
+                            return 'outgoing'
+                        } else {
+                            return 'incomplete'
+                        }
+                    }
+                }
+            }
+        } else {
+            return 'unknown'
+        }
     }
 }
 
-var last = '';
-var ipcache = {};
 var aliases = {};
 
-var hold;
-var cache;
-var seqN;
+/**
+ * Agnostic SIP Message Regexp
+ * @type {RegExp} Agnostic SIP check
+ */
+const agnostic = new RegExp(/(?:\(N.*)---- (?:Incoming|Outgoing) SIP Message (?:from|to) (?<ip>.*) (?:from|to) SIPInterface #[0-9]+? \((?<alias>.*)\) (?:.*) TO[(]?#[0-9]+?[)]? (?:.*)?---[-]?[ ]?(?:#012)?(?<sip>.*)*/)
 
 /**
  * Receives a buffer from an input or filter
@@ -184,7 +282,8 @@ var seqN;
  */
 FilterAppAudiocodes.prototype.process = function(data) {
 	/* Message to String*/
-	var line = data.message.toString();
+	var line = data.message.toString()
+
 	/* Debug for when we send a text file for debug */
 	if (this.file_debug) {
 		console.log('RECEIVED LINE')
@@ -199,209 +298,128 @@ FilterAppAudiocodes.prototype.process = function(data) {
 
 	if (this.debug) console.info('DEBUG', line)
 
-	/* Adjust Regexp for 7.40A.500 format*/
-    /*
-	if (this.version === '7.40A.500') {
-		var message = /.*\[S=([0-9]+)\].*?\[SID=.*?\]\s?(.*)\[Time:.*\]/g
-	} else {
-		var message = /^.*?\[S=([0-9]+)\].*?\[SID=.*?\]\s?(.*)\[Time:.*\]$/
-	}
-
-	
-	var test = message.exec(line.replace(/\r\n/g, '#012'))
-
-	if(hold && line && test) {
-		if (this.debug) logger.error('Next packet number', test[1])
-		if (parseInt(test[1]) == seq + 1) {
-			line = cache + ( test ? test[2] : '')
-			hold = false
-			cache = ''
-			if (this.debug) console.info('reassembled line', line)
-		}
-	}*/
+    /* Remove brinary prefix, Remove trailing timestamp, helps with detection of final fragment */
+    try {
+        line = line.split('<157>')[1]
+        line = line.split(' [Time:')[0]
+    } catch (err) {
+        logger.error('Unknown Event or malformed line')
+        logger.error(data.message.toString())
+        if (this.debug) console.log('ERROR', err)
+        return
+    }
+    
 
 	/* Prepare line for processing */
 	line = line.replace(/\r\n/g, '#012')
 
+    let messages = this.splitMessages(line)
+
 	/* Create Session or append to Session */
-	let session = sessionManager.evaluateMessage(line)
+    messages.forEach((msg) => {
+	    let session = sessionManager.evaluateMessage(msg)
+    
+        if (!session) return
 
-	if (this.debug) logger.error('SESSION SID',session.sid)
-
-    this.sipRouter(session)
+        session.currentMessage.forEach((msg) => {
+            this.sipRouter(session, msg)
+        })
+    })
 }
 
 exports.create = function() {
     return new FilterAppAudiocodes()
 }
 
-/* Previous Router 
+FilterAppAudiocodes.prototype.splitMessages = function(line) {
+    let messages = []
+    let split = line.split(/(?=\(N  )/g)
+    
+    /** 
+     * @param {string} first Sequence number and Session ID 
+     * */
+    let first = split.shift()
+    if (split.length > 1) {
+        split.forEach((msg) => {
+            let newmsg = first + msg
+            messages.push(newmsg)
+        })
+    } else {
+        messages.push(line)
+    }
+    return messages
+}
 
- if (line.indexOf('Incoming SIP Message') !== -1) {
+FilterAppAudiocodes.prototype.sipRouter = async function(session, message) {
+    if (this.debug) console.log('Routing SIP Session', session.sid)
+
+    if (message.indexOf('Incoming SIP Message') !== -1) {
+        if (this.debug) console.log('Incoming SIP Message')
         try {
-			// Set regex based on version 
-            // var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g;
-            var regex;
-            if (this.version === '7.40A.500') {
-                regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO\(#[0-99]\) ----  (.*)/g; //7.40A.500.357
-            } else if (this.version == '7.20A.256.511') {
-                regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
-            } else {
-                regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*---\s?#012(.*)#012\s?#012(.*)/g; //7.20A.260.012
-            }
-
+            let resolvedObj = false
             if (this.resolver){
-                var aliasregex = /SIPInterface #([^\s]+) \((.*)\) (.*) TO/g;
-                var interface = aliasregex.exec(line) || false;
-                if (this.resolver && interface){
-                    var alias = interface[1]; //0
-                    var group = interface[2]; //some-group
-                    var proto = interface[3]; //UDP,TCP,TLS
-
-                    var ifname = this.resolver.sip[group] ? this.resolver.sip[group].NetworkInterface : false;
-                    if (ifname){
-                        var xlocalip = this.resolver.ifs[ifname] ? this.resolver.ifs[ifname] : false;
-                        var xlocalport = this.resolver.sip[group] ? this.resolver.sip[group][proto+"Port"] : false;
-                        if (this.debug) console.log('!!!!!!!!!!!!!!!!! IN IFNAME MATCH', group, ifname, alias, proto, xlocalip, xlocalport);
-                    } else {
-                        if (this.debug) console.log('!!!!!!!!!!!!!!!!! IN IFNAME FAILURE', group, ifname, alias, proto);
-                    }
-                }
+                resolvedObj = this.invokeResolver(session)
             }
-			// Apply Regexp to line 
-            var ip = regex.exec(line);
-            console.log('PROCESSED')
-            console.log(ip)
-            if (!ip) {
-				console.log('BAD LINE', line)
-                cache = line.replace(/\[Time.*\]$/,'');
-
-                hold = true;
-                var regpackid = /.*\[S=([0-9]+)\].\*\/.exec(line);
-                seq = parseInt(regpackid[1]);
-                if (this.debug) logger.error('Cached packet number', seq, line);
-                logger.error('failed parsing Incoming SIP. Cache on!');
-                if (this.bypass) return data;
-            } else {
-                if (xlocalip && xlocalport){
-                    ipcache.dstIp = xlocalip;
-                    ipcache.dstPort = parseInt(xlocalport);
-                } else if (ip[3]) {
-                    // convert alias to IP:port 
-                    ipcache.dstIp = aliases[0] || this.localip;
-                    ipcache.dstPort = aliases[1] || this.localport;
-                }
-                ipcache.srcIp = ip[2].split(':')[0];
-                ipcache.srcPort = ip[2].split(':')[1];
-                last = ip[5];
-                last += '#012 #012';
-                var callid = last.match(/call-id:\s?(.*?)\s?#012/i) || [];
-                ipcache.callId = callid[1] || sid[1] || '';
-                // Cache SID to Call-ID correlation
-                sid_cache.set(sid[1], ipcache.callId, expire);
-                // Seek final fragment
-                if(ip[6]?.includes(' SIP Message ') && this.version !== '7.40A.500'){
-                    hold = true;
-                    cache = line.replace(/\[Time.*\]$/,'');
-                }
-                return this.postProcess(ipcache,last);
+            // Apply Regexp to line 
+            var rawSIP = agnostic.exec(message) 
+            if (!rawSIP || !rawSIP?.groups?.sip) {
+                if (this.debug) console.log('MISSING SIP')
+                if (this.debug) console.log( message)
+                return
+            } else  {
+                this.handleSIP(session, rawSIP, 'incoming', resolvedObj)
             }
-        } catch(e) { 
-            logger.error(e, line); 
+        } catch (err) {
+            logger.error(err, message)
         }
-
-    } else if (line.indexOf('Outgoing SIP Message') !== -1) {
-       try {
-            var regex;
-            if (this.version === '7.40A.500') {
-                regex = /(.*) ---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO\(#.*\) ----  (.*)/g; //7.40A.500.357
-            } else if (this.version == '7.20A.256.511') {
-                regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
-            } else {
-                    regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*---\s?#012(.*)#012\s?#012 (.*)/g; //7.20A.260.012
-            }
-
+    } else if (message.indexOf('Outgoing SIP Message') !== -1) {
+        if (this.debug) console.log('Outgoing SIP Message')
+        try {
+            let resolvedObj = false
             if (this.resolver) {
-                var aliasregex = /SIPInterface #([^\s]+) \((.*)\) (.*) TO/g;
-                var interface = aliasregex.exec(line) || false;
-                if (this.resolver && interface) {
-                    var alias = interface[1]; //0
-                    var group = interface[2]; //some-group
-                    var proto = interface[3]; //UDP,TCP,TLS
-
-                    var ifname = this.resolver.sip[group] ? this.resolver.sip[group].NetworkInterface : false;
-                    if (ifname) {
-                        var xlocalip = this.resolver.ifs[ifname] ? this.resolver.ifs[ifname] : false;
-                        var xlocalport = this.resolver.sip[group] ? this.resolver.sip[group][proto+"Port"] : false;
-                        if (this.debug) console.log('!!!!!!!!!!!!!!!!! OUT IFNAME MATCH', group, ifname, alias, proto, xlocalip, xlocalport);
-                    } else {
-                        if (this.debug) console.log('!!!!!!!!!!!!!!!!! OUT IFNAME FAILURE', group, ifname, alias, proto);
-                    }
-                }
+                resolvedObj = this.invokeResolver(session)
             }
-
-            var ip = regex.exec(line);
-            if (!ip) {
-                cache = line.replace(/\[Time.*\]$/,'');
-                hold = true;
-                var regpackid = /.*\[S=([0-9]+)\].\*\/.exec(line);
-                seq = parseInt(regpackid[1]);
-                if (this.debug) logger.error('Cached packet number', seq, line);
-                logger.error('failed parsing Outgoing SIP. Cache on!');
-                if (this.bypass) return data;
-            } else {
-                if (xlocalip && xlocalport){
-                    ipcache.srcIp = xlocalip;
-                    ipcache.srcPort = parseInt(xlocalport);
-                } else if (ip[3]) {
-                    // convert alias to IP:port 
-                    ipcache.srcIp = aliases[0] || this.localip;
-                    ipcache.srcPort = aliases[1] || this.localport;
-                }
-                ipcache.dstIp = ip[2].split(':')[0];
-                ipcache.dstPort = ip[2].split(':')[1];
-                last = ip[5];
-                last += '#012 #012';
-                var callid = last.match(/call-id:\s?(.*?)\s?#012/i) || [];
-                ipcache.callId = callid[1] || sid[1] || '';
-                // Cache SID to Call-ID correlation
-                sid_cache.set(sid[1], ipcache.callId, expire);
-                // Seek final fragment
-                if(ip[6]?.includes(' SIP Message ') && this.version !== '7.40A.500'){
-                    hold = true;
-                    cache = line.replace(/\[Time.*\]$/,'');
-                }
-                return this.postProcess(ipcache,last);
+            // Apply Regexp to line 
+            var rawSIP = agnostic.exec(message)
+            if (!rawSIP || !rawSIP?.groups?.sip) {
+                if (this.debug) console.log('MISSING SIP')
+                if (this.debug) console.log( message)
+                return
+            } else  { 
+                this.handleSIP(session, rawSIP, 'outgoing', resolvedObj)
             }
-     } catch(e) { 
-            logger.error(e, line); 
+        } catch (err) {
+            logger.error(err, message)
         }
-    } else if (this.autolocal && line.indexOf('Local IP Address =') !== -1) {
-        var local = line.match(/Local IP Address = (.*?):(.*?),/) || [];
-        if(local[1]) this.localip   = local[1];
-        if(local[2]) this.localport = local[2];
-    } else if (line.indexOf('CALL_END ') !== -1 && this.logs) {
+    } else if (this.autolocal && message.indexOf('Local IP Address =') !== -1) {
+        console.log('Local IP Address')
+        var local = message.match(/Local IP Address = (.*?):(.*?),/) || []
+        if (local[1]) this.localip   = local[1]
+        if (local[2]) this.localport = local[2]
+    } else if (message.indexOf('CALL_END ') !== -1) {
+        console.log('CALL_END')
         // Parser TBD page 352 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
-        var cdr = line.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
-        ipcache.callId = cdr[3] || '';
-        if (this.debug) logger.info('CALL_END', cdr, ipcache);
-        if (this.logs) return this.postProcess(ipcache,JSON.stringify(cdr),100);
-    } else if (line.indexOf('MEDIA_END ') !== -1 && this.qos) {
+        var cdr = message.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
+        session.callId = cdr[3] || ''
+        if (this.debug) logger.info('CALL_END', cdr, session)
+        if (this.logs) return this.postProcess(session,JSON.stringify(cdr),100)
+    } else if (message.indexOf('MEDIA_END ') !== -1) {
+        console.log('MEDIA_END')
         // Parsed TBD page 353 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
-        var qos = line.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
+        var qos = session.currentMessage.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
         if (qos.length == 25){
             qos.splice(15, 1);
             qos.splice(5, 1);
         }
         logger.info('!!!!!!!!!!!!!! DEBUG MEDIA', qos, qos.length);
-        if(qos && qos[2] && qos[21]){
-            ipcache.callId = qos[2] || '';
+        if (qos && qos[2] && qos[21]){
+            session.callId = qos[2] || '';
             var response = [];
             // A-LEG
-            ipcache.srcIp = qos[7];
-            ipcache.srcPort = parseInt(qos[8]);
-            ipcache.dstIp = qos[9];
-            ipcache.dstPort = parseInt(qos[10]);
+            session.srcIp = qos[7];
+            session.srcPort = parseInt(qos[8]);
+            session.dstIp = qos[9];
+            session.dstPort = parseInt(qos[10]);
             var local_report = {
                 "CORRELATION_ID": qos[2],
                 "RTP_SIP_CALL_ID": qos[2],
@@ -413,12 +431,12 @@ exports.create = function() {
                 "PARTY":0,
                 "TYPE":"HANGUP"
             };
-            response.push(this.postProcess(ipcache,JSON.stringify(local_report),35));
+            response.push(this.postProcess(session,JSON.stringify(local_report),35));
             // B-LEG
-            ipcache.srcIp = qos[9];
-            ipcache.srcPort = parseInt(qos[10]);
-            ipcache.dstIp = qos[7];
-            ipcache.dstPort = parseInt(qos[8]);
+            session.srcIp = qos[9];
+            session.srcPort = parseInt(qos[10]);
+            session.dstIp = qos[7];
+            session.dstPort = parseInt(qos[8]);
             var remote_report = {
                 "CORRELATION_ID": qos[2],
                 "RTP_SIP_CALL_ID": qos[2],
@@ -430,120 +448,84 @@ exports.create = function() {
                 "PARTY":1,
                 "TYPE":"HANGUP"
             };
-            response.push(this.postProcess(ipcache,JSON.stringify(remote_report),35));
+            response.push(this.postProcess(session,JSON.stringify(remote_report),35));
             if (this.debug) logger.info('MEDIA_END', response);
             if (this.qos) return response;
         } else {
-            logger.error('missing media parameters', qos);
+            logger.error('Missing media parameters', qos);
         }
-    } else if (sid && !hold && this.logs) {
+    } else if (session.sid && this.logs) {
         if (this.bypass) return data;
         // Prepare SIP LOG
         if (this.logs) {
-            ipcache.callId = sid_cache.get(sid) || sid || '';
-            ipcache.srcIp = this.localip || '127.0.0.1';
-            ipcache.srcPort = 514
-            ipcache.dstIp = this.localip || '127.0.0.1';
-            ipcache.dstPort = 514
-            return this.postProcess(ipcache,line,100);
+            var callid = message.match(/call-id:\s?(.*?)\s?#012/i) || []
+            session.callId = callid[1] || session.sid || ''
+            session.srcIp = this.localip || '127.0.0.1'
+            session.srcPort = 514
+            session.dstIp = this.localip || '127.0.0.1'
+            session.dstPort = 514
+            sessionManager.removeFragment(session, message)
+            return this.postProcess(session, message, 100)
         }
-    } else {
-        // Discard
-        if (this.bypass) return data;
-    }
-
-*/
-
-FilterAppAudiocodes.prototype.sipRouter = function(session) {
-    console.log('Routing SIP Session')
-    if (session.currentMessage.indexOf('Incoming SIP Message') !== -1) {
-        console.log('Incoming SIP Message')
-        try {
-            /* Set regex based on version 
-            var regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*--- #012(.*)#012 #012 #012(.*) \[Time:(.*)-(.*)@(.*)\]/g; */
-            let regex
-            if (this.version === '7.40A.500') {
-                regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO\(#[0-99]\) ----  (.*)/g; //7.40A.500.357
-            } else if (this.version == '7.20A.256.511') {
-                regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
-            } else {
-                regex = /(.*)---- Incoming SIP Message from (.*) to SIPInterface #[0-99] \((.*)\) (.*) TO.*---\s?#012(.*)#012\s?#012(.*)/g; //7.20A.260.012
-            }
-
-            let resolvedObj = false
-            if (this.resolver){
-                resolvedObj = this.invokeResolver(session)
-            }
-            // Apply Regexp to line 
-            let ip = regex.exec(session.currentMessage)
-            if (!ip) {
-                console.log('BAD LINE', session.currentMessage)
-                cache = session.currentMessage.replace(/\[Time.*\]$/,'');
-
-                hold = true;
-                var regpackid = /.*\[S=([0-9]+)\].*/.exec(session.currentMessage);
-                seqN = parseInt(regpackid[1]);
-                if (this.debug) logger.error('Cached packet number', seqN, session.currentMessage);
-                logger.error('failed parsing Incoming SIP. Cache on!');
-                if (this.bypass) return data;
-            } else  {
-                this.handleSIP(session, ip, 'incoming')
-            }
-        } catch (err) {
-            logger.error(err, line)
-        }
-    } else if (session.currentMessage.indexOf('Outgoing SIP Message') !== -1) {
-        console.log('Outgoing SIP Message')
-        try {
-            let regex;
-            if (this.version === '7.40A.500') {
-                regex = /(.*) ---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO\(#.*\) ----  (.*)/g; //7.40A.500.357
-            } else if (this.version == '7.20A.256.511') {
-                regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*---  (.*)(.*)/g; //7.20A.256.511
-            } else {
-                    regex = /(.*)---- Outgoing SIP Message to (.*) from SIPInterface #[0-99] \((.*)\) (.*) TO.*---\s?#012(.*)#012\s?#012 (.*)/g; //7.20A.260.012
-            }
-
-            let resolvedObj = false
-            if (this.resolver) {
-                resolvedObj = this.invokeResolver(session)
-            }
-
-            // Apply Regexp to line 
-            let ip = regex.exec(session.currentMessage)
-            if (!ip) {
-                console.log('BAD LINE', session.currentMessage)
-                cache = session.currentMessage.replace(/\[Time.*\]$/,'');
-                hold = true;
-                var regpackid = /.*\[S=([0-9]+)\].*/.exec(session.currentMessage);
-                seqN = parseInt(regpackid[1]);
-                if (this.debug) logger.error('Cached packet number', seqN, session.currentMessage);
-                logger.error('failed parsing Outgoing SIP. Cache on!');
-                if (this.bypass) return data;
-            } else  {
-                this.handleSIP(session, ip, 'outgoing')
-            }
-
-        } catch (err) {
-            logger.error(err, line)
-        }
-    } else if (this.autolocal && session.currentMessage.indexOf('Local IP Address =') !== -1) {
-        console.log('Local IP Address')
-    } else if (session.currentMessage.indexOf('CALL_END ') !== -1) {
-        console.log('CALL_END')
-    } else if (session.currentMessage.indexOf('MEDIA_END ') !== -1) {
-        console.log('MEDIA_END')
     } else {
         if (this.bypass) return data
+        if (this.debug) console.log('UNKNOWN', session.sid, message)
+        // Prepare unknown as log
+        if (this.logs) {
+            var callid = message.match(/call-id:\s?(.*?)\s?#012/i) || []
+            session.callId = callid[1] || session.sid || ''
+            session.srcIp = this.localip || '127.0.0.1'
+            session.srcPort = 514
+            session.dstIp = this.localip || '127.0.0.1'
+            session.dstPort = 514
+            sessionManager.removeFragment(session, message)
+            return this.postProcess(session, message, 100)
+        }
     }
 }
 
-FilterAppAudiocodes.prototype.handleSIP = function(session, ip, direction) {
-    console.log(direction, session.sid, session.seq, ip[5])
+FilterAppAudiocodes.prototype.handleSIP = async function(session, rawSIP, direction, resolved) {
+    /* Extract and set src/dst IP and Ports */
+    if (resolved.xlocalip && resolved.xlocalport){
+        if (direction === 'incoming') {
+            session.dstIp = resolved.xlocalip
+            session.dstPort = parseInt(resolved.xlocalport)
+        } else {
+            session.srcIp = resolved.xlocalip
+            session.srcPort = parseInt(resolved.xlocalport)
+        }
+    } else if (rawSIP.groups.alias) {
+        // convert alias to IP:port 
+        if (direction === 'incoming') {
+            session.dstIp = aliases[0] || this.localip
+            session.dstPort = aliases[1] || this.localport
+        } else {
+            session.srcIp = aliases[0] || this.localip
+            session.srcPort = aliases[1] || this.localport
+        }
+    }
+
+    if (direction === 'incoming') {
+        session.srcIp = rawSIP.groups.ip.split(':')[0]
+        session.srcPort = parseInt(rawSIP.groups.ip.split(':')[1])
+    } else {
+        session.dstIp = rawSIP.groups.ip.split(':')[0]
+        session.dstPort = parseInt(rawSIP.groups.ip.split(':')[1])
+    }
+
+    let message = rawSIP.groups.sip
+    if (message.length < 1) {
+        logger.error('BAD LINE', rawSIP)
+        return
+    }
+    sessionManager.removeFragment(session, rawSIP.input)
+    var callid = message.match(/call-id:\s?(.*?)\s?#012/i) || []
+    session.callId = callid[1] || session.sid || ''
+    return this.postProcess(session, message)
 }
 
 FilterAppAudiocodes.prototype.invokeResolver = function(session, ip) {
-    if(this.debug) console.log('Invoking Resolver')
+    if (this.debug) console.log('Invoking Resolver')
     let aliasregex = /SIPInterface #([^\s]+) \((.*)\) (.*) TO/g;
     let interface = aliasregex.exec(session.currentMessage) || false;
     if (this.resolver && interface){
@@ -569,7 +551,7 @@ const watchIni = function(filePath, ini){
     logger.info('Watching INI for changes...',filePath);
     fs.watch(filePath, (event, filename) => {
         if (filename && event ==='change'){
-            console.log('INI file Changed! Reloading...', filename);
+            logger.info('INI file Changed! Reloading...', filename);
             ini = parseIni(filePath);
         }
     });
