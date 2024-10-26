@@ -56,7 +56,8 @@ FilterAppAudiocodes.prototype.start = function(callback) {
 
     this.postProcess = function(session, message, type) {
         if ( !message||!session ) return
-        message = message.replace(/#012/g, '\r\n').trim() + '\r\n\r\n'
+        message = message.replace(/#012/g, `\r\n`) 
+        
         var rcinfo = {
             type: 'HEP',
             version: 3,
@@ -96,7 +97,8 @@ FilterAppAudiocodes.prototype.start = function(callback) {
             var data = { payload: message, rcinfo: rcinfo }
             if (this.debug) console.log('FINAL DATA')
             if (this.debug) console.log(data.payload)
-            this.emit('output', data)
+            return data
+        } else {
             return
         }
     }
@@ -282,8 +284,7 @@ const agnostic = new RegExp(/(?:\(N.*)---- (?:Incoming|Outgoing) SIP Message (?:
  */
 FilterAppAudiocodes.prototype.process = function(data) {
 	/* Message to String*/
-	var line = data.message.toString()
-
+	var line = data.message.toString('utf8')
 	/* Debug for when we send a text file for debug */
 	if (this.file_debug) {
 		console.log('RECEIVED LINE')
@@ -316,15 +317,15 @@ FilterAppAudiocodes.prototype.process = function(data) {
     let messages = this.splitMessages(line)
 
 	/* Create Session or append to Session */
-    messages.forEach((msg) => {
-	    let session = sessionManager.evaluateMessage(msg)
-    
+    for (let i = 0; i < messages.length; i++) {
+        let session = sessionManager.evaluateMessage(messages[i])
+
         if (!session) return
 
-        session.currentMessage.forEach((msg) => {
-            this.sipRouter(session, msg)
-        })
-    })
+        for (let y = 0; y < session.currentMessage.length; y++) {
+            return this.sipRouter(session, session.currentMessage[y])
+        }
+    }
 }
 
 exports.create = function() {
@@ -350,7 +351,7 @@ FilterAppAudiocodes.prototype.splitMessages = function(line) {
     return messages
 }
 
-FilterAppAudiocodes.prototype.sipRouter = async function(session, message) {
+FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
     if (this.debug) console.log('Routing SIP Session', session.sid)
 
     if (message.indexOf('Incoming SIP Message') !== -1) {
@@ -367,7 +368,7 @@ FilterAppAudiocodes.prototype.sipRouter = async function(session, message) {
                 if (this.debug) console.log( message)
                 return
             } else  {
-                this.handleSIP(session, rawSIP, 'incoming', resolvedObj)
+                return this.handleSIP(session, rawSIP, 'incoming', resolvedObj)
             }
         } catch (err) {
             logger.error(err, message)
@@ -386,7 +387,7 @@ FilterAppAudiocodes.prototype.sipRouter = async function(session, message) {
                 if (this.debug) console.log( message)
                 return
             } else  { 
-                this.handleSIP(session, rawSIP, 'outgoing', resolvedObj)
+                return this.handleSIP(session, rawSIP, 'outgoing', resolvedObj)
             }
         } catch (err) {
             logger.error(err, message)
@@ -484,7 +485,7 @@ FilterAppAudiocodes.prototype.sipRouter = async function(session, message) {
     }
 }
 
-FilterAppAudiocodes.prototype.handleSIP = async function(session, rawSIP, direction, resolved) {
+FilterAppAudiocodes.prototype.handleSIP = function(session, rawSIP, direction, resolved) {
     /* Extract and set src/dst IP and Ports */
     if (resolved.xlocalip && resolved.xlocalport){
         if (direction === 'incoming') {
