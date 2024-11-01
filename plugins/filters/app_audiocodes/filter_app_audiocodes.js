@@ -301,7 +301,7 @@ FilterAppAudiocodes.prototype.process = function(data) {
 
     /* Remove brinary prefix, Remove trailing timestamp, helps with detection of final fragment */
     try {
-        line = line.split('<157>')[1]
+        line = line.split(/<\d+>/)[1]
         line = line.split(' [Time:')[0]
     } catch (err) {
         logger.error('Unknown Event or malformed line')
