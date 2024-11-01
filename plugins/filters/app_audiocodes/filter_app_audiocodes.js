@@ -56,7 +56,10 @@ FilterAppAudiocodes.prototype.start = function(callback) {
 
     this.postProcess = function(session, message, type) {
         if ( !message||!session ) return
-        message = message.replace(/#012/g, `\r\n`) 
+        /* If there is 3 \r\n we need to detect it and replace it with 2 */
+        message = message.replace(/#012#012#012/, '#012#012')
+        message = message.replace(/#012/g, `\r\n`)
+
         
         var rcinfo = {
             type: 'HEP',
