@@ -31,7 +31,7 @@ function FilterAppAudiocodes() {
             'autolocal': false,
             'localip': '127.0.0.1',
             'localport': 5060,
-            'version': '7.20A.260.012',
+            'version': '7.40A.500',
             'ini': false,
             'iniwatch': false
      },
