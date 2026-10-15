@@ -1,0 +1,12 @@
+{
+  "name": "@pastash/input_top",
+  "version": "1.0.0",
+  "description": "Top Plugin for @pastash/pastash",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {},
+  "author": "akvlad",
+  "license": "ISC"
+}
