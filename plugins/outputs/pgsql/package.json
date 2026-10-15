@@ -10,7 +10,10 @@
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "pg": "*",
+    "pg": "^8.13.1",
     "uuidv4": "^6.0.2"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
   }
 }

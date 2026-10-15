@@ -2,14 +2,13 @@ var base_output = require('@pastash/pastash').base_output,
     logger = require('@pastash/pastash').logger,
     util = require('util');
 var sqdb;
-var THIS ;
 var mysql = require('mysql2');
 
 function OutputMySql() {
     base_output.BaseOutput.call(this);
     this.mergeConfig({
         name: 'MySql',
-        optional_params: ['db',  'query', 'host', 'user', 'password', 'port','interval_ms'],
+        optional_params: ['db', 'query', 'host', 'user', 'password', 'port', 'interval_ms'],
         default_values: {
             'db' : 'database',
             'host': '127.0.0.1',
@@ -17,13 +16,12 @@ function OutputMySql() {
             'user': 'root',
             'password': 'admin',
             'interval_ms': 10000,
-            'qurey': "call SP_UpdateSyncResult('{|data|}');"
+            'query': "call SP_UpdateSyncResult('{|data|}');"
         },
         start_hook: this.start,
     });
 }
 OutputMySql.prototype.start =function(callback) {
-    THIS =  this
     if (this.db) {
         try {
             var cfg = { database: this.db, rowsAsArray: true };
@@ -31,29 +29,24 @@ OutputMySql.prototype.start =function(callback) {
             if(this.user) cfg.user = this.user;
             if(this.password) cfg.password = this.password;
             sqdb = mysql.createConnection(cfg);
-            logger.info('Initializing Outpu MySql:',this.db);
-        } catch(e){ logger.error('Failed Initializing Filter MySql',e); }
+            logger.info('Initializing Output MySql:',this.db);
+        } catch(e) { logger.error('Failed Initializing Output MySql',e); }
     }
 
-
-    logger.info('Initialized Filter MySql');
+    logger.info('Initialized Output MySql');
     callback();
-
-
 }
 util.inherits(OutputMySql, base_output.BaseOutput);
 
 OutputMySql.prototype.process = function(data) {
+    var sqlstr = this.query
+    sqlstr = sqlstr.replace('{|data|}',JSON.stringify(data, null, 2));
 
-    process.stdout.write('[STDOUT] ' + JSON.stringify(data, null, 2) + '\n');
-    var sqlstr = THIS.qurey
-    sqlstr= sqlstr.replace('{|data|}',JSON.stringify(data, null, 2) )
-
-    console.log(sqlstr );
     sqdb.query(sqlstr ,null, function(err, results, fields) {
-
-        sqlstr= sqlstr.replace('{|data|}',JSON.stringify(results, null, 2) )
-    })
+        if (err) {
+            logger.error('MySQL query error:', err);
+        }
+    });
 };
 
 OutputMySql.prototype.close = function(callback) {
