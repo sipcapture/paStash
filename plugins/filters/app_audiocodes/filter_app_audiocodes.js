@@ -78,13 +78,13 @@ FilterAppAudiocodes.prototype.start = function(callback) {
         }
         // EXTRACT CORRELATION HEADER, IF ANY
         if (this.correlation_hdr && rcinfo.proto_type == 1 && message.startsWith('INVITE')) {
-          var xcid = message.match(this.correlation_hdr+":\s?(.*)\r\n\r\n")
+          var xcid = message.match(this.correlation_hdr+":\\s?([^\\r]{1,512})\r\n\r\n")
           if (xcid && xcid[1]) rcinfo.correlation_id = xcid[1].trim()
          if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id)
         }
 
         if (this.correlation_contact && rcinfo.proto_type == 1 && message.startsWith('INVITE')) {
-            var extract = /x-c=(.*?)\//.exec(message)
+            var extract = /x-c=([^/]{1,256})\//.exec(message)
             if (extract[1]) {
                 rcinfo.correlation_id = extract[1]
                if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id)
@@ -116,7 +116,7 @@ let sessionManager = {
     evaluateMessage: function (line) {
         /* Extract SID and SEQ from SIP Message */
         var seqObj = /.*\[S=(?<seq>[0-9]+)\].*/.exec(line)
-	    var sidObj = /\[SID=(?<sid>.*?)\]/.exec(line)
+	    var sidObj = /\[SID=(?<sid>[^\]]{1,256})\]/.exec(line)
 
         if (!seqObj || !sidObj) {
             if (this.bypass) return data
@@ -278,7 +278,7 @@ var aliases = {};
  * Agnostic SIP Message Regexp
  * @type {RegExp} Agnostic SIP check
  */
-const agnostic = new RegExp(/(?:\(N.*)---- (?:Incoming|Outgoing) SIP Message (?:from|to) (?<ip>.*) (?:from|to) SIPInterface #[0-9]+? \((?<alias>.*)\) (?:.*) TO[(]?#[0-9]+?[)]? (?:.*)?---[-]?[ ]?(?:#012)?(?<sip>.*)*/)
+const agnostic = new RegExp(/(?:\(N[^\)]{0,16})---- (?:Incoming|Outgoing) SIP Message (?:from|to) (?<ip>[^\s]{1,128}) (?:from|to) SIPInterface #[0-9]+? \((?<alias>[^)]{0,256})\) (?:.{0,512}) TO[(]?#[0-9]+?[)]? (?:.{0,256})?---[-]?[ ]?(?:#012)?(?<sip>[\s\S]{0,65536})/)
 
 /**
  * Receives a buffer from an input or filter
@@ -397,7 +397,7 @@ FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
         }
     } else if (this.autolocal && message.indexOf('Local IP Address =') !== -1) {
         console.log('Local IP Address')
-        var local = message.match(/Local IP Address = (.*?):(.*?),/) || []
+        var local = message.match(/Local IP Address = ([^:]+):([^,]+),/) || []
         if (local[1]) this.localip   = local[1]
         if (local[2]) this.localport = local[2]
     } else if (message.indexOf('CALL_END ') !== -1) {
@@ -462,7 +462,7 @@ FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
         if (this.bypass) return data;
         // Prepare SIP LOG
         if (this.logs) {
-            var callid = message.match(/call-id:\s?(.*?)\s?#012/i) || []
+            var callid = message.match(/call-id:\s?([^\s#]{1,512})\s?#012/i) || []
             session.callId = callid[1] || session.sid || ''
             session.srcIp = this.localip || '127.0.0.1'
             session.srcPort = 514
@@ -476,7 +476,7 @@ FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
         if (this.debug) console.log('UNKNOWN', session.sid, message)
         // Prepare unknown as log
         if (this.logs) {
-            var callid = message.match(/call-id:\s?(.*?)\s?#012/i) || []
+            var callid = message.match(/call-id:\s?([^\s#]{1,512})\s?#012/i) || []
             session.callId = callid[1] || session.sid || ''
             session.srcIp = this.localip || '127.0.0.1'
             session.srcPort = 514
@@ -523,14 +523,14 @@ FilterAppAudiocodes.prototype.handleSIP = function(session, rawSIP, direction, r
         return
     }
     sessionManager.removeFragment(session, rawSIP.input)
-    var callid = message.match(/call-id:\s?(.*?)\s?#012/i) || []
+    var callid = message.match(/call-id:\s?([^\s#]{1,512})\s?#012/i) || []
     session.callId = callid[1] || session.sid || ''
     return this.postProcess(session, message)
 }
 
 FilterAppAudiocodes.prototype.invokeResolver = function(session, ip) {
     if (this.debug) console.log('Invoking Resolver')
-    let aliasregex = /SIPInterface #([^\s]+) \((.*)\) (.*) TO/g;
+    let aliasregex = /SIPInterface #([^\s]+) \(([^)]{0,256})\) ([^ ]+) TO/g;
     let interface = aliasregex.exec(session.currentMessage) || false;
     if (this.resolver && interface){
         let alias = interface[1]; //0

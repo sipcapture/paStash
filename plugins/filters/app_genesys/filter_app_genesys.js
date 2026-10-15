@@ -50,7 +50,7 @@ FilterAppGenesys.prototype.process = function(data) {
    } else if (line.indexOf('SIPTR: Received') !== -1) {
       // SIP MESSAGE INBOUND
       var rcv = true;
-      var payload = line.split`\n`.filter((l,i)=> i != 0).join`\n`.replace('\n', '\r\n');
+      var payload = line.split`\n`.filter((l,i)=> i != 0).join`\n`.replace(/\n/g, '\r\n');
       var head = line.substring(0, line.indexOf("\n"))
       var rc = regex_receive.exec(head);
       var callid = /Call-ID: (.*)\r/.exec(payload) || ['', 'false@127.0.0.1'];
@@ -64,7 +64,7 @@ FilterAppGenesys.prototype.process = function(data) {
    } else if (line.indexOf(': Sending  [') !== -1) {
       // SIP MESSAGE OUTBOUND
       var rcv = false;
-      var payload = line.split`\n`.filter((l,i)=> i != 0).join`\n`.replace('\n', '\r\n');
+      var payload = line.split`\n`.filter((l,i)=> i != 0).join`\n`.replace(/\n/g, '\r\n');
       var head = line.substring(0, line.indexOf("\n"))
       var rc = regex_sending.exec(head);
       var callid = /Call-ID: (.*)\r/.exec(payload) || ['', 'false@127.0.0.1'];
@@ -76,7 +76,7 @@ FilterAppGenesys.prototype.process = function(data) {
       console.log('local sent',callid, localIp, localPort);
 
    } else if (line.indexOf('event: message') !== -1) {
-      var UUID = /CallUUID\t'(.*)'\n/.exec(line);
+      var UUID = /CallUUID\t'([^'\n]{1,256})'\n/.exec(line);
       if(UUID && UUID[1]) {
         UUID = UUID[1];
 	var rc = [0, 'UDP', 0, 0, '127.0.0.1', 0];
@@ -111,7 +111,7 @@ FilterAppGenesys.prototype.process = function(data) {
 
 	 // EXTRACT CORRELATION HEADER, IF ANY
 	 if (this.correlation_hdr) {
-		var xcid = payload.match(this.correlation_hdr+":\s?(.*)\\r");
+		var xcid = payload.match(this.correlation_hdr+":\\s?([^\\r]{1,512})\\r");
 		if (xcid && xcid[1]) rcinfo.correlation_id = xcid[1].trim();
 	 }
 

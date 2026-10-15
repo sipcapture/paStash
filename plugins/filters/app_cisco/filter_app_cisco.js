@@ -89,18 +89,18 @@ FilterAppCisco.prototype.process = function(data) {
 	var	device = data.host;
 
 	//console.log("line received from host : "+ device + " line : "+line);
-	payload_regex=/<\d*>.*?(:\s|:)(\*|)/g;
+	payload_regex=/<\d+>[^:]{0,2048}(:\s|:[*|])/g;
 	line_clean=line.replace(payload_regex,'');
 	//console.log("line cleaned : "+line_clean);
 
-	callid_regex=/Call-ID:\s(.*?)$/m;
+	callid_regex=/Call-ID:\s([^\r\n]+)$/m;
 	callId=callid_regex.exec(line_clean);
 	if (callId&&callId[1]) {
 		ipcache.callId=callId[1];
 		//console.log("callId : "+callId[1]);
 	}
 
-	xcid_regex=/x-cid:\s(.*?)$/m;
+	xcid_regex=/x-cid:\s([^\r\n]+)$/m;
 	xcid=xcid_regex.exec(line_clean);
 	if (xcid&&xcid[1]) {
 		ipcache.callId=xcid[1];
@@ -110,8 +110,8 @@ FilterAppCisco.prototype.process = function(data) {
 	direction_regex=/(Sent|Received):/;
 	direction=direction_regex.exec(line_clean);
 
-	from_regex=/From:\s(?:\".*?\"\s|)<sip:(?:.*?@|)(.*?)>\;/;
-	to_regex=/To: <sip:(?:.*?@|)(.*?)>/;
+	from_regex=/From:\s(?:\"[^\"]{0,256}\"\s|)<sip:(?:[^@]{0,256}@|)([^>;]{1,256})>\;/;
+	to_regex=/To: <sip:(?:[^@]{0,256}@|)([^>]{1,256})>/;
 	ip_to=to_regex.exec(line_clean);
 	ip_from=from_regex.exec(line_clean);
 
@@ -156,7 +156,7 @@ FilterAppCisco.prototype.process = function(data) {
 		ipcache.ts = ipcache.xdate.unix();
 		ipcache.usec = ipcache.xdate.millisecond() * 1000;
 	}
-	payloadfinal_regex=/^[A-Za-z]{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2}\.\d+.*?:\s.*SIP\/Msg\/ccsipDisplayMsg:\n(Sent|Received):\n/g;
+	payloadfinal_regex=/^[A-Za-z]{3}\s{1,2}\d{1,2}\s\d{2}:\d{2}:\d{2}\.\d+[^:]{0,2048}:\s[^\n]{0,2048}SIP\/Msg\/ccsipDisplayMsg:\n(Sent|Received):\n/g;
 	last=line_clean.replace(payloadfinal_regex,'') +"\r\n";
 	this.postProcess();
 
