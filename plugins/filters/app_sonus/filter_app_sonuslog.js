@@ -74,8 +74,8 @@ FilterAppSonusLog.prototype.process = function(data) {
    var line = data.message;
 
    if (line.indexOf('sent msg for CallId') !== -1) {
-	   var regex = /<147> [0-9] (.*)(?:usec| USEC)(.*?)sent msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)(<147>)?/g;
-	   if (this.type == 1) regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) (.*)msg for CallId:(.*) to IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)#012.*RAW PDU:#012(.*)(<147>)?/g;
+	   var regex = /<147> [0-9] ([^\s]{1,64})(?:usec| USEC)([^\n]{0,32})sent msg for CallId:([^\s,]{1,256}) to IP\/port:([^/]{1,64})\/([0-9]{1,10}), Local IP\/port:([^/]{1,64})\/([0-9]{1,10}), SMM:([^\n]{0,128})RAW PDU:#012([\s\S]{0,65536})(<147>)?/g;
+	   if (this.type == 1) regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) ([^\n]{0,32})msg for CallId:([^\s,]{1,256}) to IP\/port:([^/]{1,64})\/([0-9]{1,10}), Local IP\/port:([^/]{1,64})\/([0-9]{1,10}), SMM:([^\n]{0,128})#012[^\n]{0,2048}RAW PDU:#012([\s\S]{0,65536})(<147>)?/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
 	   ipcache = {};
@@ -95,8 +95,8 @@ FilterAppSonusLog.prototype.process = function(data) {
 	   this.postProcess();
 
    } else if (line.indexOf('received msg for CallId') !== -1) {
-	   var regex = /<147> [0-9] (.*)(?:usec| USEC)(.*?)received msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)RAW PDU:#012(.*)(<147>)?/g;
-	   if (this.type == 1) regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) (.*)msg for CallId:(.*) from IP\/port:(.*)\/(.*), Local IP\/port:(.*)\/(.*), SMM:(.*)#012.*RAW PDU:#012(.*)(<147>)?/g;
+	   var regex = /<147> [0-9] ([^\s]{1,64})(?:usec| USEC)([^\n]{0,32})received msg for CallId:([^\s,]{1,256}) from IP\/port:([^/]{1,64})\/([0-9]{1,10}), Local IP\/port:([^/]{1,64})\/([0-9]{1,10}), SMM:([^\n]{0,128})RAW PDU:#012([\s\S]{0,65536})(<147>)?/g;
+	   if (this.type == 1) regex = /.*<147> [0-9] (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d?\.\d+?[+-]\d\d:\d\d|Z) ([^\n]{0,32})msg for CallId:([^\s,]{1,256}) from IP\/port:([^/]{1,64})\/([0-9]{1,10}), Local IP\/port:([^/]{1,64})\/([0-9]{1,10}), SMM:([^\n]{0,128})#012[^\n]{0,2048}RAW PDU:#012([\s\S]{0,65536})(<147>)?/g;
 	   var ip = regex.exec(line);
 	   if (!ip) { logger.error(line); return; }
 	   logger.log('receive',ipcache);

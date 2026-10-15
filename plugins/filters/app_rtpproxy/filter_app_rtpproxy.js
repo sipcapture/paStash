@@ -56,7 +56,7 @@ FilterAppRtpProxy.prototype.process = function(data) {
    if (!data.message) return data;
    var line = data.message;
    if (line.indexOf('received command ') !== -1) {
-	var regex = /received command \"(.*)\s+(US|U|L)c(.*?)[\s](.*?)[\s]+/g;
+	var regex = /received command \"([^\"]{1,200})\s+(US|U|L)c([^\s]{1,100})[\s]([^\s]{1,100})[\s]+/g;
         var ip = regex.exec(line);
 	if (!ip || !ip[1]) return;
 	var token = ip[1];
@@ -77,13 +77,13 @@ FilterAppRtpProxy.prototype.process = function(data) {
 	return;
 
    } else if (line.indexOf('new session on IPv4 port ') !== -1) {
-	var regex = /new session on IPv4 port\s+(.*) created.*tag\s+(.*)/g;
+	var regex = /new session on IPv4 port\s+([^\s]+) created[^\n]{0,512}tag\s+([^\s]+)/g;
         var ip = regex.exec(line);
 	if (!ip || !ip[1]) return;
 	ipcache['port_'+ip[1]] = ip[2];
 
    } else if (line.indexOf('rtpc_doreply: sending reply ') !== -1) {
-	var regex = /rtpc_doreply: sending reply \"(.*)\s+([0-9.].*)\\n"/g;
+	var regex = /rtpc_doreply: sending reply \"([^\"]{1,200})\s+([0-9.]{1,45})\\n"/g;
         var ip = regex.exec(line);
 	if (!ip || !ip[1]) return;
 	// get port -> token lookup
@@ -100,7 +100,7 @@ FilterAppRtpProxy.prototype.process = function(data) {
 	this.emit('output', data.message);
 
    } else if (line.indexOf('sending reply ') !== -1) {
-	var regex = /sending reply \"(.*)\s+(.*?)[\s](.*?)#012/g;
+	var regex = /sending reply \"([^\"]{1,200})\s+([0-9]{1,10})[\s]([0-9.]{1,45})#012/g;
         var ip = regex.exec(line);
 	if (!ip || !ip[1]) return;
 	var token = ip[1];
@@ -114,7 +114,7 @@ FilterAppRtpProxy.prototype.process = function(data) {
 	this.emit('output', data.message);
  
    } else if (line.indexOf('is cleaned up') !== -1) {
-	var regex = /session on ports (.*)\/(.*?)[\s]is cleaned up/g;
+	var regex = /session on ports ([0-9/]{1,64})[\s]is cleaned up/g;
         var ip = regex.exec(line);
 	ip.forEach(function(port){
 		logger.info('clearing up port '+port, ipcache['port_'+port]);

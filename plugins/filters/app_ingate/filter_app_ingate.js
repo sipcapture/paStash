@@ -63,7 +63,7 @@ FilterAppIngate.prototype.process = function(data) {
 		//Info: sipfw: send sl (0xcf4310) to 4.8.12.4:5061 via 8.8.8.8:6005 TLS connection 3:
 
 
-		var regex = /send\ss[fl](?:\s\(0x.*\))?\sto\s(.*):(.*)\svia\s(.*):([^\s]+)\s(\w+)\sconnection\s\d+\:/;
+		var regex = /send\ss[fl](?:\s\(0x[0-9a-fA-F]+\))?\sto\s([^:\s]{1,64}):([0-9]{1,10})\svia\s([^:\s]{1,64}):([^\s]+)\s(\w+)\sconnection\s\d+\:/;
 		var ip = regex.exec(line);
 		ipcache.srcIp = ip[3];
 		ipcache.srcPort = ip[4];
@@ -88,7 +88,7 @@ FilterAppIngate.prototype.process = function(data) {
 		//otherwise (taken from HTML logs):
 		//Info: sipfw: recv from 4.8.12.4:5061 via 1.1.1.1:6005 TLS connection 3:
 
-		var regex = /recv\sfrom\s(.*):(.+)\svia\s(.*):(.+)\s(\w+)\sconnection\s\d+\:/i;
+		var regex = /recv\sfrom\s([^:\s]{1,64}):([0-9]{1,10})\svia\s([^:\s]{1,64}):([0-9]{1,10})\s(\w+)\sconnection\s\d+\:/i;
 		var ip = regex.exec(line);
 		ipcache.srcIp = ip[1];
 		ipcache.srcPort = ip[2];
@@ -191,7 +191,7 @@ FilterAppIngate.prototype.process = function(data) {
 
 		// EXTRACT CORRELATION HEADER, IF ANY
 		if (this.correlation_hdr) {
-			var xcid = sip.match(this.correlation_hdr + '\\s?(.*)\\r?\\n?');
+			var xcid = sip.match(this.correlation_hdr + ':\\s?([^\\r\\n]{1,512})\\r?\\n?');
 			if (xcid && xcid[1]) {
 				//console.log('Found: ',xcid);
 				rcinfo.correlation_id = xcid[1].trim();

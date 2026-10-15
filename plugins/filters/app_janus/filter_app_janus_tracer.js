@@ -639,7 +639,7 @@ function ContextManager (self, tracerName, lru) {
         transportId: line?.event?.id?.toString(),
         emitter: line?.emitter,
         transport: line?.event?.transport,
-        session_id: (Math.random() * 1000000).toString(),
+        session_id: crypto.randomBytes(8).toString('hex'),
         type: line?.type?.toString()
       }
       let transportSpan = this.startSpan(
@@ -888,9 +888,9 @@ function ContextManager (self, tracerName, lru) {
   */
 
   this.generateTraceId = function (session_id) {
-    const hash = crypto.createHash('md5', { outputLength: 16 })
+    const hash = crypto.createHash('sha256')
     hash.update(session_id.toString(), 'utf-8')
-    return hash.digest('hex')
+    return hash.digest('hex').slice(0, 32)
   }
 
   this.generateSpanId = function () {
@@ -901,9 +901,9 @@ function ContextManager (self, tracerName, lru) {
   }
 
   this.generateParentSpanId = function (session_id) {
-    const hash = crypto.createHash('shake256', { outputLength: 8 })
+    const hash = crypto.createHash('sha256')
     hash.update(session_id.toString(), 'utf-8')
-    return hash.digest('hex')
+    return hash.digest('hex').slice(0, 16)
   }
 
   this.bufferToHex = function (buffer) {

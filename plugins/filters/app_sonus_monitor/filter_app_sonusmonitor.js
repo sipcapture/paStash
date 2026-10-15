@@ -64,7 +64,7 @@ FilterAppSonusMonitor.prototype.process = function(data) {
 
 	 // EXTRACT CORRELATION HEADER, IF ANY
 	 if (this.correlation_hdr) {
-		var xcid = data.payload.match(this.correlation_hdr+":\s?(.*)\\r");
+		var xcid = data.payload.match(this.correlation_hdr+":\\s?([^\\r]{1,512})\\r");
 		if (xcid && xcid[1]) data.rcinfo.correlation_id = xcid[1].trim();
 	 }
 
