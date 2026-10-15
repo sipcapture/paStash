@@ -65,6 +65,7 @@ Parameters:
 
 * ``host``: ip of the HEP server.
 * ``port``: port of the HEP server.
+* ``protocol``: transport used to reach the collector: ``udp`` (default) or ``tcp``.
 * ``hep_id`` to change the HEP id of the stream. Default value: ``2001``.
 * ``hep_pass``: to enable HEP authentication support. Default : none
 * ``hep_cid``: to insert a (required) correaltion id, interpolated from string. Default : none.

@@ -47,6 +47,8 @@ How to use it ?
 
 Installation
 ---
+Requires **Node.js 18+** (see [docs/INSTALL.md](docs/INSTALL.md) for root install and native modules).
+
 ### NPM install
 PaStash and its dependencies can be easily installed with NPM _(provides `pastash` as command)_ as root or sudo user:
 ```

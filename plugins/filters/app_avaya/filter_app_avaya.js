@@ -49,7 +49,7 @@ FilterAppAvaya.prototype.process = function(data) {
       
       // SANITIZE KNOWN ELEMENTS
       full = full.replace(/#015#012/g, '\r\n');
-      full = full.replace(/#011|-->|<--|#012--------------------/g, '');
+      full = full.replace(/#011|--!>|<--|-->|#012--------------------/g, '');
       
       // SPLIT FIELDS
       var split = full.split(/#012/);
@@ -84,7 +84,7 @@ FilterAppAvaya.prototype.process = function(data) {
          var sip = split[split.length-1];
 	 // EXTRACT CORRELATION HEADER, IF ANY
 	 if (this.correlation_hdr) {
-		var xcid = sip.match(this.correlation_hdr+":\s?(.*)\\r");
+		var xcid = sip.match(this.correlation_hdr+":\\s?([^\\r]{1,512})\\r");
 		if (xcid && xcid[1]) rcinfo.correlation_id = xcid[1].trim();
 	 }
          if (sip && rcinfo && ip) {

@@ -1,7 +1,13 @@
-App Cisco ISR filter
+App Cisco ISR / CUBE filter
 ---
 
 Status : functional, experimental plugin.
+
+Parses Cisco IOS / ISR-style ``ccsipDisplayMsg`` syslog (including many **CUBE** SIP debug
+streams). Point syslog (UDP or TCP with ``unserializer => raw``) at paStash, use
+``multiline`` for multi-line SIP bodies, then ``app_cisco {}`` before ``hep`` output.
+See the recipe below; adjust ``start_line_regex`` if your CUBE firmware uses a slightly
+different timestamp or prefix format.
 
 #### NPM
 ```

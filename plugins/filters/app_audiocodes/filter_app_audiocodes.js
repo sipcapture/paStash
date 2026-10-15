@@ -43,6 +43,7 @@ util.inherits(FilterAppAudiocodes, base_filter.BaseFilter);
 
 FilterAppAudiocodes.prototype.start = function(callback) {
     logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
+    sessionManager.filter = this;
     if (this.ini) {
         logger.info('Reading INI file to resolver...', this.ini);
         try {
@@ -78,13 +79,13 @@ FilterAppAudiocodes.prototype.start = function(callback) {
         }
         // EXTRACT CORRELATION HEADER, IF ANY
         if (this.correlation_hdr && rcinfo.proto_type == 1 && message.startsWith('INVITE')) {
-          var xcid = message.match(this.correlation_hdr+":\s?(.*)\r\n\r\n")
+          var xcid = message.match(this.correlation_hdr+":\\s?([^\\r]{1,512})\r\n\r\n")
           if (xcid && xcid[1]) rcinfo.correlation_id = xcid[1].trim()
          if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id)
         }
 
         if (this.correlation_contact && rcinfo.proto_type == 1 && message.startsWith('INVITE')) {
-            var extract = /x-c=(.*?)\//.exec(message)
+            var extract = /x-c=([^/]{1,256})\//.exec(message)
             if (extract[1]) {
                 rcinfo.correlation_id = extract[1]
                if (this.debug) logger.info('auto correlation pick', rcinfo.correlation_id)
@@ -114,20 +115,23 @@ FilterAppAudiocodes.prototype.start = function(callback) {
  */
 let sessionManager = {
     evaluateMessage: function (line) {
+        var filter = sessionManager.filter;
         /* Extract SID and SEQ from SIP Message */
-        var seqObj = /.*\[S=(?<seq>[0-9]+)\].*/.exec(line)
-	    var sidObj = /\[SID=(?<sid>.*?)\]/.exec(line)
+        var seqObj = /.*\[S=([0-9]+)\].*/.exec(line) || /\(N\s+([0-9]+)\)/.exec(line);
+        var sidObj = /\[SID=([^\]]{1,256})\]/.exec(line);
 
-        if (!seqObj || !sidObj) {
-            if (this.bypass) return data
-            logger.error(`Invalid SIP Message, missing SID or SEQ in Line: ${line}`)
-            return
+        if (!seqObj) {
+            if (filter && filter.bypass) {
+                return filter.bypassData(line);
+            }
+            logger.error('Invalid SIP Message, missing SEQ in line: ' + line);
+            return;
         }
-        /* Unwrap SID and SEQ from Regexp */
-        let seq = seqObj[1]
-        let sid = sidObj[1]
+        var seq = seqObj[1];
+        var sid = sidObj ? sidObj[1] : ('n-' + seq);
         /* Remove SEQ and SID from line */
-        line = line.replace(/\[S=[0-9]+\] \[SID=.*\]  /, '')
+        line = line.replace(/\[S=[0-9]+\] \[SID=[^\]]+\]  /, '');
+        line = line.replace(/\[S=[0-9]+\] \[SID=[^\]]+\] /, '');
 
         
 
@@ -139,11 +143,11 @@ let sessionManager = {
         let session = {}
         /* Check if we are waiting for another part of this session */
         if (this.findSession(sid)) {
-            if (this.debug) logger.info('Found existing session', sid)
-            session = this.addFragment(sid, seq, line)
+            if (filter && filter.debug) logger.info('Found existing session', sid);
+            session = this.addFragment(sid, seq, line);
         } else {
-            if (this.debug) logger.info('Created new entry', sid)
-            session = this.createSession(sid, seq, line)
+            if (filter && filter.debug) logger.info('Created new entry', sid);
+            session = this.createSession(sid, seq, line);
         }
         
         return session
@@ -159,7 +163,7 @@ let sessionManager = {
     },
     createSession: function(sid, seq, message) {
         if (this.debug) console.log('Creating a session for a fragment', sid, seq)
-        let messages = message.split(/(?=\(N  )/g)
+        let messages = message.split(/(?=\(N\s+)/g);
         let session = {
             sid: sid,
             seq: seq,
@@ -172,7 +176,7 @@ let sessionManager = {
     addFragment: function(sid, seq, message) {
         let session = this.findSession(sid)
         if (this.debug) console.log('Adding fragment to session', sid, seq)
-        let messages = message.split(/(?=\(N  )/g)
+        let messages = message.split(/(?=\(N\s+)/g);
         for (let i = 0; i < messages.length; i++) {
             session.buffer.push({message: messages[i], seq: seq + (i / 10)})
             session.buffer = session.buffer.sort((a, b) => a.seq - b.seq)
@@ -278,7 +282,7 @@ var aliases = {};
  * Agnostic SIP Message Regexp
  * @type {RegExp} Agnostic SIP check
  */
-const agnostic = new RegExp(/(?:\(N.*)---- (?:Incoming|Outgoing) SIP Message (?:from|to) (?<ip>.*) (?:from|to) SIPInterface #[0-9]+? \((?<alias>.*)\) (?:.*) TO[(]?#[0-9]+?[)]? (?:.*)?---[-]?[ ]?(?:#012)?(?<sip>.*)*/)
+const agnostic = new RegExp(/(?:\(N[^\)]{0,16})---- (?:Incoming|Outgoing) SIP Message (?:from|to) (?<ip>[^\s]{1,128}) (?:from|to) SIPInterface #[0-9]+? \((?<alias>[^)]{0,256})\) (?:.{0,512}) TO[(]?#[0-9]+?[)]? (?:.{0,256})?---[-]?[ ]?(?:#012)?(?<sip>[\s\S]{0,65536})/)
 
 /**
  * Receives a buffer from an input or filter
@@ -315,21 +319,46 @@ FilterAppAudiocodes.prototype.process = function(data) {
     
 
 	/* Prepare line for processing */
-	line = line.replace(/\r\n/g, '#012')
+	line = line.replace(/\r\n/g, '#012');
+	line = line.replace(/\n/g, '#012');
 
-    let messages = this.splitMessages(line)
+    let messages = this.splitMessages(line);
+    var outputs = [];
 
 	/* Create Session or append to Session */
     for (let i = 0; i < messages.length; i++) {
-        let session = sessionManager.evaluateMessage(messages[i])
+        let session = sessionManager.evaluateMessage(messages[i]);
 
-        if (!session) return
+        if (!session) {
+            continue;
+        }
 
         for (let y = 0; y < session.currentMessage.length; y++) {
-            return this.sipRouter(session, session.currentMessage[y])
+            var routed = this.sipRouter(session, session.currentMessage[y]);
+            if (!routed) {
+                continue;
+            }
+            if (Array.isArray(routed)) {
+                outputs = outputs.concat(routed);
+            } else {
+                outputs.push(routed);
+            }
         }
     }
+    if (outputs.length === 0) {
+        return;
+    }
+    if (outputs.length === 1) {
+        return outputs[0];
+    }
+    return outputs;
 }
+
+FilterAppAudiocodes.prototype.bypassData = function(line) {
+    return {
+        message: line,
+    };
+};
 
 exports.create = function() {
     return new FilterAppAudiocodes()
@@ -337,7 +366,7 @@ exports.create = function() {
 
 FilterAppAudiocodes.prototype.splitMessages = function(line) {
     let messages = []
-    let split = line.split(/(?=\(N  )/g)
+    let split = line.split(/(?=\(N\s+)/g);
     
     /** 
      * @param {string} first Sequence number and Session ID 
@@ -397,20 +426,20 @@ FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
         }
     } else if (this.autolocal && message.indexOf('Local IP Address =') !== -1) {
         console.log('Local IP Address')
-        var local = message.match(/Local IP Address = (.*?):(.*?),/) || []
+        var local = message.match(/Local IP Address = ([^:,\n]{1,64}):([0-9]{1,10}),/) || []
         if (local[1]) this.localip   = local[1]
         if (local[2]) this.localport = local[2]
     } else if (message.indexOf('CALL_END ') !== -1) {
         console.log('CALL_END')
         // Parser TBD page 352 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
-        var cdr = message.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
+        var cdr = message.split('|').map(function (e) { return e.trim(); }).filter(function (e) { return e.length > 1; })
         session.callId = cdr[3] || ''
         if (this.debug) logger.info('CALL_END', cdr, session)
         if (this.logs) return this.postProcess(session,JSON.stringify(cdr),100)
     } else if (message.indexOf('MEDIA_END ') !== -1) {
         console.log('MEDIA_END')
         // Parsed TBD page 353 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
-        var qos = session.currentMessage.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
+        var qos = session.currentMessage.split('|').map(function (e) { return e.trim(); }).filter(function (e) { return e.length > 1; })
         if (qos.length == 25){
             qos.splice(15, 1);
             qos.splice(5, 1);
@@ -462,7 +491,7 @@ FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
         if (this.bypass) return data;
         // Prepare SIP LOG
         if (this.logs) {
-            var callid = message.match(/call-id:\s?(.*?)\s?#012/i) || []
+            var callid = message.match(/call-id:\s?([^\s#]{1,512})\s?#012/i) || []
             session.callId = callid[1] || session.sid || ''
             session.srcIp = this.localip || '127.0.0.1'
             session.srcPort = 514
@@ -476,7 +505,7 @@ FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
         if (this.debug) console.log('UNKNOWN', session.sid, message)
         // Prepare unknown as log
         if (this.logs) {
-            var callid = message.match(/call-id:\s?(.*?)\s?#012/i) || []
+            var callid = message.match(/call-id:\s?([^\s#]{1,512})\s?#012/i) || []
             session.callId = callid[1] || session.sid || ''
             session.srcIp = this.localip || '127.0.0.1'
             session.srcPort = 514
@@ -490,7 +519,7 @@ FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
 
 FilterAppAudiocodes.prototype.handleSIP = function(session, rawSIP, direction, resolved) {
     /* Extract and set src/dst IP and Ports */
-    if (resolved.xlocalip && resolved.xlocalport){
+    if (resolved && resolved.xlocalip && resolved.xlocalport){
         if (direction === 'incoming') {
             session.dstIp = resolved.xlocalip
             session.dstPort = parseInt(resolved.xlocalport)
@@ -523,14 +552,14 @@ FilterAppAudiocodes.prototype.handleSIP = function(session, rawSIP, direction, r
         return
     }
     sessionManager.removeFragment(session, rawSIP.input)
-    var callid = message.match(/call-id:\s?(.*?)\s?#012/i) || []
+    var callid = message.match(/call-id:\s?([^\s#]{1,512})\s?#012/i) || []
     session.callId = callid[1] || session.sid || ''
     return this.postProcess(session, message)
 }
 
 FilterAppAudiocodes.prototype.invokeResolver = function(session, ip) {
     if (this.debug) console.log('Invoking Resolver')
-    let aliasregex = /SIPInterface #([^\s]+) \((.*)\) (.*) TO/g;
+    let aliasregex = /SIPInterface #([^\s]+) \(([^)]{0,256})\) ([^ ]+) TO/g;
     let interface = aliasregex.exec(session.currentMessage) || false;
     if (this.resolver && interface){
         let alias = interface[1]; //0

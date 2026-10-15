@@ -28,20 +28,44 @@ function OutputPostgres() {
         start_hook: this.start,
     });
 }
+OutputPostgres.prototype.pgConnectionString = function() {
+    return 'postgres://' + this.user + ':' + this.password + '@' + this.host + ':' + this.port + '/' + this.db;
+};
+
+OutputPostgres.prototype.connectClient = function() {
+    var self = this;
+    if (pool.client) {
+        pool.client.removeAllListeners('error');
+    }
+    pool.client = new Client({
+        connectionString: self.pgConnectionString(),
+    });
+    pool.client.on('error', function(err) {
+        logger.error('PG client error', err);
+        self.reconnectClient();
+    });
+    return pool.client.connect().then(function() {
+        logger.info('DB connected!');
+    });
+};
+
+OutputPostgres.prototype.reconnectClient = function() {
+    var self = this;
+    var oldClient = pool.client;
+    if (!oldClient) {
+        return self.connectClient();
+    }
+    return oldClient.end().catch(function() {}).then(function() {
+        return self.connectClient();
+    });
+};
+
 OutputPostgres.prototype.start =function(callback) {
     THIS =  this;
     if (this.db) {
         try {
-	    var pgConnectionString = 'postgres://' + this.user + ':' + this.password + '@' + this.host + ":" + this.port + '/' + this.db;
             logger.info('Initializing Output Filter Postgres:',this.db);
-		pool.client = new Client({
-		  connectionString: pgConnectionString,
-		})
-		pool.client.on('error', err => { pool.client.end(); pool.client.connect(); }  );
-
-		pool.client
-		  .connect()
-		  .then(() => console.log('DB connected!'))
+		this.connectClient()
 		  .catch(err => logger.error('DB connection error!', err.stack))
 		  .then(() => {
 			  if (this.create_db){
@@ -83,7 +107,7 @@ var insert_failures = 0;
 OutputPostgres.prototype.process = function(data) {
 	var id = uuid();
 	if (data[this.id]) id = data[this.id];
-	if (!pool && !pool.client) {
+	if (!pool.client) {
 		logger.error("no pg client available", pool.err);
 		return;
 	}
@@ -100,7 +124,9 @@ OutputPostgres.prototype.process = function(data) {
 			if(insert_failures > 10) {
 				insert_failures = 0;
 				logger.error("too many insert failures, restarting pool");
-				pool.client.end(); pool.client.connect();
+				THIS.reconnectClient().catch(function(err) {
+					logger.error('PG reconnect failed', err);
+				});
 			}
                     }
 		    if (this.debug) logger.info("Successful insert!",result);
