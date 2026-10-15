@@ -43,6 +43,7 @@ util.inherits(FilterAppAudiocodes, base_filter.BaseFilter);
 
 FilterAppAudiocodes.prototype.start = function(callback) {
     logger.info('Initialized App Audiocodes SysLog to SIP/HEP parser');
+    sessionManager.filter = this;
     if (this.ini) {
         logger.info('Reading INI file to resolver...', this.ini);
         try {
@@ -114,20 +115,23 @@ FilterAppAudiocodes.prototype.start = function(callback) {
  */
 let sessionManager = {
     evaluateMessage: function (line) {
+        var filter = sessionManager.filter;
         /* Extract SID and SEQ from SIP Message */
-        var seqObj = /.*\[S=(?<seq>[0-9]+)\].*/.exec(line)
-	    var sidObj = /\[SID=(?<sid>[^\]]{1,256})\]/.exec(line)
+        var seqObj = /.*\[S=([0-9]+)\].*/.exec(line) || /\(N\s+([0-9]+)\)/.exec(line);
+        var sidObj = /\[SID=([^\]]{1,256})\]/.exec(line);
 
-        if (!seqObj || !sidObj) {
-            if (this.bypass) return data
-            logger.error(`Invalid SIP Message, missing SID or SEQ in Line: ${line}`)
-            return
+        if (!seqObj) {
+            if (filter && filter.bypass) {
+                return filter.bypassData(line);
+            }
+            logger.error('Invalid SIP Message, missing SEQ in line: ' + line);
+            return;
         }
-        /* Unwrap SID and SEQ from Regexp */
-        let seq = seqObj[1]
-        let sid = sidObj[1]
+        var seq = seqObj[1];
+        var sid = sidObj ? sidObj[1] : ('n-' + seq);
         /* Remove SEQ and SID from line */
-        line = line.replace(/\[S=[0-9]+\] \[SID=.*\]  /, '')
+        line = line.replace(/\[S=[0-9]+\] \[SID=[^\]]+\]  /, '');
+        line = line.replace(/\[S=[0-9]+\] \[SID=[^\]]+\] /, '');
 
         
 
@@ -139,11 +143,11 @@ let sessionManager = {
         let session = {}
         /* Check if we are waiting for another part of this session */
         if (this.findSession(sid)) {
-            if (this.debug) logger.info('Found existing session', sid)
-            session = this.addFragment(sid, seq, line)
+            if (filter && filter.debug) logger.info('Found existing session', sid);
+            session = this.addFragment(sid, seq, line);
         } else {
-            if (this.debug) logger.info('Created new entry', sid)
-            session = this.createSession(sid, seq, line)
+            if (filter && filter.debug) logger.info('Created new entry', sid);
+            session = this.createSession(sid, seq, line);
         }
         
         return session
@@ -159,7 +163,7 @@ let sessionManager = {
     },
     createSession: function(sid, seq, message) {
         if (this.debug) console.log('Creating a session for a fragment', sid, seq)
-        let messages = message.split(/(?=\(N  )/g)
+        let messages = message.split(/(?=\(N\s+)/g);
         let session = {
             sid: sid,
             seq: seq,
@@ -172,7 +176,7 @@ let sessionManager = {
     addFragment: function(sid, seq, message) {
         let session = this.findSession(sid)
         if (this.debug) console.log('Adding fragment to session', sid, seq)
-        let messages = message.split(/(?=\(N  )/g)
+        let messages = message.split(/(?=\(N\s+)/g);
         for (let i = 0; i < messages.length; i++) {
             session.buffer.push({message: messages[i], seq: seq + (i / 10)})
             session.buffer = session.buffer.sort((a, b) => a.seq - b.seq)
@@ -315,21 +319,46 @@ FilterAppAudiocodes.prototype.process = function(data) {
     
 
 	/* Prepare line for processing */
-	line = line.replace(/\r\n/g, '#012')
+	line = line.replace(/\r\n/g, '#012');
+	line = line.replace(/\n/g, '#012');
 
-    let messages = this.splitMessages(line)
+    let messages = this.splitMessages(line);
+    var outputs = [];
 
 	/* Create Session or append to Session */
     for (let i = 0; i < messages.length; i++) {
-        let session = sessionManager.evaluateMessage(messages[i])
+        let session = sessionManager.evaluateMessage(messages[i]);
 
-        if (!session) return
+        if (!session) {
+            continue;
+        }
 
         for (let y = 0; y < session.currentMessage.length; y++) {
-            return this.sipRouter(session, session.currentMessage[y])
+            var routed = this.sipRouter(session, session.currentMessage[y]);
+            if (!routed) {
+                continue;
+            }
+            if (Array.isArray(routed)) {
+                outputs = outputs.concat(routed);
+            } else {
+                outputs.push(routed);
+            }
         }
     }
+    if (outputs.length === 0) {
+        return;
+    }
+    if (outputs.length === 1) {
+        return outputs[0];
+    }
+    return outputs;
 }
+
+FilterAppAudiocodes.prototype.bypassData = function(line) {
+    return {
+        message: line,
+    };
+};
 
 exports.create = function() {
     return new FilterAppAudiocodes()
@@ -337,7 +366,7 @@ exports.create = function() {
 
 FilterAppAudiocodes.prototype.splitMessages = function(line) {
     let messages = []
-    let split = line.split(/(?=\(N  )/g)
+    let split = line.split(/(?=\(N\s+)/g);
     
     /** 
      * @param {string} first Sequence number and Session ID 
@@ -490,7 +519,7 @@ FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
 
 FilterAppAudiocodes.prototype.handleSIP = function(session, rawSIP, direction, resolved) {
     /* Extract and set src/dst IP and Ports */
-    if (resolved.xlocalip && resolved.xlocalport){
+    if (resolved && resolved.xlocalip && resolved.xlocalport){
         if (direction === 'incoming') {
             session.dstIp = resolved.xlocalip
             session.dstPort = parseInt(resolved.xlocalport)

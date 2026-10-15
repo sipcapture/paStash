@@ -54,7 +54,7 @@ filter {
 }
 
 output {
-  if [rcinfo] != 'undefined' {
+  if [rcinfo] {
         hep {
           host => '127.0.0.1'
           port => 9060
@@ -64,6 +64,8 @@ output {
 }
 ```
 
+Use ``if [rcinfo]`` (field present). The ``!= 'undefined'`` string check never matches
+a real HEP object and will skip the ``hep`` output.
 
 ## Usage
 ```
