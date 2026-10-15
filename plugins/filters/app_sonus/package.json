@@ -1,13 +1,13 @@
 {
   "name": "@pastash/filter_app_sonuslog",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Sonus TRC Filter Plugin for @pastash/pastash",
   "main": "filter_app_sonuslog.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "optionalDependencies": {
-    "moment": "2.19.3"
+    "moment": "2.31.0"
   },
   "author": "Lorenzo Mangani <lorenzo.mangan@gmail.com>",
   "license": "ISC"

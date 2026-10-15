@@ -41,7 +41,7 @@ OutputKafka.prototype.start = async function(callback) {
       }
   }
   this.kafka = new Kafka(kconf);
-  this.producer = kafka.producer()
+  this.producer = this.kafka.producer()
   await this.producer.connect()
 
   this.producer.on('error', (err) => {
