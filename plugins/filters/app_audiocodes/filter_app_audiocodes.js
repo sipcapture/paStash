@@ -397,20 +397,20 @@ FilterAppAudiocodes.prototype.sipRouter = function(session, message) {
         }
     } else if (this.autolocal && message.indexOf('Local IP Address =') !== -1) {
         console.log('Local IP Address')
-        var local = message.match(/Local IP Address = ([^:]+):([^,]+),/) || []
+        var local = message.match(/Local IP Address = ([^:,\n]{1,64}):([0-9]{1,10}),/) || []
         if (local[1]) this.localip   = local[1]
         if (local[2]) this.localport = local[2]
     } else if (message.indexOf('CALL_END ') !== -1) {
         console.log('CALL_END')
         // Parser TBD page 352 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
-        var cdr = message.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
+        var cdr = message.split('|').map(function (e) { return e.trim(); }).filter(function (e) { return e.length > 1; })
         session.callId = cdr[3] || ''
         if (this.debug) logger.info('CALL_END', cdr, session)
         if (this.logs) return this.postProcess(session,JSON.stringify(cdr),100)
     } else if (message.indexOf('MEDIA_END ') !== -1) {
         console.log('MEDIA_END')
         // Parsed TBD page 353 @ https://www.audiocodes.com/media/10312/ltrt-41548-mediant-software-sbc-users-manual-ver-66.pdf
-        var qos = session.currentMessage.split(/(\s+\|)/).filter( function(e) { return e.trim().length > 1; } )
+        var qos = session.currentMessage.split('|').map(function (e) { return e.trim(); }).filter(function (e) { return e.length > 1; })
         if (qos.length == 25){
             qos.splice(15, 1);
             qos.splice(5, 1);
