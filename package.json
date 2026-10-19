@@ -50,16 +50,16 @@
     "rimraf": "5.0.x",
     "vows": "0.7.0",
     "vows-batch-retry": "0.0.4",
-    "which": "^4.0.0"
+    "which": "^7.0.0"
   },
   "scripts": {
     "test": "./test-runner.sh"
   },
   "dependencies": {
     "async": "2.6.4",
-    "csv-parser": "^2.3.3",
+    "csv-parser": "^3.2.1",
     "log4node": "0.1.6",
-    "lru-cache": "4.1.x",
+    "lru-cache": "11.5.x",
     "mkdirp": "0.5.1",
     "optimist": "0.6.1",
     "requireg": "^0.2.1"
