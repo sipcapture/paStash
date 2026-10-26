@@ -66,7 +66,7 @@
   },
   "optionalDependencies": {
     "amqplib": "2.2.0",
-    "fast-json-stringify": "^5.15.1",
+    "fast-json-stringify": "^7.1.3",
     "geoip-lite": "1.4.10",
     "gun": "0.2019.1228",
     "hep-js": "^1.0.20",
