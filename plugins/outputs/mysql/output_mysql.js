@@ -3,6 +3,7 @@ var base_output = require('@pastash/pastash').base_output,
     util = require('util');
 var sqdb;
 var mysql = require('mysql2');
+var bind_query = require('./bind_query');
 
 function OutputMySql() {
     base_output.BaseOutput.call(this);
@@ -16,7 +17,7 @@ function OutputMySql() {
             'user': 'root',
             'password': 'admin',
             'interval_ms': 10000,
-            'query': "call SP_UpdateSyncResult('{|data|}');"
+            'query': bind_query.DEFAULT_QUERY
         },
         start_hook: this.start,
     });
@@ -24,8 +25,9 @@ function OutputMySql() {
 OutputMySql.prototype.start =function(callback) {
     if (this.db) {
         try {
-            var cfg = { database: this.db, rowsAsArray: true };
+            var cfg = { database: this.db, rowsAsArray: true, multipleStatements: false };
             if(this.host) cfg.host = this.host;
+            if(this.port) cfg.port = this.port;
             if(this.user) cfg.user = this.user;
             if(this.password) cfg.password = this.password;
             sqdb = mysql.createConnection(cfg);
@@ -39,10 +41,16 @@ OutputMySql.prototype.start =function(callback) {
 util.inherits(OutputMySql, base_output.BaseOutput);
 
 OutputMySql.prototype.process = function(data) {
-    var sqlstr = this.query
-    sqlstr = sqlstr.replace('{|data|}',JSON.stringify(data, null, 2));
+    var payload;
+    var bound;
 
-    sqdb.query(sqlstr ,null, function(err, results, fields) {
+    if (!sqdb) {
+        logger.error('MySQL output is not connected');
+        return;
+    }
+    payload = JSON.stringify(data, null, 2);
+    bound = bind_query.bindEventQuery(this.query, payload);
+    sqdb.query(bound.sql, bound.params, function(err) {
         if (err) {
             logger.error('MySQL query error:', err);
         }
