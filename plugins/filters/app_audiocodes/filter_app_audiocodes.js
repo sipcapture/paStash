@@ -48,8 +48,8 @@ FilterAppAudiocodes.prototype.start = function(callback) {
         logger.info('Reading INI file to resolver...', this.ini);
         try {
             this.resolver = parseIni(this.ini);
-            logger.info('INI Loaded '+this.resolver.interfaces.lenght +' Interfaces');
-            logger.info('INI Loaded '+this.resolver.sip.lenght +' SIP Profiles');
+            logger.info('INI Loaded '+this.resolver.interfaces.length +' Interfaces');
+            logger.info('INI Loaded '+this.resolver.sip.length +' SIP Profiles');
             if (this.debug) console.log(this.resolver);
             if (this.iniwatch) watchIni(this.ini, this.resolver);
         } catch(err) { logger.error(err) }
