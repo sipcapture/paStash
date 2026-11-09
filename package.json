@@ -65,7 +65,7 @@
     "requireg": "^0.2.1"
   },
   "optionalDependencies": {
-    "amqplib": "2.2.0",
+    "amqplib": "2.2.1",
     "fast-json-stringify": "^7.2.0",
     "geoip-lite": "1.4.10",
     "gun": "0.2019.1228",
