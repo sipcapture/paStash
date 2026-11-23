@@ -67,7 +67,7 @@
   "optionalDependencies": {
     "amqplib": "2.2.1",
     "fast-json-stringify": "^7.2.0",
-    "geoip-lite": "1.4.10",
+    "geoip-lite": "2.0.3",
     "gun": "0.2019.1228",
     "hep-js": "^1.0.20",
     "http-proxy-agent": "9.x",
