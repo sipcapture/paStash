@@ -71,7 +71,7 @@
     "gun": "0.2019.1228",
     "hep-js": "^1.0.20",
     "http-proxy-agent": "9.x",
-    "https-proxy-agent": "7.0.4",
+    "https-proxy-agent": "9.1.0",
     "lumberjack-protocol": "git://github.com/bpaquet/node-lumberjack-protocol.git",
     "maxmind": "5.1.x",
     "maxmind-geolite-mirror": "1.3.x",
