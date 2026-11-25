@@ -9,3 +9,7 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    ignore:
+      # 2.x requires Node >= 24 and no longer ships GeoLite data. paStash still supports Node 18.
+      - dependency-name: "geoip-lite"
+        update-types: ["version-update:semver-major"]
